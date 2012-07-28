@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2011 Alexey Ragozin
+    Copyright 2012 Alexey Ragozin
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -19,47 +19,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
+    <parent>
+        <groupId>org.gridkit.lab</groupId>
+        <artifactId>vicluster-parent</artifactId>
+        <version>0.5-SNAPSHOT</version>        
+        <relativePath>..</relativePath>
+    </parent>
+
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.gridkit.coherence.workshop</groupId>
-    <artifactId>grid-lab</artifactId>
+    <groupId>org.gridkit.lab</groupId>
+    <artifactId>vicluster-core</artifactId>
     <packaging>jar</packaging>
     <version>0.1-SNAPSHOT</version>
-    <name>Misc code for Coherence performance lab</name>
+    <name>ViCluster core</name>
     <url></url>
-
-
-    <properties>
-        <javaVersion>1.6</javaVersion>
-    </properties>
-
-    <repositories>
-        <!-- GridKit maven2 repository -->
-        <repository>
-            <id>gridkit-releases</id>
-            <name>gridkit-repo.googlecode.com</name>
-            <url>http://gridkit.googlecode.com/svn/repo/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-	<!--
-        <repository>
-            <id>prova</id>
-            <name>Prova repository</name>
-            <url>http://prova.ws/maven2</url>
-            <releases>
-               <enabled>true</enabled>
-            </releases>
-            <snapshots>
-               <enabled>true</enabled>
-            </snapshots>
-        </repository>
-	-->
-    </repositories>
 
     <pluginRepositories>
         <pluginRepository>
@@ -103,7 +76,6 @@
         	<groupId>junit</groupId>
         	<artifactId>junit</artifactId>
         	<version>4.10</version>
-        	<scope>test</scope>
         </dependency>
         
         <dependency>
@@ -117,31 +89,24 @@
             <artifactId>testng</artifactId>
             <version>6.4</version>
         </dependency>
+
         <dependency>
         	<groupId>com.jcraft</groupId>
         	<artifactId>jsch</artifactId>
         	<version>0.1.48</version>
         </dependency>
+
         <dependency>
         	<groupId>ch.qos.logback</groupId>
         	<artifactId>logback-classic</artifactId>
         	<version>1.0.6</version>
         </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${javaVersion}</source>
-                    <target>${javaVersion}</target>
-                </configuration>
-            </plugin>
-
-<!-- usage: http://code.google.com/p/maven-license-plugin/wiki/HowTo -->
-<!--
+            <!-- usage: http://code.google.com/p/maven-license-plugin/wiki/HowTo -->
             <plugin> 
                 <artifactId>maven-license-plugin</artifactId>
                 <groupId>com.mathieucarbou.mojo</groupId>
@@ -154,6 +119,7 @@
                         <include>**/pom.xml</include>
                     </includes>
                 </configuration>
+                <!--
                 <executions>
                     <execution>
                         <phase>test</phase>
@@ -162,8 +128,8 @@
                         </goals>
                     </execution>
                 </executions>
+                -->
             </plugin>
--->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -173,14 +139,6 @@
                     <forkMode>always</forkMode>
                 </configuration>
             </plugin>            
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                </configuration> 
-            </plugin>                
 
         </plugins>
 
