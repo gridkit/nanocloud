@@ -40,6 +40,10 @@
         <javaVersion>1.6</javaVersion>
     </properties>
 
+    <modules>
+        <module>vicluster-core</module>
+    </modules>
+
     <repositories>
         <!-- GridKit maven2 repository -->
         <!-- required to fetch parent POM -->
