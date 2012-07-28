@@ -16,6 +16,9 @@ import org.gridkit.util.vicontrol.ViNodeConfig;
 import org.gridkit.util.vicontrol.VoidCallable;
 import org.gridkit.util.vicontrol.VoidCallable.VoidCallableWrapper;
 
+/**
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class IsolateViNode implements ViNode {
 
 	private ViNodeConfig config = new ViNodeConfig();
@@ -323,7 +326,7 @@ public class IsolateViNode implements ViNode {
 		}
 	}
 	
-	public static void excludeClass(ViConfigurable node, Class<StaticVarHost> type) {
+	public static void excludeClass(ViConfigurable node, Class<?> type) {
 		if (type.isPrimitive() || type.isArray() || type.getDeclaringClass() != null) {
 			throw new IllegalArgumentException("Non inner, non primity, non array class is expected");
 		}

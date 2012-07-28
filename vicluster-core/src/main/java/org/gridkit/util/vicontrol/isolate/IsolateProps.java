@@ -1,5 +1,8 @@
 package org.gridkit.util.vicontrol.isolate;
 
+/**
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class IsolateProps {
 
 	public static String NAME = "isolate:name";

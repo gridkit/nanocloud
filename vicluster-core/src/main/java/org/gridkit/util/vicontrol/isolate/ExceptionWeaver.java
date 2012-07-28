@@ -17,7 +17,10 @@ package org.gridkit.util.vicontrol.isolate;
 
 import java.util.Arrays;
 
-public class ExceptionWeaver {
+/**
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
+class ExceptionWeaver {
 	
 	public static void replaceStackTop(Throwable receiver, StackTraceElement receiverTop, Throwable donnor, StackTraceElement donnorBottom, StackTraceElement boundary) {
 		StackTraceElement[] rtrace = receiver.getStackTrace();

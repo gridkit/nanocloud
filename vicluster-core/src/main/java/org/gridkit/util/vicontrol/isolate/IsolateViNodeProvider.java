@@ -4,6 +4,9 @@ import org.gridkit.util.vicontrol.ViNode;
 import org.gridkit.util.vicontrol.ViNodeConfig;
 import org.gridkit.util.vicontrol.ViNodeProvider;
 
+/**
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class IsolateViNodeProvider implements ViNodeProvider {
 
 	@Override

@@ -79,12 +79,10 @@ import java.util.logging.LogManager;
 
 import org.gridkit.util.vicontrol.VoidCallable;
 import org.gridkit.util.vicontrol.VoidCallable.VoidCallableWrapper;
-import org.junit.Ignore;
 
 /**
  *	@author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-@Ignore
 public class Isolate {
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
