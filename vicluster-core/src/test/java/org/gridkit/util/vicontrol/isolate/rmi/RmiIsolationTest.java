@@ -1,5 +1,8 @@
 package org.gridkit.util.vicontrol.isolate.rmi;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -11,8 +14,7 @@ import org.gridkit.util.vicontrol.ViGroup;
 import org.gridkit.util.vicontrol.ViNode;
 import org.gridkit.util.vicontrol.VoidCallable;
 import org.gridkit.util.vicontrol.isolate.IsolateViNode;
-import org.testng.AssertJUnit;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 public class RmiIsolationTest {
 
@@ -52,7 +54,7 @@ public class RmiIsolationTest {
 				
 				PingObject ping = new PingObject("pong");
 				System.out.println("Ping: " + ping.getClass().getClassLoader());
-				AssertJUnit.assertEquals("pong", rping.ping(ping));
+				assertThat(rping.ping(ping), is("pong"));
 			}
 		});
 
@@ -66,7 +68,7 @@ public class RmiIsolationTest {
 				
 				PingObject ping = new PingObject("pong");
 				System.out.println("Ping: " + ping.getClass().getClassLoader());
-				AssertJUnit.assertEquals("pong", rping.ping(ping));
+				assertThat(rping.ping(ping), is("pong"));
 			}
 		});
 		

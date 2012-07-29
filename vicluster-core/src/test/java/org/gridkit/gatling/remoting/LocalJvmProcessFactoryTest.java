@@ -1,5 +1,7 @@
 package org.gridkit.gatling.remoting;
 
+import static org.hamcrest.CoreMatchers.not;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
@@ -7,8 +9,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class LocalJvmProcessFactoryTest {
 
@@ -28,7 +30,7 @@ public class LocalJvmProcessFactoryTest {
 		Future<String> f = process.getExecutionService().submit(new GetJvmName());
 		String rname = f.get();
 		System.out.println("VM names: " + name + " / " + rname);
-		Assert.assertNotEquals(rname, name);
+		Assert.assertThat(rname, not(name));
 		process.getProcess().destroy();
 	}	
 
@@ -49,7 +51,7 @@ public class LocalJvmProcessFactoryTest {
 		
 		String rname = f.get();
 		System.out.println("VM names: " + name + " / " + rname);
-		Assert.assertNotEquals(rname, name);
+		Assert.assertThat(rname, not(name));
 		process.getProcess().destroy();
 	}	
 
@@ -61,12 +63,4 @@ public class LocalJvmProcessFactoryTest {
 			return ManagementFactory.getRuntimeMXBean().getName();
 		}
 	}	
-
-//	@SuppressWarnings("serial")
-//	private final static class GetWorkDir implements Callable<String>, Serializable {
-//		@Override
-//		public String call() throws Exception {
-//			return new File(".").getAbsoluteFile().getCanonicalPath();
-//		}
-//	}	
 }

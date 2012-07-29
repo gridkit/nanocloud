@@ -1359,7 +1359,14 @@ public class Isolate {
 			if (!isExcluded(name)) {
 				for(String prefix: packages) {
 					if (name.startsWith(prefix + ".")) {
-						return super.loadClass(name, false);
+						Class<?> cl = findLoadedClass(name);
+						if (cl == null) {
+							cl = findClass(name);
+						}
+						if (cl == null) {
+							throw new ClassNotFoundException(name);
+						}
+						return cl;
 					}
 				}
 			}
@@ -1369,7 +1376,7 @@ public class Isolate {
 			Class<?> cc = baseClassloader.loadClass(name);
 			return cc;
 		}
-
+		
 		private boolean isExcluded(String name) {	
 			if (name.equals(Isolate.class.getName()) 
 					|| name.startsWith(Isolate.class.getName() + "$")

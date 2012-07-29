@@ -9,7 +9,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
-public class ChechSshConnection {
+public class SshConnectionCheck {
 
 	@Test
 	public void test_password_auth() throws JSchException {

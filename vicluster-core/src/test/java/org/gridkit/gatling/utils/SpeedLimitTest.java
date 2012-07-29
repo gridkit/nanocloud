@@ -10,8 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
-import org.testng.AssertJUnit;
-import org.testng.annotations.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 public class SpeedLimitTest {
@@ -100,7 +100,7 @@ public class SpeedLimitTest {
 	}
 	
 	private void assertError(double value, double target, double tolerance) {
-		AssertJUnit.assertTrue(String.format("%f within %.3f bounds from %f", value, tolerance, target), value < (target + target * tolerance) && value > (target - target * tolerance));
+		Assert.assertTrue(String.format("%f within %.3f bounds from %f", value, tolerance, target), value < (target + target * tolerance) && value > (target - target * tolerance));
 	}
 	
 	private void runTest(double targetRate, int threads, boolean balanced) {

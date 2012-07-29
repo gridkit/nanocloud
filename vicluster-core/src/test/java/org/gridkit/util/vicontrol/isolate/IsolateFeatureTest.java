@@ -14,10 +14,10 @@ import java.util.concurrent.Callable;
 import org.gridkit.util.vicontrol.ViGroup;
 import org.gridkit.util.vicontrol.ViNode;
 import org.gridkit.util.vicontrol.VoidCallable;
-import org.testng.Assert;
-import org.testng.AssertJUnit;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class IsolateFeatureTest {
 
@@ -34,7 +34,7 @@ public class IsolateFeatureTest {
 		return viHost;
 	}
 	
-	@AfterMethod
+	@After
 	public void cleanIsolates() {
 		hosts.shutdown();
 		hosts = new ViGroup();
@@ -70,7 +70,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		Assert.assertEquals("[isolate 1, isolate 2]", results.toString(), "Static variable should be different is different isolartes");
+		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
 	}
 
 	@Test
@@ -105,7 +105,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		Assert.assertEquals("[isolate 1, isolate 2]", results.toString(), "Static variable should be different is different isolartes");
+		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
 	}
 
 	@Test
@@ -138,7 +138,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		Assert.assertEquals("[isolate 1, isolate 2]", results.toString(), "Static variable should be different is different isolartes");
+		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
 	}
 	
 	@Test
@@ -173,7 +173,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		Assert.assertEquals("[isolate 2, isolate 2]", results.toString(), "Static variable should be different is different isolartes");
+		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 2, isolate 2]", results.toString());
 	}	
 	
 	@Test
@@ -236,7 +236,7 @@ public class IsolateFeatureTest {
 					throw new IllegalArgumentException("test");
 				}
 			});
-			Assert.assertFalse(true, "Should throw an exception");
+			Assert.assertFalse("Should throw an exception", true);
 		}
 		catch(IllegalArgumentException e) {
 			e.printStackTrace();
@@ -265,7 +265,7 @@ public class IsolateFeatureTest {
 	}
 	
 	// TODO expose export feature
-	@Test(enabled=false)
+	@Test @Ignore("Feature is missing")
 	public void test_stack_trace2() {
 
 		Isolate is1 = new Isolate("node-1", "com.tangosol", "org.gridkit");
@@ -285,7 +285,7 @@ public class IsolateFeatureTest {
 
 			r.run();
 			
-			Assert.assertFalse(true, "Should throw an exception");
+			Assert.assertFalse("Should throw an exception", true);
 		}
 		catch(IllegalArgumentException e) {
 			e.printStackTrace();
@@ -307,23 +307,23 @@ public class IsolateFeatureTest {
 		new CheckMarker("Default marker").run();
 	}
 
-	@Test(expectedExceptions = NoClassDefFoundError.class)
+	@Test(expected = NoClassDefFoundError.class)
 	public void test_classpath_limiting() throws MalformedURLException {
 		ViNode node = createIsolateViHost("test-node");
 		node.setProps(ISOLATE_PROPS);
-		IsolateViNode.includePackage(node, "org.testng");
+		IsolateViNode.includePackage(node, "org.junit");
 		
-		URL url = getClass().getResource("/testng-1.0.dtd");
+		URL url = getClass().getResource("/org/junit/Assert.class");
 		Assert.assertNotNull(url);
 		
 		String jarUrl = url.toString();
-		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('/') + 1);
+		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!') + 2);
 		IsolateViNode.removeFromClasspath(node, new URL(jarUrl));
 		
 		node.exec(new Runnable() {
 			@Override
 			public void run() {
-				// should throw NoClassDefFoundError because testng was removed from isolate classpath
+				// should throw NoClassDefFoundError because junit was removed from isolate classpath
 				Assert.assertTrue(true);
 			}
 		});		
@@ -368,9 +368,9 @@ public class IsolateFeatureTest {
 
 			@Override
 			public Void call() throws Exception {
-				AssertJUnit.assertEquals("fb", true, fb);
-				AssertJUnit.assertEquals("fi", 10, fi);
-				AssertJUnit.assertEquals("fd", 10.1d, fd);
+				Assert.assertEquals("fb", true, fb);
+				Assert.assertEquals("fi", 10, fi);
+				Assert.assertEquals("fd", 10.1d, fd, 0d);
 				return null;
 			}			
 		});

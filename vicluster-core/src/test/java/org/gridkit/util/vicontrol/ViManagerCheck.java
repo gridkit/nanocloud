@@ -17,7 +17,7 @@ import org.gridkit.util.vicontrol.jvm.JvmNodeProvider;
 import org.junit.After;
 import org.junit.Test;
 
-public class ViManagerTest {
+public class ViManagerCheck {
 
 	
 	private ViManager manager = createViManager();
