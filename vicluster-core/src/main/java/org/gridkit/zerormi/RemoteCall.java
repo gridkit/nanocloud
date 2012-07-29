@@ -18,10 +18,8 @@ package org.gridkit.zerormi;
 import java.io.Serializable;
 
 /**
- * Class that holds method call informations.
  * 
- * @date   05/10/2006 
- * @author lipe
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class RemoteCall implements RemoteMessage, Serializable {
 

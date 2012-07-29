@@ -1,4 +1,4 @@
-package org.gridkit.util.vicontrol.isolate;
+package org.gridkit.vicluster.isolate;
 
 public class StaticVarHost {
 

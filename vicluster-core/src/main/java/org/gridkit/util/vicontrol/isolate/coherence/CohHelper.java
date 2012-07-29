@@ -49,6 +49,10 @@ import com.tangosol.net.management.MBeanServerFinder;
 import com.tangosol.run.xml.XmlElement;
 import com.tangosol.run.xml.XmlHelper;
 
+/**
+ * Helper class implementing Oracle Coherence specific operations for Isolate. 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class CohHelper {
 
 	public static void pofConfig(ViConfigurable node, String path) {

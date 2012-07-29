@@ -1,4 +1,4 @@
-package org.gridkit.fabric.remoting;
+package org.gridkit.vicluster.telecontrol;
 
 import org.junit.Test;
 

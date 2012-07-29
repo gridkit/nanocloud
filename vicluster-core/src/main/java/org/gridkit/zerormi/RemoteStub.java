@@ -20,6 +20,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class RemoteStub implements InvocationHandler  {
 
 	private RemoteInstance identity;

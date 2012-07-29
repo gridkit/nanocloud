@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class CompositeViNodeProvider implements ViNodeProvider {
 
 	private List<Provider> providers = new ArrayList<Provider>();

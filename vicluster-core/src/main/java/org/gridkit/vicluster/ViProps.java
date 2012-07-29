@@ -15,6 +15,10 @@
  */
 package org.gridkit.vicluster;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class ViProps {
 
 	/**

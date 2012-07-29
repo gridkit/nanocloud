@@ -19,6 +19,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class JvmConfig implements Serializable {
 
 	private static final long serialVersionUID = 20120211L;

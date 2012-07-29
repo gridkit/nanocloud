@@ -1,4 +1,4 @@
-package org.gridkit.util.vicontrol.isolate;
+package org.gridkit.vicluster.isolate;
 
 import java.io.BufferedReader;
 import java.io.IOException;

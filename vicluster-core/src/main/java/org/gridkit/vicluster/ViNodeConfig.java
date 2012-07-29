@@ -19,6 +19,10 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 @SuppressWarnings("serial")
 public class ViNodeConfig implements ViConfigurable, Serializable {
 

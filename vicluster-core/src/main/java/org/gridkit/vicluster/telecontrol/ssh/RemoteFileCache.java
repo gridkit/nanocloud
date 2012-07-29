@@ -26,6 +26,10 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class RemoteFileCache {
 	
 	private static final String DIGEST_ALGO = "SHA-1";

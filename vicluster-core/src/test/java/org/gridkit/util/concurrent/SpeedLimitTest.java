@@ -1,4 +1,4 @@
-package org.gridkit.gatling.utils;
+package org.gridkit.util.concurrent;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;

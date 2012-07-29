@@ -17,6 +17,10 @@ package org.gridkit.vicluster.telecontrol.jvm;
 
 import java.util.Arrays;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 class ExceptionHelper {
 	
 	public static void replaceStackTop(Throwable receiver, StackTraceElement receiverTop, Throwable donnor, StackTraceElement donnorBottom, StackTraceElement boundary) {

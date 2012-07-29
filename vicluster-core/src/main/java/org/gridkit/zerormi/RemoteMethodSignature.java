@@ -19,6 +19,10 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class RemoteMethodSignature implements Serializable {
 	
 	private static final long serialVersionUID = 20080415L;

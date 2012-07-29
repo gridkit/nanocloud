@@ -15,8 +15,13 @@
  */
 package org.gridkit.vicluster.telecontrol.jvm;
 
+import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 
+/**
+ * Static helper class for setup {@link ViNode} props specific to out-of-process implementations.
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class JvmProps {
 
 	/**

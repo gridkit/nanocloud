@@ -17,6 +17,10 @@ package org.gridkit.vicluster;
 
 import java.util.regex.Pattern;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 class GlobHelper {
 	
 	/**

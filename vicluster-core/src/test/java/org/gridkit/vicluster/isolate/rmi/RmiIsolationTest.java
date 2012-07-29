@@ -1,4 +1,4 @@
-package org.gridkit.util.vicontrol.isolate.rmi;
+package org.gridkit.vicluster.isolate.rmi;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

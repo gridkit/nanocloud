@@ -34,6 +34,10 @@ import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.ViNodeConfig.ReplyStartupHooks;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 class JvmNode implements ViNode {
 
 	private String name;

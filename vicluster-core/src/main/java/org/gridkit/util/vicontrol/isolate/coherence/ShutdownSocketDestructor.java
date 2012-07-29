@@ -22,6 +22,11 @@ import java.net.DatagramSocket;
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.isolate.ThreadKiller;
 
+/**
+ * This is heuristic thread killer which knows how to kill Coherence threads blocked on IO.
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 @SuppressWarnings("serial")
 public class ShutdownSocketDestructor implements ThreadKiller, Runnable, Serializable {
 

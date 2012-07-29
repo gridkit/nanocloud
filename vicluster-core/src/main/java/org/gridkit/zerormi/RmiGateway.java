@@ -34,6 +34,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class RmiGateway {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RmiGateway.class);

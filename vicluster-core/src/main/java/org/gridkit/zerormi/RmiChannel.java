@@ -31,6 +31,10 @@ import java.util.concurrent.locks.LockSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class RmiChannel {
 
     private static final Logger logger = LoggerFactory.getLogger(RmiChannel.class);

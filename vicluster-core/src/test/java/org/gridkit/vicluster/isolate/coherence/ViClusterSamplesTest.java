@@ -1,7 +1,8 @@
-package org.gridkit.util.vicontrol.isolate.coherence;
+package org.gridkit.vicluster.isolate.coherence;
 
 import java.util.concurrent.Callable;
 
+import org.gridkit.util.vicontrol.isolate.coherence.CohHelper;
 import org.gridkit.vicluster.ViGroup;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.isolate.IsolateViNode;

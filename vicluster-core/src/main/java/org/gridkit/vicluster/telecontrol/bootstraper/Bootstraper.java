@@ -21,6 +21,10 @@ import java.util.Arrays;
 
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 
+/**
+ * This is a main class to be started on remotly controlled JVM.
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class Bootstraper {
 
 	private String id;

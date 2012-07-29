@@ -12,7 +12,7 @@ import junit.framework.Assert;
 import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
-import org.gridkit.vicluster.telecontrol.ssh.DefaultSSHFactory;
+import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SshJvmReplicator;
 import org.junit.After;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class ViManagerCheck {
 		localSelector.put(ViProps.NODE_TYPE, "clone-jvm");
 		provider.addProvider(localSelector, localProvider);
 
-		DefaultSSHFactory sshFactory = new DefaultSSHFactory();
+		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
 //		sshFactory.setUser("grimisuat");
 //		sshFactory.setPassword("@Mon_day5");
 //		SshJvmReplicator replicator = new SshJvmReplicator("longmdcfu531.uk.db.com", sshFactory);

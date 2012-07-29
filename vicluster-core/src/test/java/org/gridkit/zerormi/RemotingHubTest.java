@@ -1,4 +1,4 @@
-package org.gridkit.fabric.remoting;
+package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.Serializable;

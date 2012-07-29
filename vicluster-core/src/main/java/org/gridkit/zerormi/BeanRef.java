@@ -17,6 +17,10 @@ package org.gridkit.zerormi;
 
 import java.io.Serializable;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class BeanRef implements Serializable {
 
 	private static final long serialVersionUID = 20080415L;

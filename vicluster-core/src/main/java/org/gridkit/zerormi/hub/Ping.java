@@ -18,6 +18,10 @@ package org.gridkit.zerormi.hub;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class Ping implements Callable<Void>, Serializable {
 
 	private static final long serialVersionUID = 20120318L;

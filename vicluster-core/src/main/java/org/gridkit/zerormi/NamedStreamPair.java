@@ -18,6 +18,10 @@ package org.gridkit.zerormi;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class NamedStreamPair implements DuplexStream {
 
 	private String name;

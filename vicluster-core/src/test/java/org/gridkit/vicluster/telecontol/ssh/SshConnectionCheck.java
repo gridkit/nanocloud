@@ -1,8 +1,8 @@
-package org.gridkit.fabric.ssh;
+package org.gridkit.vicluster.telecontol.ssh;
 
 import junit.framework.Assert;
 
-import org.gridkit.vicluster.telecontrol.ssh.DefaultSSHFactory;
+import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.junit.AfterClass;
 import org.junit.Test;
 
@@ -15,7 +15,7 @@ public class SshConnectionCheck {
 	@Test
 	public void test_password_auth() throws JSchException {
 		JSch.setConfig("PreferredAuthentications", "gssapi-with-mic,publickey,password");
-		DefaultSSHFactory sshFactory = new DefaultSSHFactory();
+		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
 		sshFactory.setUser("ubuntu");
 		sshFactory.setPassword("reverse");
 		
@@ -26,7 +26,7 @@ public class SshConnectionCheck {
 	@Test
 	public void test_ki_password_auth() throws JSchException {
 		JSch.setConfig("PreferredAuthentications", "gssapi-with-mic,publickey,keyboard-interactive");
-		DefaultSSHFactory sshFactory = new DefaultSSHFactory();
+		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
 		sshFactory.setUser("ubuntu");
 		sshFactory.setPassword("reverse");
 		
@@ -37,7 +37,7 @@ public class SshConnectionCheck {
 	@Test
 	public void test_public_key_auth() throws JSchException {
 		JSch.setConfig("PreferredAuthentications", "gssapi-with-mic,publickey");
-		DefaultSSHFactory sshFactory = new DefaultSSHFactory();
+		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
 		sshFactory.setUser("ubuntu");
 		sshFactory.setKeyFile("C:/.ssh/aragozin.rsa");
 		

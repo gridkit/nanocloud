@@ -26,7 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class SmartRmiMarshaler implements RmiMarshaler {
 
     @SuppressWarnings("rawtypes")

@@ -36,6 +36,10 @@ import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class LocalJvmProcessFactory implements JvmProcessFactory {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LocalJvmProcessFactory.class);

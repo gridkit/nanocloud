@@ -18,6 +18,10 @@ package org.gridkit.vicluster;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface VoidCallable {		
 
 	public void call() throws Exception;

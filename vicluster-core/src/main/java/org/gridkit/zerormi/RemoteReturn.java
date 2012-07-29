@@ -15,6 +15,10 @@
  */
 package org.gridkit.zerormi;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class RemoteReturn implements RemoteMessage {
 
 	private static final long serialVersionUID = 20090415L;

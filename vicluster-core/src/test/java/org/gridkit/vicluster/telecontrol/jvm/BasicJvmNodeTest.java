@@ -1,4 +1,4 @@
-package org.gridkit.util.vicontrol.jvm;
+package org.gridkit.vicluster.telecontrol.jvm;
 
 import junit.framework.Assert;
 

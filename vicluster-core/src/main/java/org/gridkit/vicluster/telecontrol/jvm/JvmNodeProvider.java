@@ -24,6 +24,10 @@ import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class JvmNodeProvider implements ViNodeProvider {
 
 	private JvmProcessFactory factory;

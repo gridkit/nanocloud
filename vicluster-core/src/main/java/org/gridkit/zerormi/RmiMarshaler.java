@@ -17,6 +17,10 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface RmiMarshaler {
 
 	public Object writeReplace(Object obj) throws IOException;

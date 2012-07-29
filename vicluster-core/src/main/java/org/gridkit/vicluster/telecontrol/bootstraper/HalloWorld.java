@@ -18,6 +18,10 @@ package org.gridkit.vicluster.telecontrol.bootstraper;
 import java.io.IOException;
 import java.net.InetAddress;
 
+/**
+ * Dummy main class to ensure that JVM starts normally.
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class HalloWorld {
 	public static void main(String[] args) throws IOException {
 		System.out.println("\"Hallo world\" from " + InetAddress.getLocalHost().getHostName());

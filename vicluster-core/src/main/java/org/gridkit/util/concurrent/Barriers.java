@@ -15,6 +15,10 @@
  */
 package org.gridkit.util.concurrent;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class Barriers {
 
 	public static NoBarrier openBarrier() {

@@ -47,6 +47,9 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+/**
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class SshJvmReplicator implements JvmProcessFactory {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SshJvmReplicator.class);

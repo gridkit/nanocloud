@@ -18,6 +18,10 @@ package org.gridkit.zerormi;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public final class RemoteInstance implements Serializable {
 
 	private static final long serialVersionUID = 20090415L;

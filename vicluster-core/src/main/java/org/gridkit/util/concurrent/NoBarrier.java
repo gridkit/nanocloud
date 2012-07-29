@@ -18,6 +18,10 @@ package org.gridkit.util.concurrent;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Future;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class NoBarrier implements BlockingBarrier {
 
 	public static final NoBarrier INSTANCE = new NoBarrier();

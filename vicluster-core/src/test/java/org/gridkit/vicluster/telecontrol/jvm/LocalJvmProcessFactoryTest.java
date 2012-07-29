@@ -1,4 +1,4 @@
-package org.gridkit.gatling.remoting;
+package org.gridkit.vicluster.telecontrol.jvm;
 
 import static org.hamcrest.CoreMatchers.not;
 

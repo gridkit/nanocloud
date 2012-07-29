@@ -18,6 +18,14 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
+/**
+ * This class encapsulate credentials and network configuration.
+ * One provide could handle multiple hosts.
+ * 
+ * TODO add optional account name as paramater.
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface SshSessionProvider {
 
 	public Session getSession(String host) throws JSchException;

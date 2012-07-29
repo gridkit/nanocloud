@@ -17,6 +17,11 @@ package org.gridkit.zerormi;
 
 import java.io.Serializable;
 
+/**
+ * Marker interface for low level RPC messages.
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface RemoteMessage extends Serializable {
 	
 }

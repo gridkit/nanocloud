@@ -17,6 +17,10 @@ package org.gridkit.vicluster;
 
 import java.util.Collection;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface ViNodeSet {
 
 	/**

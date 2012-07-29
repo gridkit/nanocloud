@@ -1,4 +1,4 @@
-package org.gridkit.util.vicontrol.isolate;
+package org.gridkit.vicluster.isolate;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;

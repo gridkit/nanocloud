@@ -1,4 +1,4 @@
-package org.gridkit.gatling.remoting;
+package org.gridkit.vicluster.telecontrol.jvm;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -8,7 +8,7 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
-import org.gridkit.vicluster.telecontrol.ssh.DefaultSSHFactory;
+import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SshJvmReplicator;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class RemoteJvmCheck {
 	@Test
 	public void check_ssh_execution() throws JSchException, SftpException, IOException, InterruptedException {
 		
-		DefaultSSHFactory sshFactory = new DefaultSSHFactory();
+		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
 		sshFactory.setUser("ubuntu");
 		sshFactory.setPassword("reverse");
 		SshJvmReplicator host = new SshJvmReplicator("localhost:11022", sshFactory);

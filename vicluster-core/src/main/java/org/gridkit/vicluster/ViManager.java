@@ -25,6 +25,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class ViManager implements ViNodeSet {
 
 	private Map<String, ManagedNode> liveNodes = new TreeMap<String, ManagedNode>();

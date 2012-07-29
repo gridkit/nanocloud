@@ -21,6 +21,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class FutureLatch implements Future<Void> {
 	
 	private CountDownLatch latch = new CountDownLatch(1);

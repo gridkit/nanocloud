@@ -17,6 +17,10 @@ package org.gridkit.vicluster.telecontrol;
 
 import java.io.IOException;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface JvmProcessFactory {
 	
 	public ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException;

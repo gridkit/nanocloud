@@ -31,7 +31,11 @@ import java.util.jar.Manifest;
 
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 
-public class ClasspathUtils {
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
+class ClasspathUtils {
 
 	public static Collection<URL> listCurrentClasspath() {
 		URLClassLoader classLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();

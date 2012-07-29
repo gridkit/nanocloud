@@ -17,6 +17,10 @@ package org.gridkit.vicluster;
 
 import java.util.Map;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface ViConfigurable {
 
 	public void setProp(String propName, String value);

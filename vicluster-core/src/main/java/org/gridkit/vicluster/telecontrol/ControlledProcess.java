@@ -17,6 +17,10 @@ package org.gridkit.vicluster.telecontrol;
 
 import java.util.concurrent.ExecutorService;
 
+/**
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public interface ControlledProcess {
 
 	public Process getProcess();
