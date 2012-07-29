@@ -10,10 +10,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import org.gridkit.util.vicontrol.ViGroup;
-import org.gridkit.util.vicontrol.ViNode;
-import org.gridkit.util.vicontrol.VoidCallable;
-import org.gridkit.util.vicontrol.isolate.IsolateViNode;
+import org.gridkit.vicluster.ViGroup;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.Test;
 
 public class RmiIsolationTest {

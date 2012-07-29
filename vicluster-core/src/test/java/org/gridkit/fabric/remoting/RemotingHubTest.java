@@ -14,10 +14,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.gridkit.fabric.remoting.hub.RemotingEndPoint;
-import org.gridkit.fabric.remoting.hub.RemotingHub;
-import org.gridkit.fabric.remoting.hub.RemotingHub.SessionEventListener;
-import org.gridkit.fabric.remoting.hub.SimpleSocketAcceptor;
+import org.gridkit.zerormi.DuplexStream;
+import org.gridkit.zerormi.hub.RemotingEndPoint;
+import org.gridkit.zerormi.hub.RemotingHub;
+import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
+import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

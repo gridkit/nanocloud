@@ -2,9 +2,9 @@ package org.gridkit.util.vicontrol.isolate.coherence;
 
 import java.util.concurrent.Callable;
 
-import org.gridkit.util.vicontrol.ViGroup;
-import org.gridkit.util.vicontrol.ViNode;
-import org.gridkit.util.vicontrol.isolate.IsolateViNode;
+import org.gridkit.vicluster.ViGroup;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;

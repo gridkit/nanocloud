@@ -14,6 +14,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.zerormi.DuplexStream;
+import org.gridkit.zerormi.NamedStreamPair;
+import org.gridkit.zerormi.RmiGateway;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;

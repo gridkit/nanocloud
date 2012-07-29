@@ -9,6 +9,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.ControlledProcess;
+import org.gridkit.vicluster.telecontrol.JvmConfig;
+import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.junit.Assert;
 import org.junit.Test;
 

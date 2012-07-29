@@ -2,6 +2,7 @@ package org.gridkit.fabric.ssh;
 
 import junit.framework.Assert;
 
+import org.gridkit.vicluster.telecontrol.ssh.DefaultSSHFactory;
 import org.junit.AfterClass;
 import org.junit.Test;
 

@@ -2,9 +2,11 @@ package org.gridkit.util.vicontrol.jvm;
 
 import junit.framework.Assert;
 
-import org.gridkit.gatling.remoting.LocalJvmProcessFactory;
-import org.gridkit.util.vicontrol.ViNode;
-import org.gridkit.util.vicontrol.ViNodeConfig;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
+import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
+import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.Test;
 

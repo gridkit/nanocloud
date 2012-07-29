@@ -6,8 +6,9 @@ import java.lang.management.MemoryPoolMXBean;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.gridkit.util.vicontrol.ViNode;
-import org.gridkit.util.vicontrol.VoidCallable;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.gridkit.fabric.ssh.DefaultSSHFactory;
-import org.gridkit.util.vicontrol.ViNode;
-import org.gridkit.util.vicontrol.ViNodeConfig;
-import org.gridkit.util.vicontrol.VoidCallable;
-import org.gridkit.util.vicontrol.jvm.JvmNodeProvider;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
+import org.gridkit.vicluster.telecontrol.ssh.DefaultSSHFactory;
+import org.gridkit.vicluster.telecontrol.ssh.SshJvmReplicator;
 import org.junit.Test;
 
 import com.jcraft.jsch.JSchException;
