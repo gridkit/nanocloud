@@ -28,7 +28,7 @@
     <groupId>org.gridkit.lab</groupId>
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.5-SNAPSHOT</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
     <scm>
@@ -55,7 +55,7 @@
 	    	<dependency>
 	    		<groupId>org.gridkit.lab</groupId>
 	    		<artifactId>vicluster-core</artifactId>
-	    		<version>0.6-SNAPSHOT</version>
+	    		<version>0.5-SNAPSHOT</version>
 	    	</dependency>
 	    	<dependency>
 	    		<groupId>junit</groupId>
@@ -94,13 +94,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
