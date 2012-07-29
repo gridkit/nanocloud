@@ -1,4 +1,4 @@
-package org.gridkit.vicluster.telecontrol.jvm;
+package org.gridkit.vicluster.telecontol.ssh;
 
 import java.io.IOException;
 import java.net.InetAddress;
