@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.util.vicontrol.isolate.coherence;
+package org.gridkit.vicluster.isolate.coherence;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
