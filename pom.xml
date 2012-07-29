@@ -29,6 +29,7 @@
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.5-SNAPSHOT</version>
+    <name>${project.groupId}::${project.artifactId}</name>
 
     <scm>
         <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/trunk/vicluster</connection>
@@ -38,10 +39,15 @@
 
     <properties>
         <javaVersion>1.6</javaVersion>
+        <vicontrolVersion>${project.version}</vicontrolVersion>
     </properties>
 
     <modules>
         <module>vicluster-core</module>
+        <module>vicluster-coherence</module>
+        <module>zerormi</module>
+        <module>telecontrol</module>
+        <module>telecontrol-ssh</module>
     </modules>
 
     <dependencyManagement>
