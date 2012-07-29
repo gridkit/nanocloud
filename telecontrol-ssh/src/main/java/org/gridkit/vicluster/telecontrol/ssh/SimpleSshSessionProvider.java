@@ -30,13 +30,18 @@ public class SimpleSshSessionProvider implements SshSessionProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSshSessionProvider.class); 
 
-	private JSch jsch = new JSch();
+	private JSch jsch;
 	
 	private String user;
 	private String password;
 	private String passphrase;
 	
 	public SimpleSshSessionProvider() {
+		this(new JSch());
+	}
+
+	public SimpleSshSessionProvider(JSch jsch) {
+		this.jsch = jsch;
 	}
 	
 	public void setUser(String user) {
@@ -56,7 +61,11 @@ public class SimpleSshSessionProvider implements SshSessionProvider {
 	}
 	
 	@Override
-	public Session getSession(String host) throws JSchException {
+	public Session getSession(String host, String account) throws JSchException {
+		if (account != null && !user.equals(account)) {
+			throw new IllegalArgumentException("User '" + account + "' is not configured");
+		}
+		
 		UserInfo ui = new UserAuthnticator(host);
 		
 		int port = 22;

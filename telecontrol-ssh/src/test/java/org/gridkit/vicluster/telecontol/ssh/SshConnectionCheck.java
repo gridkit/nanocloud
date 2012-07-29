@@ -2,8 +2,10 @@ package org.gridkit.vicluster.telecontol.ssh;
 
 import junit.framework.Assert;
 
+import org.gridkit.vicluster.telecontrol.ssh.ConfigurableSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
-import org.junit.AfterClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.jcraft.jsch.JSch;
@@ -19,7 +21,7 @@ public class SshConnectionCheck {
 		sshFactory.setUser("ubuntu");
 		sshFactory.setPassword("reverse");
 		
-		Session session = sshFactory.getSession("localhost:11022");
+		Session session = sshFactory.getSession("localhost:11022", null);
 		Assert.assertTrue(session.isConnected());
 	}
 	
@@ -30,7 +32,7 @@ public class SshConnectionCheck {
 		sshFactory.setUser("ubuntu");
 		sshFactory.setPassword("reverse");
 		
-		Session session = sshFactory.getSession("localhost:11022");
+		Session session = sshFactory.getSession("localhost:11022", null);
 		Assert.assertTrue(session.isConnected());
 	}
 
@@ -41,12 +43,42 @@ public class SshConnectionCheck {
 		sshFactory.setUser("ubuntu");
 		sshFactory.setKeyFile("C:/.ssh/aragozin.rsa");
 		
-		Session session = sshFactory.getSession("localhost:11022");
+		Session session = sshFactory.getSession("localhost:11022", null);
 		Assert.assertTrue(session.isConnected());
 	}
+	
+	@Test 
+	public void test_configurable_factory() throws JSchException {
+		ConfigurableSshSessionProvider provider = new ConfigurableSshSessionProvider();
+		
+		provider.hosts("*")
+			.profile("password")
+			.useLogin("ubuntu")
+			.usePassword("reverse");
+		provider.hosts("*")
+			.profile("private-key")
+			.useLogin("ubuntu")
+			.usePrivateKey("C:/.ssh/aragozin.rsa");
+		provider.hosts("*")
+			.profile("ubuntu")
+			.usePassword("reverse")
+			.defaultProfile();
+		
+		Session session;
+		
+		session = provider.getSession("localhost:11022", null);
+		Assert.assertTrue(session.isConnected());
 
-	@AfterClass
-	public static void restorePerferedAuth() {
+		session = provider.getSession("localhost:11022", "password");
+		Assert.assertTrue(session.isConnected());
+
+		session = provider.getSession("localhost:11022", "private-key");
+		Assert.assertTrue(session.isConnected());
+		
+	}
+
+	@Before @After
+	public void restorePerferedAuth() {
 		JSch.setConfig("PreferredAuthentications", "gssapi-with-mic,publickey,keyboard-interactive,password");
 	}
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2010 Grid Dynamics Consulting Services, Inc.
+    Copyright 2012 Alexey Ragozin
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -25,7 +26,6 @@
         <version>0.9</version>        
     </parent>
 
-    <groupId>org.gridkit.lab</groupId>
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.6-SNAPSHOT</version>
@@ -55,7 +55,27 @@
 	    	<dependency>
 	    		<groupId>org.gridkit.lab</groupId>
 	    		<artifactId>vicluster-core</artifactId>
-	    		<version>0.6-SNAPSHOT</version>
+	    		<version>${project.version}</version>
+	    	</dependency>
+	    	<dependency>
+	    		<groupId>org.gridkit.lab</groupId>
+	    		<artifactId>vicluster-coherence</artifactId>
+	    		<version>${project.version}</version>
+	    	</dependency>
+	    	<dependency>
+	    		<groupId>org.gridkit.lab</groupId>
+	    		<artifactId>zerormi</artifactId>
+	    		<version>${project.version}</version>
+	    	</dependency>
+	    	<dependency>
+	    		<groupId>org.gridkit.lab</groupId>
+	    		<artifactId>telecontrol</artifactId>
+	    		<version>${project.version}</version>
+	    	</dependency>
+	    	<dependency>
+	    		<groupId>org.gridkit.lab</groupId>
+	    		<artifactId>telecontrol-ssh</artifactId>
+	    		<version>${project.version}</version>
 	    	</dependency>
 	    	<dependency>
 	    		<groupId>junit</groupId>

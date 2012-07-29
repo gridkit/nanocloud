@@ -82,7 +82,7 @@ public class SshJvmReplicator implements JvmProcessFactory {
 	}
 
 	public void init() throws JSchException, SftpException, IOException, InterruptedException {
-		ssh = factory.getSession(host);
+		ssh = factory.getSession(host, null);
 		remoteCache = new RemoteFileCache();
 		remoteCache.setAgentHome(agentHome);
 		remoteCache.setSession(ssh);

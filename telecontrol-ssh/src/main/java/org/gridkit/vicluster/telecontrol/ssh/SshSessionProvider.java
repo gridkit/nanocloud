@@ -28,6 +28,6 @@ import com.jcraft.jsch.Session;
  */
 public interface SshSessionProvider {
 
-	public Session getSession(String host) throws JSchException;
+	public Session getSession(String host, String account) throws JSchException;
 	
 }
