@@ -148,13 +148,13 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		public void log(int level, String message) {
 			switch(level) {
 				case DEBUG: 
-					logger.debug(message);
+					logger.trace(message);
 					break;
 				case WARN: 
 					logger.warn(message);
 					break;
 				case INFO: 
-					logger.info(message);
+					logger.debug(message);
 					break;
 				case ERROR: 
 					logger.error(message);

@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.vicluster.MassExec;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.ViNodeConfig.ReplyStartupHooks;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
@@ -65,8 +67,35 @@ class JvmNode implements ViNode {
 		BackgroundStreamDumper.link(process.getInputStream(), stdOut);
 		BackgroundStreamDumper.link(process.getErrorStream(), stdErr);
 		
+		initPropperteis();
 		initStartupHooks();
 		active = true;
+	}
+
+	private void initPropperteis() throws IOException {
+
+		final Properties props = new Properties();
+		ReplyProps replay = new ReplyProps() {
+			@Override
+			protected void setPropInternal(String propName, String value) {
+				if (propName.indexOf(':') < 0) {
+					props.put(propName, value);
+				}
+			}
+		};
+		
+		try {
+			config.apply(replay);
+			executor.submit(new Runnable() {
+				@Override
+				public void run() {
+					System.getProperties().putAll(props);
+				}
+			}).get();
+		}
+		catch(Exception e) {
+			throw new IOException("Node '" + name + "' has failed to initialize", e);
+		}
 	}
 
 	private void initStartupHooks() throws IOException {

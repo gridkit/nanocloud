@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
@@ -31,6 +34,8 @@ import com.jcraft.jsch.SftpException;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class RemoteFileCache {
+	
+	private final static Logger LOGGER = LoggerFactory.getLogger(RemoteFileCache.class);
 	
 	private static final String DIGEST_ALGO = "SHA-1";
 	private static final String CACHE_PATH = ".cache";
@@ -85,11 +90,11 @@ public class RemoteFileCache {
 			}
 			String rname = CACHE_PATH + "/" + digest + "/" + name;
 			if (!exists(sftp, rname)) {
-				System.out.println("Uploading: " + rname + " " + data.length + " bytes");
+				LOGGER.info("Uploading: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
 				sftp.put(new ByteArrayInputStream(data), rname);
 			}
 			else {
-				System.out.println("Exists: " + rname + " " + data.length + " bytes");
+				LOGGER.debug("Already exists: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
 			}
 			
 			fileMapping.put(id, agentHomePath + "/" + rname);

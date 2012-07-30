@@ -121,10 +121,18 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 			simpleProvider.setPassword(config.get(CFG_PASSWORD));
 		}
 		if (config.containsKey(CFG_PRIVATE_KEY)) {
-			simpleProvider.setKeyFile(config.get(CFG_PRIVATE_KEY));
+			simpleProvider.setKeyFile(resolveFile(config.get(CFG_PRIVATE_KEY)));
 		}
 		
 		return simpleProvider.getSession(host, null);
+	}
+
+	private String resolveFile(String filename) {
+		if (filename.startsWith("~/")) {
+			String home = System.getProperty("user.home");
+			filename = home + filename.substring(1);
+		}
+		return filename;
 	}
 
 	private Map<String, String> resolveConfig(String host, String account) {
