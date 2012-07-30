@@ -26,7 +26,7 @@ import com.jcraft.jsch.Session;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface SshSessionProvider {
+public interface SshSessionFactory {
 
 	public Session getSession(String host, String account) throws JSchException;
 	

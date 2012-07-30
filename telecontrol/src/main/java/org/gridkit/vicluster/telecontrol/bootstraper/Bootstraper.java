@@ -16,8 +16,8 @@
 package org.gridkit.vicluster.telecontrol.bootstraper;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 
@@ -44,7 +44,7 @@ public class Bootstraper {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		System.out.println("Args: " + Arrays.asList(args));
+		System.out.println("Exec command: " + ManagementFactory.getRuntimeMXBean().getInputArguments().toString());
 		String id = args[0];
 		String host = args[1];
 		int port = Integer.valueOf(args[2]);

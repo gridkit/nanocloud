@@ -15,8 +15,8 @@
  */
 package org.gridkit.vicluster.telecontrol.jvm;
 
+import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeConfig;
 
 /**
  * Static helper class for setup {@link ViNode} props specific to out-of-process implementations.
@@ -69,11 +69,11 @@ public class JvmProps {
 	 */	
 	public static String JDK_CLARIFIER = "jdk:clarifier";
 
-	public static void setJvmArg(ViNodeConfig config, String string) {
+	public static void setJvmArg(ViConfigurable config, String string) {
 		config.setProp(JVM_XX + "arg:" + string, string);
 	}
 
-	public static void setJvmArg(String name, ViNodeConfig config, String string) {
+	public static void setJvmArg(String name, ViConfigurable config, String string) {
 		config.setProp(JVM_XX + name, string);
 	}
 	

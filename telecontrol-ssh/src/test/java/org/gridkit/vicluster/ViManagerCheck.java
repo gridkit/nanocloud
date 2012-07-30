@@ -13,7 +13,7 @@ import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
-import org.gridkit.vicluster.telecontrol.ssh.SshJvmReplicator;
+import org.gridkit.vicluster.telecontrol.ssh.SimpleSshJvmReplicator;
 import org.junit.After;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ public class ViManagerCheck {
 //		replicator.setJavaExecPath("/apps/grimis/java/linux/jdk1.6.0_22/jre/bin/java");
 		sshFactory.setUser("coreserv");
 		sshFactory.setKeyFile("C:/WarZone/keys/dfdev.dsa");
-		SshJvmReplicator replicator = new SshJvmReplicator("longmrdfappd1.uk.db.com", sshFactory);
+		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmrdfappd1.uk.db.com", null, sshFactory);
 		replicator.setJavaExecPath("/usr/lib64/jvm/java-1.6.0-sun/bin/java");
 		replicator.setAgentHome(".gridagent");
 		try {

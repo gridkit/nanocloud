@@ -50,12 +50,13 @@ import com.jcraft.jsch.SftpException;
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class SshJvmReplicator implements JvmProcessFactory {
+public class SimpleSshJvmReplicator implements JvmProcessFactory {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SshJvmReplicator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSshJvmReplicator.class);
 	
-	private SshSessionProvider factory;
+	private SshSessionFactory factory;
 	private String host;
+	private String account;
 	private String agentHome; 
 	private String javaExecPath = "java";
 	
@@ -68,8 +69,9 @@ public class SshJvmReplicator implements JvmProcessFactory {
 	private RemotingHub hub = new RemotingHub();
 	private int controlPort;
 
-	public SshJvmReplicator(String host, SshSessionProvider sshFactory) {
+	public SimpleSshJvmReplicator(String host, String account, SshSessionFactory sshFactory) {
 		this.host = host;
+		this.account = account;
 		this.factory = sshFactory;
 	}
 	
@@ -82,7 +84,7 @@ public class SshJvmReplicator implements JvmProcessFactory {
 	}
 
 	public void init() throws JSchException, SftpException, IOException, InterruptedException {
-		ssh = factory.getSession(host, null);
+		ssh = factory.getSession(host, account);
 		remoteCache = new RemoteFileCache();
 		remoteCache.setAgentHome(agentHome);
 		remoteCache.setSession(ssh);
@@ -99,15 +101,14 @@ public class SshJvmReplicator implements JvmProcessFactory {
 		rp.getOutputStream().close();
 		BackgroundStreamDumper.link(rp.getInputStream(), System.out);
 		BackgroundStreamDumper.link(rp.getErrorStream(), System.err);
-		
 		rp.waitFor();
-		Thread.sleep(2000);
 	}
 	
 	@Override
 	public ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException {
 		ExecCommand jvmCmd = new ExecCommand(javaExecPath);
 		jvmCmd.setWorkDir(agentHome);
+		jvmArgs.apply(jvmCmd);
 		jvmCmd.addArg("-jar").addArg(bootJarPath);
 		
 		RemoteControlSession session = new RemoteControlSession();
@@ -152,7 +153,7 @@ public class SshJvmReplicator implements JvmProcessFactory {
 			int port;
 			try {
 				port = 50000 + random.nextInt(1000);
-				ssh.setPortForwardingR(port, SshJvmReplicator.class.getName() + "$" + RemotingTunnelAcceptor.class.getSimpleName(), new Object[]{SshJvmReplicator.this});
+				ssh.setPortForwardingR(port, SimpleSshJvmReplicator.class.getName() + "$" + RemotingTunnelAcceptor.class.getSimpleName(), new Object[]{SimpleSshJvmReplicator.this});
 			}
 			catch(JSchException e) {
 				LOGGER.warn("Failed to forward port " + e.toString());
@@ -319,14 +320,14 @@ public class SshJvmReplicator implements JvmProcessFactory {
 		private ChannelForwardedTCPIP channel;
 		private InputStream in;
 		private OutputStream out;
-		private SshJvmReplicator host;
+		private SimpleSshJvmReplicator host;
 		
 		public RemotingTunnelAcceptor() {
 		}
 		
 		@Override
 		public void setArg(Object[] arg) {
-			host = (SshJvmReplicator) arg[0];
+			host = (SimpleSshJvmReplicator) arg[0];
 		}
 
 		@Override

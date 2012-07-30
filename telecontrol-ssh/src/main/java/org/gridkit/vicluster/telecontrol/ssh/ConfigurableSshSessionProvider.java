@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.jcraft.jsch.JSchException;
@@ -29,14 +31,73 @@ import com.jcraft.jsch.Session;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
-public class ConfigurableSshSessionProvider implements SshSessionProvider {
+public class ConfigurableSshSessionProvider implements SshSessionFactory {
+	
+	private static final Pattern ENTRY_PATTERN = Pattern.compile("(\\w+@)?([a-zA-Z0-9.*?\\-]+)([!][a-zA-Z\\-]+)?");
 	
 	private static final String CFG_DEFAULT_PROFILE = "default-profile";
 	private static final String CFG_LOGIN = "login";
 	private static final String CFG_PASSWORD = "password";
-	private static final String CFG_KEY_FILE = "key-file";
+	private static final String CFG_PRIVATE_KEY = "private-key";
+
+	public static void configure(ConfigurableSshSessionProvider provider, Properties props) {
+		for(Object prop: props.keySet()) {
+			String key = (String)prop;
+			Matcher matcher = ENTRY_PATTERN.matcher(key);
+			if (!matcher.matches()) {
+				throw new IllegalArgumentException("Wrong key format: " + key);
+			}
+			String profile = matcher.group(1); 
+			String host = matcher.group(2);
+			String conf = matcher.group(3);
+			String value = props.getProperty(key);
+			
+			if (value.startsWith("$")) {
+				if (System.getProperties().containsKey(value.substring(1))) {
+					value = System.getProperty(value.substring(1));
+				}
+			}
+			
+			if (profile != null) {
+				profile = profile.substring(0, profile.length() - 1);
+			}
+			if (conf != null) {
+				conf = conf.substring(1);
+			}
+			
+			if (profile == null) {
+				if (conf != null) {
+					throw new IllegalArgumentException("Wrong key format: " + key);
+				}
+				else {
+					provider.hosts(host).defaultProfile(value);
+				}
+			}
+			else {
+				if (CFG_LOGIN.equals(conf)) {
+					provider.hosts(host).profile(profile).useLogin(value);
+				}
+				else if (CFG_PASSWORD.equals(conf)) {
+					provider.hosts(host).profile(profile).usePassword(value);
+				}
+				else if (CFG_PRIVATE_KEY.equals(conf)) {
+					provider.hosts(host).profile(profile).usePrivateKey(value);
+				}
+				else {
+					throw new IllegalArgumentException("Wrong key format: " + key);
+				}
+			}
+		}
+	}	
 	
 	private List<ConfigEntry> entries = new ArrayList<ConfigEntry>();
+	
+	public ConfigurableSshSessionProvider() {		
+	}
+	
+	public ConfigurableSshSessionProvider(Properties props) {
+		configure(this, props);
+	}	
 	
 	@Override
 	public Session getSession(String host, String account) throws JSchException {
@@ -59,8 +120,8 @@ public class ConfigurableSshSessionProvider implements SshSessionProvider {
 		if (config.containsKey(CFG_PASSWORD)) {
 			simpleProvider.setPassword(config.get(CFG_PASSWORD));
 		}
-		if (config.containsKey(CFG_KEY_FILE)) {
-			simpleProvider.setKeyFile(config.get(CFG_KEY_FILE));
+		if (config.containsKey(CFG_PRIVATE_KEY)) {
+			simpleProvider.setKeyFile(config.get(CFG_PRIVATE_KEY));
 		}
 		
 		return simpleProvider.getSession(host, null);
@@ -163,7 +224,7 @@ public class ConfigurableSshSessionProvider implements SshSessionProvider {
 			if (profile == null) {
 				throw new IllegalArgumentException("Profile name is not set");
 			}
-			entries.add(new ConfigEntry(hostPattern, profile, CFG_KEY_FILE, path));
+			entries.add(new ConfigEntry(hostPattern, profile, CFG_PRIVATE_KEY, path));
 			return this;
 		}
 	}
