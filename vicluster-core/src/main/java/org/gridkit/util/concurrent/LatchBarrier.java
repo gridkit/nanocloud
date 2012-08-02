@@ -30,6 +30,9 @@ public class LatchBarrier implements BlockingBarrier {
 
 	private CountDownLatch latch = new CountDownLatch(1);
 	
+	public void open() {
+		latch.countDown();
+	}
 	
 	@Override
 	public void pass() throws InterruptedException, BrokenBarrierException {

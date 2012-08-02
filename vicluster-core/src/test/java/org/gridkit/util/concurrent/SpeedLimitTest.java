@@ -42,6 +42,13 @@ public class SpeedLimitTest {
 	}	
 	
 	@Test
+	public void test_AboveUltraHighRate_16_thread() {
+		runTest(1000000, 16, false);
+		runTest(500000, 16, false);
+		runTest(100000, 16, false);
+	}
+
+	@Test
 	public void test_UltraHighRate_16_thread() {
 		runTest(10000, 16, false);
 		runTest(10000, 16, true);

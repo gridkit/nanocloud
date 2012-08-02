@@ -21,6 +21,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.SocketException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
@@ -183,7 +184,12 @@ public class RmiGateway {
 				}
 			}
 			catch(Exception e) {
-				LOGGER.error("RMI stream read exception [" + socket + "]", e);
+				if (e instanceof SocketException && "Connection reset".equals(e.getMessage())) {
+					LOGGER.debug("RMI stream, socket reset [" + socket + "]");
+				}
+				else {
+					LOGGER.error("RMI stream read exception [" + socket + "]", e);
+				}
 				DuplexStream socket = RmiGateway.this.socket;
 				InputStream in = RmiGateway.this.in;
 				readerThread = null;

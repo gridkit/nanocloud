@@ -32,8 +32,8 @@ public class Barriers {
 		else if (eventsPerSecond == Double.POSITIVE_INFINITY) {
 			return openBarrier();
 		}
-		else {
-			int replenishLimit = (int)(eventsPerSecond * 0.1);
+		else {			
+			int replenishLimit = (int)(eventsPerSecond * 0.02); // compensation for scheduling granularity
 			if (replenishLimit < 1) {
 				replenishLimit = 1;
 			}
