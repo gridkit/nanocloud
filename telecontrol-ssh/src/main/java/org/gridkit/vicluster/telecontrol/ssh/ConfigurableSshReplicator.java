@@ -20,17 +20,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.gridkit.vicluster.HostSideHook;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class ConfigurableSshReplicator implements ViNodeProvider {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableSshReplicator.class);
+	
 	private SshSessionFactory sshFactory;
 	private Map<String, SessionInfo> sessions = new HashMap<String, SessionInfo>();
 	private ViNodeConfig defaultConfig = new ViNodeConfig();
@@ -97,12 +102,37 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 				}
 			}
 			
-			ViNode node = new JvmNodeProvider(session.session).createNode(name, effectiveConfig);
+			final SessionInfo context = session;
+			final ViNode node = new JvmNodeProvider(session.session).createNode(name, effectiveConfig);			
+			node.addShutdownHook("release-ssh", new HostSideHook() {
+				
+				@Override
+				public void run() {
+					throw new UnsupportedOperationException();
+				}
+				
+				@Override
+				public void hostRun(boolean shutdown) {
+					if (shutdown) {
+						releaseConnection(context, node);
+					}
+				}
+			}, false);
 			session.processes.add(node);
 			
 			return node;			
+		}		
+	}
+	
+	private void releaseConnection(SessionInfo session, ViNode connection) {
+		synchronized(session) {
+			session.processes.remove(connection);
+			if (session.processes.isEmpty()) {
+				LOGGER.info("Session " + session + " is not used");
+				session.session.shutdown();
+				session.session = null;
+			}
 		}
-		
 	}
 
 	private static class SessionInfo {

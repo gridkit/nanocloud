@@ -15,6 +15,7 @@
  */
 package org.gridkit.zerormi;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -184,7 +185,10 @@ public class RmiGateway {
 				}
 			}
 			catch(Exception e) {
-				if (e instanceof SocketException && "Connection reset".equals(e.getMessage())) {
+				if (e instanceof EOFException) {
+					LOGGER.debug("RMI stream, scoket closed [" + socket + "]");
+				}
+				else if (e instanceof SocketException && "Connection reset".equals(e.getMessage())) {
 					LOGGER.debug("RMI stream, socket reset [" + socket + "]");
 				}
 				else {
@@ -297,7 +301,14 @@ public class RmiGateway {
 					out.writeUnshared(message);
 					out.reset();
 				}
-			} catch (IOException e) {
+			}
+			catch (NullPointerException e) {
+				if (out == null) {
+					throw new IOException("RMI channel is not connected");
+				}
+				else throw e;
+			}
+			catch (IOException e) {
 				DuplexStream socket = RmiGateway.this.socket;
 				OutputStream out = RmiGateway.this.out;			
 				disconnect();

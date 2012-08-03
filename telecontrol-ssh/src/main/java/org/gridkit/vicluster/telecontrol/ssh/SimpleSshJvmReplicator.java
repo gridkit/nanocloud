@@ -127,25 +127,9 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		
 		return session;
 	}
-
-	public ExecutorService createRemoteExecutor() throws JSchException, IOException {
-		ExecCommand jvmCmd = new ExecCommand(javaExecPath);
-		jvmCmd.setWorkDir(agentHome);
-		jvmCmd.addArg("-jar").addArg(bootJarPath);
-		
-		RemoteControlSession session = new RemoteControlSession();
-		String sessionId = hub.newSession(session);
-		jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(controlPort));
-		jvmCmd.addArg(agentHome);
-		session.setSessionId(sessionId);
-		
-		RemoteSshProcess rp = new RemoteSshProcess(ssh, jvmCmd);
-		rp.getOutputStream().close();
-		BackgroundStreamDumper.link(rp.getInputStream(), System.out);
-		BackgroundStreamDumper.link(rp.getErrorStream(), System.err);
-		session.setProcess(rp);
-		
-		return session.getRemoteExecutor();
+	
+	public void shutdown() {
+		ssh.disconnect();
 	}
 
 	private synchronized void initPortForwarding() {

@@ -33,7 +33,6 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.ViNodeConfig.ReplyStartupHooks;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 
 /**
@@ -68,7 +67,7 @@ class JvmNode implements ViNode {
 		BackgroundStreamDumper.link(process.getErrorStream(), stdErr);
 		
 		initPropperteis();
-		initStartupHooks();
+		runStartupHooks();
 		active = true;
 	}
 
@@ -98,20 +97,18 @@ class JvmNode implements ViNode {
 		}
 	}
 
-	private void initStartupHooks() throws IOException {
-		ReplyStartupHooks replay = new ReplyStartupHooks() {
-			@Override
-			public void addStartupHook(String name, Runnable hook, boolean override) {
-				try {
-					executor.submit(hook).get();
-				} catch (Exception e) {
-					ExceptionHelper.throwUnchecked(e);
-				}				
-			}
-		};
-		
+	private void runStartupHooks() throws IOException {
 		try {
-			config.apply(replay);
+			config.runStartupHooks(executor);
+		}
+		catch(Exception e) {
+			throw new IOException("Node '" + name + "' has failed to initialize", e);
+		}
+	}
+	
+	private void runShutdownHooks() throws IOException {
+		try {
+			config.runShutdownHooks(executor);
 		}
 		catch(Exception e) {
 			throw new IOException("Node '" + name + "' has failed to initialize", e);
@@ -263,6 +260,11 @@ class JvmNode implements ViNode {
 	public synchronized void shutdown() {
 		// TODO call shutdown hooks
 		if (active) {
+			try {
+				runShutdownHooks();
+			} catch (IOException e) {
+				e.printStackTrace(); // TODO logging
+			}
 			Future<Void> f = submit(new Runnable() {
 				@Override
 				public void run() {
@@ -274,6 +276,7 @@ class JvmNode implements ViNode {
 			} catch (Exception e) {
 				// it doesn't matter 
 			}
+			executor.shutdown();
 			process.destroy();
 			
 			active = false;

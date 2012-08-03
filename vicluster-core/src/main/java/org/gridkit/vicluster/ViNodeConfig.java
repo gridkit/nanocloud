@@ -18,6 +18,7 @@ package org.gridkit.vicluster;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * 
@@ -83,6 +84,58 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		for(HookInfo hi : shutdownHooks.values()) {
 			target.addShutdownHook(hi.name, hi.hook, hi.override);
 		}	
+	}
+	
+	public void runStartupHooks(ViNode node) {
+		for(HookInfo hi : startupHooks.values()) {
+			if (hi.hook instanceof HostSideHook) {
+				((HostSideHook)hi.hook).hostRun(false);				
+			}
+			else {
+				node.exec(hi.hook);
+			}
+		}
+	}
+
+	public void runShutdownHooks(ViNode node) {
+		for(HookInfo hi : shutdownHooks.values()) {
+			if (hi.hook instanceof HostSideHook) {
+				((HostSideHook)hi.hook).hostRun(true);				
+			}
+			else {
+				node.exec(hi.hook);
+			}
+		}
+	}
+
+	public void runStartupHooks(ExecutorService executor) {
+		for(HookInfo hi : startupHooks.values()) {
+			if (hi.hook instanceof HostSideHook) {
+				((HostSideHook)hi.hook).hostRun(false);				
+			}
+			else {
+				try {
+					executor.submit(hi.hook).get();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	}
+
+	public void runShutdownHooks(ExecutorService executor) {
+		for(HookInfo hi : shutdownHooks.values()) {
+			if (hi.hook instanceof HostSideHook) {
+				((HostSideHook)hi.hook).hostRun(true);				
+			}
+			else {
+				try {
+					executor.submit(hi.hook).get();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
 	}
 	
 	private static class HookInfo {

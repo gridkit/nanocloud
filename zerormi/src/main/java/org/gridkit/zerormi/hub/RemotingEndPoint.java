@@ -18,6 +18,8 @@ package org.gridkit.zerormi.hub;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.rmi.RemoteException;
+import java.util.concurrent.ExecutionException;
 
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
@@ -82,7 +84,14 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				}
 				
 				LOGGER.debug("Ping");
-				gateway.getRemoteExecutorService().submit(new Ping()).get();
+				try {
+					gateway.getRemoteExecutorService().submit(new Ping()).get();
+				}
+				catch(ExecutionException e) {
+					if (e.getCause() instanceof RemoteException) {
+						LOGGER.debug("Ping failed: " + e.getCause().toString());
+					}
+				}
 			} catch (Exception e) {
 				LOGGER.error("Communication error", e);
 			}
