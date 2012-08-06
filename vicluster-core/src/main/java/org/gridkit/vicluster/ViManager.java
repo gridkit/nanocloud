@@ -22,8 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
+
+import org.gridkit.util.concurrent.BlockingBarrier;
+import org.gridkit.util.concurrent.LatchBarrier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -31,11 +38,14 @@ import java.util.regex.Pattern;
  */
 public class ViManager implements ViNodeSet {
 
+	private final static Logger LOGGER = LoggerFactory.getLogger(ViNodeSet.class);
+	
 	private Map<String, ManagedNode> liveNodes = new TreeMap<String, ManagedNode>();
 	private Map<String, ManagedNode> deadNodes = new TreeMap<String, ManagedNode>();
 	private Map<String, NodeSelector> dynamicSelectors = new LinkedHashMap<String, NodeSelector>();
 	
 	private ViNodeProvider provider;
+	private ExecutorService asyncInitThreads = Executors.newCachedThreadPool();
 	
 	public ViManager(ViNodeProvider provider) {
 		this.provider = provider;
@@ -124,7 +134,9 @@ public class ViManager implements ViNodeSet {
 
 		private String name;
 		private ViNodeConfig config = new ViNodeConfig();
+		private ViExecutor nodeExecutor;
 		private ViNode realNode;
+		private LatchBarrier initLatch;
 		private boolean terminated;
 		
 		public ManagedNode(String name) {
@@ -184,20 +196,20 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public Future<Void> submit(Runnable task) {
-			ensureStarted();
-			return realNode.submit(task);
+			ensureExecutor();
+			return nodeExecutor.submit(task);
 		}
 
 		@Override
 		public Future<Void> submit(VoidCallable task) {
-			ensureStarted();
-			return realNode.submit(task);
+			ensureExecutor();
+			return nodeExecutor.submit(task);
 		}
 
 		@Override
 		public synchronized <T> Future<T> submit(Callable<T> task) {
-			ensureStarted();
-			return realNode.submit(task);
+			ensureExecutor();
+			return nodeExecutor.submit(task);
 		}
 
 		@Override
@@ -231,15 +243,33 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		public synchronized void suspend() {
-			ensureStarted();
-			realNode.suspend();
+		public void suspend() {
+			ensureExecutor();
+			try {
+				initLatch.pass();
+			} catch (Exception e) {
+				LOGGER.warn("Node ["  + name + "], async init failed: " + e.toString());
+				return;
+			}
+			synchronized(this) {
+				ensureStarted();
+				realNode.suspend();
+			}
 		}
 
 		@Override
-		public synchronized void resume() {
-			ensureStarted();
-			realNode.resume();
+		public void resume() {
+			ensureExecutor();
+			try {
+				initLatch.pass();
+			} catch (Exception e) {
+				LOGGER.warn("Node ["  + name + "], async init failed: " + e.toString());
+				return;
+			}
+			synchronized(this) {
+				ensureStarted();
+				realNode.resume();
+			}
 		}
 
 		@Override
@@ -249,25 +279,136 @@ public class ViManager implements ViNodeSet {
 					realNode.shutdown();
 					realNode = null;
 				}
+				if (nodeExecutor != null) {
+					nodeExecutor = null;
+				}
 				
 				terminated = true;
 				ViManager.this.markAsDead(this);
 			}
 		}
 
+		private synchronized void ensureExecutor() {
+			if (terminated) {
+				throw new IllegalStateException("Node " + name + " is terminated");
+			}
+			if (nodeExecutor == null) {
+				nodeExecutor = new DeferedNodeExecutor(initLatch, asyncInitThreads, this);
+				
+				asyncInitThreads.execute(new Runnable() {
+					@Override
+					public void run() {
+						ViNode realNode = provider.createNode(name, config);
+						synchronized(ManagedNode.this) {
+							if (terminated) {
+								realNode.shutdown();
+								initLatch.open();
+							}
+							else {
+								ManagedNode.this.realNode = realNode;
+								nodeExecutor = realNode;
+								initLatch.open();
+							}
+						}
+					}
+				});
+			}
+		}
+		
 		private synchronized void ensureStarted() {
 			if (terminated) {
 				throw new IllegalStateException("Node " + name + " is terminated");
 			}
-			if (realNode == null) {
-				realNode = provider.createNode(name, config);
-			}
+			
 		}
 		
 		private synchronized void ensureAlive() {
 			if (terminated) {
 				throw new IllegalStateException("Node " + name + " is terminated");
 			}
+		}
+	}
+	
+	private static class DeferedNodeExecutor implements ViExecutor {
+
+		private BlockingBarrier barrier;
+		private ExecutorService executor;
+		private ViExecutor target;
+
+		public DeferedNodeExecutor(BlockingBarrier barrier, ExecutorService executor, ViExecutor target) {
+			this.barrier = barrier;
+			this.executor = executor;
+			this.target = target;
+		}
+
+		@Override
+		public void exec(Runnable task) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void exec(VoidCallable task) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public <T> T exec(Callable<T> task) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Future<Void> submit(final Runnable task) {
+			return executor.submit(new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					barrier.pass();
+					target.exec(task);
+					return null;
+				}
+			});
+		}
+
+		@Override
+		public Future<Void> submit(final VoidCallable task) {
+			return executor.submit(new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					barrier.pass();
+					target.exec(task);
+					return null;
+				}
+			});
+		}
+
+		@Override
+		public <T> Future<T> submit(final Callable<T> task) {
+			return executor.submit(new Callable<T>() {
+				@Override
+				public T call() throws Exception {
+					barrier.pass();
+					return target.exec(task);
+				}
+			});
+		}
+
+		@Override
+		public <T> List<T> massExec(Callable<? extends T> task) {
+			return MassExec.singleNodeMassExec(this, task);
+		}
+
+		@Override
+		public List<Future<Void>> massSubmit(Runnable task) {
+			return MassExec.singleNodeMassSubmit(this, task);
+		}
+
+		@Override
+		public List<Future<Void>> massSubmit(VoidCallable task) {
+			return MassExec.singleNodeMassSubmit(this, task);
+		}
+
+		@Override
+		public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
+			return MassExec.singleNodeMassSubmit(this, task);
 		}
 	}
 	
