@@ -136,7 +136,7 @@ public class ViManager implements ViNodeSet {
 		private ViNodeConfig config = new ViNodeConfig();
 		private ViExecutor nodeExecutor;
 		private ViNode realNode;
-		private LatchBarrier initLatch;
+		private LatchBarrier initLatch = new LatchBarrier();
 		private boolean terminated;
 		
 		public ManagedNode(String name) {
@@ -290,25 +290,33 @@ public class ViManager implements ViNodeSet {
 
 		private synchronized void ensureExecutor() {
 			if (terminated) {
-				throw new IllegalStateException("Node " + name + " is terminated");
+				throw new IllegalStateException("ViNode[" + name + "] is terminated");
 			}
 			if (nodeExecutor == null) {
-				nodeExecutor = new DeferedNodeExecutor(initLatch, asyncInitThreads, this);
+				nodeExecutor = new DeferedNodeExecutor(name, initLatch, asyncInitThreads, this);
+				LOGGER.debug("ViNode[" + name + "] instantiating");
 				
 				asyncInitThreads.execute(new Runnable() {
 					@Override
 					public void run() {
-						ViNode realNode = provider.createNode(name, config);
-						synchronized(ManagedNode.this) {
-							if (terminated) {
-								realNode.shutdown();
-								initLatch.open();
+						String tname = swapThreadName("ViNode[" + name + "] init");
+						try {
+							ViNode realNode = provider.createNode(name, config);
+							synchronized(ManagedNode.this) {
+								if (terminated) {
+									realNode.shutdown();
+									initLatch.open();
+								}
+								else {
+									ManagedNode.this.realNode = realNode;
+									nodeExecutor = realNode;
+									LOGGER.debug("ViNode[" + name + "] instantiated");
+									initLatch.open();
+								}
 							}
-							else {
-								ManagedNode.this.realNode = realNode;
-								nodeExecutor = realNode;
-								initLatch.open();
-							}
+						}
+						finally {
+							swapThreadName(tname);
 						}
 					}
 				});
@@ -317,25 +325,27 @@ public class ViManager implements ViNodeSet {
 		
 		private synchronized void ensureStarted() {
 			if (terminated) {
-				throw new IllegalStateException("Node " + name + " is terminated");
+				throw new IllegalStateException("ViNode[" + name + "] is terminated");
 			}
 			
 		}
 		
 		private synchronized void ensureAlive() {
 			if (terminated) {
-				throw new IllegalStateException("Node " + name + " is terminated");
+				throw new IllegalStateException("ViNode[" + name + "] is terminated");
 			}
 		}
 	}
 	
 	private static class DeferedNodeExecutor implements ViExecutor {
 
+		private String name;
 		private BlockingBarrier barrier;
 		private ExecutorService executor;
 		private ViExecutor target;
 
-		public DeferedNodeExecutor(BlockingBarrier barrier, ExecutorService executor, ViExecutor target) {
+		public DeferedNodeExecutor(String name, BlockingBarrier barrier, ExecutorService executor, ViExecutor target) {
+			this.name = name;
 			this.barrier = barrier;
 			this.executor = executor;
 			this.target = target;
@@ -361,9 +371,15 @@ public class ViManager implements ViNodeSet {
 			return executor.submit(new Callable<Void>() {
 				@Override
 				public Void call() throws Exception {
-					barrier.pass();
-					target.exec(task);
-					return null;
+					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
+					try {
+						barrier.pass();
+						target.exec(task);
+						return null;
+					}
+					finally {
+						swapThreadName(tname);
+					}
 				}
 			});
 		}
@@ -373,9 +389,15 @@ public class ViManager implements ViNodeSet {
 			return executor.submit(new Callable<Void>() {
 				@Override
 				public Void call() throws Exception {
-					barrier.pass();
-					target.exec(task);
-					return null;
+					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
+					try {
+						barrier.pass();
+						target.exec(task);
+						return null;
+					}
+					finally {
+						swapThreadName(tname);
+					}
 				}
 			});
 		}
@@ -385,8 +407,14 @@ public class ViManager implements ViNodeSet {
 			return executor.submit(new Callable<T>() {
 				@Override
 				public T call() throws Exception {
-					barrier.pass();
-					return target.exec(task);
+					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
+					try {
+						barrier.pass();
+						return target.exec(task);
+					}
+					finally {
+						swapThreadName(tname);
+					}
 				}
 			});
 		}
@@ -534,5 +562,12 @@ public class ViManager implements ViNodeSet {
 		public void shutdown() {
 			select().shutdown();
 		}
+	}
+	
+	private static String swapThreadName(String newName) {
+		Thread currentThread = Thread.currentThread();
+		String name = currentThread.getName();
+		currentThread.setName(newName);
+		return name;
 	}
 }

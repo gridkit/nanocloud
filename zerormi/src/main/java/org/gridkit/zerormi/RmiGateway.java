@@ -15,14 +15,12 @@
  */
 package org.gridkit.zerormi;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.net.SocketException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
@@ -185,11 +183,8 @@ public class RmiGateway {
 				}
 			}
 			catch(Exception e) {
-				if (e instanceof EOFException) {
-					LOGGER.debug("RMI stream, scoket closed [" + socket + "]");
-				}
-				else if (e instanceof SocketException && "Connection reset".equals(e.getMessage())) {
-					LOGGER.debug("RMI stream, socket reset [" + socket + "]");
+				if (IOHelper.isSocketTerminationException(e)) {
+					LOGGER.debug("RMI stream, socket has been discontinued [" + socket + "] - " + e.toString());
 				}
 				else {
 					LOGGER.error("RMI stream read exception [" + socket + "]", e);

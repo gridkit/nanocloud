@@ -90,7 +90,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 				socket.bind(addr);
 				this.socket = socket;
 			} catch (IOException e) {
-				LOGGER.info("Failed to bind 127.0.0.1:" + port + ", " + e.toString());
+				LOGGER.debug("Failed to bind 127.0.0.1:" + port + ", " + e.toString());
 			}
 		}
 		if (socket == null) {
@@ -143,30 +143,34 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	}
 	
 	@Override
-	public synchronized ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException {
+	public ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException {
+
+		ProcessBuilder pb;
+		RemoteControlSession session;
 
 		String filesep = System.getProperty("file.separator");
 		ExecCommand jvmCmd = new ExecCommand(javaHome + filesep + "bin" + filesep + "java");
 		jvmCmd.addArg("-cp").addArg(defaultClasspath);
 		jvmArgs.apply(jvmCmd);
 		jvmCmd.addArg(Bootstraper.class.getName());
-		
-		RemoteControlSession session = new RemoteControlSession();
-		String sessionId = hub.newSession(session);
-		jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(socket.getLocalPort()));
-		session.setSessionId(sessionId);
-		
-		ProcessBuilder pb = jvmCmd.getProcessBuilder();		
+
+		synchronized(this) {
+			
+			session = new RemoteControlSession();
+			String sessionId = hub.newSession(session);
+			jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(socket.getLocalPort()));
+			session.setSessionId(sessionId);
+			
+			pb = jvmCmd.getProcessBuilder();
+		}
 		
 		Process p;
 
 		p = pb.start();
-		processes.add(p);
-
-//		p.getOutputStream().close();
-//		BackgroundStreamDumper.link(p.getInputStream(), System.out);
-//		BackgroundStreamDumper.link(p.getErrorStream(), System.err);
-		session.setProcess(p);
+		synchronized(this) {
+			enlist(p);
+			session.setProcess(p);
+		}
 		
 		while(true) {
 			ExecutorService exec = session.ensureRemoteExecutor(100);
@@ -178,6 +182,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 				StreamHelper.copy(p.getInputStream(), System.out);
 				StreamHelper.copy(p.getErrorStream(), System.err);
 				p.destroy();
+				unlist(p);
 				throw new IOException("Child JVM process has terminated, exit code " + code);
 			}
 			catch(IllegalThreadStateException e) {
@@ -188,6 +193,14 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		return session;
 	}
 	
+	private synchronized void enlist(Process p) {
+		processes.add(p);	
+	}
+
+	private void unlist(Process p) {
+		processes.remove(p);
+	}
+
 	private class RemoteControlSession implements SessionEventListener, ControlledProcess {
 		
 		String sessionId;
@@ -253,6 +266,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		public void closed() {
 			LOGGER.info("Closed");
 			process.destroy();
+			unlist(process);
 		}
 	}	
 }
