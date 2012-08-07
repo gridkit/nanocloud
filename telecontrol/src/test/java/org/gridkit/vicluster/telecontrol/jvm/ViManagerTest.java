@@ -46,25 +46,6 @@ public class ViManagerTest {
 	}
 	
 	@Test
-	public void test_ssh_node() {
-		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
-		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "ssh-clone-jvm");
-		
-		manager.node("jvm.remote.node1");
-		
-		List<String> ids = manager.node("**.node1").massExec(new Callable<String>(){
-			@Override
-			public String call() throws Exception {
-				return ManagementFactory.getRuntimeMXBean().getName();
-			}
-		});
-		ids = new ArrayList<String>(ids);
-		
-		String name = ManagementFactory.getRuntimeMXBean().getName();
-		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);		
-	}
-	
-	@Test
 	public void test_isolate_and_local_node() {
 		
 		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");

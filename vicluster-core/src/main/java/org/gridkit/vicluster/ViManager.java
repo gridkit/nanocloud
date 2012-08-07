@@ -314,6 +314,7 @@ public class ViManager implements ViNodeSet {
 									initLatch.open();
 								}
 							}
+							//TODO handle exception
 						}
 						finally {
 							swapThreadName(tname);
