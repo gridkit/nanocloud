@@ -26,10 +26,11 @@ import java.util.concurrent.Future;
  *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class LatchBarrier implements BlockingBarrier {
+public class LatchBarrier implements BlockingBarrier, Latch {
 
 	private CountDownLatch latch = new CountDownLatch(1);
 	
+	@Override
 	public void open() {
 		latch.countDown();
 	}

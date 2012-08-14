@@ -65,6 +65,9 @@ public class ViGroup implements ViNode {
 	}
 	
 	public synchronized void addNode(ViNode host) {
+		if (host == null) {
+			throw new NullPointerException("null ViNode reference");
+		}
 		checkActive();
 		hosts.add(host);
 		config.apply(host);

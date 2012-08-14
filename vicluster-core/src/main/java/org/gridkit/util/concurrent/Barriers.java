@@ -25,6 +25,10 @@ public class Barriers {
 		return NoBarrier.INSTANCE;
 	}
 	
+	public static BlockingBarrier cyclicBarrier(int parties) {
+		return new CyclicBlockingBarrier(parties, null);
+	}
+	
 	public static BlockingBarrier speedLimit(double eventsPerSecond) {
 		if (eventsPerSecond < 0) {
 			throw new IllegalArgumentException("speedLimit should be >= 0");

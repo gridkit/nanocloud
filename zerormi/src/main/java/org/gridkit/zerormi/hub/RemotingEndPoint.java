@@ -104,7 +104,10 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 			pingSingnal.notifyAll();
 		}
 		try {
-			socket.close();
+			// TODO WTF?
+			if (socket != null) {
+				socket.close();
+			}
 		} catch (IOException e) {
 			LOGGER.error("Stream error " + socket, e);
 		}
