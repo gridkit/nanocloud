@@ -849,7 +849,7 @@ public class Isolate {
 
 		@Override
 		public Throwable getCause() {
-			return this;
+			return null;
 		}
 
 		@Override
