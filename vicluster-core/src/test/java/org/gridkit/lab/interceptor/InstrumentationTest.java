@@ -4,22 +4,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collection;
 
 import junit.framework.Assert;
 
-import org.gridkit.lab.interceptor.ConstPoolParser.ConstEntry;
 import org.gridkit.lab.interceptor.ViInstrumentation.CutPoint;
-import org.gridkit.lab.interceptor.test.HookMocks;
-import org.gridkit.lab.interceptor.test.SimpleClass_CRT;
 import org.junit.Test;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.util.ASMifier;
 
 public class InstrumentationTest {
 
@@ -45,11 +36,10 @@ public class InstrumentationTest {
 		Assert.assertTrue(testB.contains(cp_arrays_search));
 	}
 	
-	@Test
-	public void asmify_SimpleClass_CRT() throws Exception {
-		ASMifier.main(new String[]{HookMocks.class.getName()});
-	}
-	
+//	@Test
+//	public void asmify_SimpleClass_CRT() throws Exception {
+//		ASMifier.main(new String[]{HookMocks.class.getName()});
+//	}
 	
 	private byte[] readClass(Class<?> type) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();

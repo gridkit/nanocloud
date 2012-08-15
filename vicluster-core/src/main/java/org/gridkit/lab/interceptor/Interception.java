@@ -13,11 +13,15 @@ public interface Interception {
 
 	public Object getReflectionObject();
 	
+	/**
+	 * @return <code>this</code> reference for context of interception. <code>null</code> for static method/fields and constructor access.
+	 */
+	public Object getThis();
 	
 	/**
 	 * @return array of arguments, array could be modified to modify arguments passing through.
 	 */
-	public Object[] getArguments();
+	public Object[] getCallParameters();
 
 	/**
 	 * @return result of call being hooked

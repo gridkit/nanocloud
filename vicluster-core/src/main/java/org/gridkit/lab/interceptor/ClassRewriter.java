@@ -138,6 +138,8 @@ public class ClassRewriter {
 		private String returnType;
 		private String[] paramTypes;
 		private int[] paramOffs;
+		private String hookName;
+		private String stubName;
 		
 		public HookMethodGenerator(HookInfo hookInfo) {
 			this.hookInfo = hookInfo;
@@ -159,8 +161,8 @@ public class ClassRewriter {
 			
 			isStatic = hookInfo.opcode == INVOKESTATIC;
 			
-			String hookName = HOOK_PREFIX + hookInfo.hookId;
-			String stubName = STUB_PREFIX + hookInfo.hookId;
+			hookName = HOOK_PREFIX + hookInfo.hookId;
+			stubName = STUB_PREFIX + hookInfo.hookId;
 
 			
 			paramTypes = getParamTypes(hookInfo.hookSignature);  
@@ -205,14 +207,14 @@ public class ClassRewriter {
 
 		private void initParamsArray() {
 			// int param array
-			int staticShift = isStatic ? 1 : 0;
-			intPush(paramTypes.length + staticShift);
+			int thisShift = isStatic ? 0 : 1;
+			intPush(paramTypes.length - thisShift);
 			mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
 			astore_paramsArray();
 			
-			for(int i = 0; i != paramTypes.length; ++i) {
+			for(int i = thisShift; i != paramTypes.length; ++i) {
 				aload_paramsArray();
-				intPush(i + staticShift);
+				intPush(i - thisShift);
 				load_param_as_object(i);
 				aastore();
 			}
@@ -303,8 +305,20 @@ public class ClassRewriter {
 			invoke_ctx("setTargetClass", "(Ljava/lang/Class;)V");
 
 			aload_hookContext();
+			mv.visitLdcInsn(stubName);
+			mv.visitLdcInsn(hookInfo.hookSignature);
+			invoke_ctx("setStubMethod", "(Ljava/lang/String;Ljava/lang/String;)V");
+
+			aload_hookContext();
 			mv.visitLdcInsn(hookInfo.targetMethod);
-			invoke_ctx("setTargetMethod", "(Ljava/lang/String;)V");
+			mv.visitLdcInsn(hookInfo.targetSignature);
+			invoke_ctx("setTargetMethod", "(Ljava/lang/String;Ljava/lang/String;)V");
+			
+			if (!isStatic) {
+				aload_hookContext();
+				load_param_as_object(0);
+				invoke_ctx("setThis", "(Ljava/lang/Object;)V");
+			}
 			
 			aload_hookContext();
 			aload_paramsArray();

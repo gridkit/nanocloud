@@ -4,9 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import org.gridkit.lab.interceptor.test.BoolHookTest_CRT;
 import org.gridkit.lab.interceptor.test.ByteHookTest_CRT;
@@ -35,28 +37,50 @@ public class ClassRewriterTest {
 	public static Object NEXT_RETURN;
 	public static Throwable NEXT_ERROR;
 	
+	private static Object[] lastParamsVector(Interception hook) {
+		Object[] vec = new Object[hook.getCallParameters().length + 1];
+		vec[0] = hook.getThis();
+		System.arraycopy(hook.getCallParameters(), 0, vec, 1, hook.getCallParameters().length);
+		return vec;
+	}
+
 	public static void recorderHook(int hookId, Interception hook) {
 		System.out.println("hooked: " + hook);
-		LAST_HOOK_PARAMS = hook.getArguments();
+		LAST_HOOK_PARAMS = lastParamsVector(hook);
 	}
 
 	public static void explosiveHook(int hookId, Interception hook) {
 		System.out.println("hooked: " + hook);
-		LAST_HOOK_PARAMS = hook.getArguments();
+		LAST_HOOK_PARAMS = lastParamsVector(hook);
 		hook.setError(NEXT_ERROR);
 	}
 	
 	public static void replacerHook(int hookId, Interception hook) {
 		System.out.println("hooked: " + hook);
-		LAST_HOOK_PARAMS = hook.getArguments();
+		LAST_HOOK_PARAMS = lastParamsVector(hook);
 		hook.setResult(NEXT_RETURN);
 	}
 	
 	public static void checkInterception(int hookId, Interception hook) {
 		Assert.assertNotNull(hook.getHookType());
 		Assert.assertNotNull(hook.getReflectionObject());
-		Assert.assertNotNull(hook.getArguments());
-		Assert.assertNotNull(hook.getHostClass());		
+		Assert.assertNotNull(hook.getCallParameters());
+		Assert.assertNotNull(hook.getHostClass());
+		try {
+			hook.call();
+		} catch (ExecutionException e) {
+			throw new AssertionError("Unexpected exception: " + e);
+		}		
+		
+		// try also call method directly
+		try {
+			Method m = (Method)hook.getReflectionObject();
+			m.setAccessible(true);
+			
+			m.invoke(hook.getThis(), hook.getCallParameters());
+		} catch (Exception e) {
+			throw new AssertionError("Unexpected exception: " + e);
+		}				
 	}
 	
 	@Test

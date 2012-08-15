@@ -1,7 +1,10 @@
 package org.gridkit.lab.interceptor;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -15,10 +18,12 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 
 	private Class<?> hostClass;
 	private String stubMethod;
+	private String stubSignature;
 	private Class<?> targetClass;
 	private String targetMethod;
 	private String targetMethodSignature;
 	private Method method;
+	private Object that;
 	private Object[] parameters;
 	private Object result;
 	private Throwable exception;
@@ -37,27 +42,17 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 	@Override
 	public Object getReflectionObject() {
 		if (method == null) {
-			String[] pt = getParamTypes(targetMethodSignature);
-			for(Method m : targetClass.getDeclaredMethods()) {
-				if (m.getParameterTypes().length == pt.length) {
-					boolean match = true;
-					for(int i = 0; i != pt.length; ++i) {
-						if (!pt[i].equals(m.getParameterTypes()[i].getName().replace('.', '/'))) {
-							match = false;
-							break;
-						}
-					}
-					if (match) {
-						method = m;
-						break;
-					}
-				}
+			try {
+				Class<?>[] pt = getParameterTypes(targetClass, targetMethodSignature);
+				method = targetClass.getDeclaredMethod(targetMethod, pt);
+			} catch (Exception e) {
+				throw new IllegalArgumentException("Cannot instantiate method " + targetClass.getName() + "::" + targetMethod + targetMethodSignature, e);
 			}
 		}
 		return method;
 	}
 
-	private static String[] getParamTypes(String signature) {
+	private static String[] parseParamTypeNames(String signature) {
 		List<String> result = new ArrayList<String>();
 		StringBuilder sb = new StringBuilder();
 		int c = signature.lastIndexOf(')');
@@ -70,7 +65,7 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 			}
 			else if (';' == x) {
 				sb.append(x);
-				result.add(toType(sb.toString()));
+				result.add(sb.toString());
 				sb.setLength(0);
 				longName = false;
 			}
@@ -83,55 +78,115 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 			}
 			else {
 				sb.append(x);
-				result.add(toType(sb.toString()));
+				result.add(sb.toString());
 				sb.setLength(0);
 			}
 		}
 		return result.toArray(new String[result.size()]);
 	}
-
 	
-	private static String toType(String spec) {
-		if (spec.startsWith("L")) {
-			return spec.substring(1, spec.length() - 1);
+	private Class<?>[] getParameterTypes(Class<?> host, String signature) throws ClassNotFoundException {
+		String[] typeNames = parseParamTypeNames(signature);
+		Class<?>[] types = new Class[typeNames.length];
+		for(int i = 0; i != types.length; ++i) {
+			types[i] = classforName(host, typeNames[i]);
 		}
-		else if ("Z".equals(spec)) {
-			return "boolean";
+		return types;
+	}
+
+	static Class<?> classforName(Class<?> host, String type) throws ClassNotFoundException {
+		if ("boolean".equals(type) || "Z".equals(type)) {
+			return boolean.class;
 		}
-		else if ("B".equals(spec)) {
-			return "byte";
+		else if ("byte".equals(type) || "B".equals(type)) {
+			return byte.class;
 		}
-		else if ("S".equals(spec)) {
-			return "short";
+		else if ("short".equals(type) || "S".equals(type)) {
+			return short.class;
 		}
-		else if ("C".equals(spec)) {
-			return "char";
+		else if ("char".equals(type) || "C".equals(type)) {
+			return char.class;
 		}
-		else if ("I".equals(spec)) {
-			return "int";
+		else if ("int".equals(type) || "I".equals(type)) {
+			return int.class;
 		}
-		else if ("J".equals(spec)) {
-			return "long";
+		else if ("long".equals(type) || "J".equals(type)) {
+			return long.class;
 		}
-		else if ("F".equals(spec)) {
-			return "float";
+		else if ("float".equals(type) || "F".equals(type)) {
+			return float.class;
 		}
-		else if ("D".equals(spec)) {
-			return "double";
+		else if ("double".equals(type) || "D".equals(type)) {
+			return double.class;
 		}
-		else {
-			return spec;
+		else if ("void".equals(type) || "V".equals(type)) {
+			return void.class;
+		}
+		else if (type.startsWith("[")) {
+			Class<?> ct = classforName(host, type.substring(1));
+			return Array.newInstance(ct, 0).getClass();
+		}
+		else if (type.startsWith("L") && type.endsWith(";")) {
+			return classforName(host, type.substring(1, type.length() - 1));
+		} else {
+			ClassLoader cl = host == null ? Thread.currentThread().getContextClassLoader() : host.getClassLoader();
+			return cl.loadClass(type.replace('/', '.'));
 		}
 	}
 
 	@Override
-	public Object[] getArguments() {
+	public Object getThis() {
+		return that;
+	}
+
+	@Override
+	public Object[] getCallParameters() {
 		return parameters;
 	}
 
 	@Override
 	public Object call() throws ExecutionException {
-		
+		if (resultReady) {
+			throw new IllegalStateException("can be executed only once");
+		}
+		else {
+			Method stub;
+			try {
+				stub = hostClass.getDeclaredMethod(stubMethod, getParameterTypes(hostClass, stubSignature));
+				stub.setAccessible(true); 
+			}
+			catch(Exception e) {
+				throw new RuntimeException("Cannot access stub method " + hostClass.getName() + "::" + stubMethod, e);
+			}
+			Object[] callParams = parameters;
+			if (stub.getParameterTypes().length > callParams.length) {
+				if (that == null) {
+					throw new IllegalArgumentException("Method " + targetClass.getName() + "::" + targetMethod + targetMethodSignature + " is not static, but [this] is null");
+				}
+				callParams = Arrays.copyOf(callParams, callParams.length + 1);
+				callParams[0] = that;
+				System.arraycopy(parameters, 0, callParams, 1, parameters.length);
+			}
+			else {
+				if (that != null) {
+					throw new IllegalArgumentException("Method " + targetClass.getName() + "::" + targetMethod + targetMethodSignature + " is static, but [this] is not null");
+				}
+			}
+			try {
+				Object result;
+				setResult(result = stub.invoke(null, callParams));
+				return result;
+			}
+			catch(IllegalAccessException e) {
+				throw new RuntimeException("Cannot access stub method " + hostClass.getName() + "::" + stubMethod, e);
+			}
+			catch(InvocationTargetException e) {
+				Throwable ee = e.getCause();
+				ee = ee == null ? e : ee;
+				setError(ee);
+				throw new ExecutionException(ee);
+			}
+		}
 	}
 
 	public boolean isResultReady() {
@@ -164,20 +219,22 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 		this.hostClass = hostClass;
 	}
 	
-	public void setStubMethod(String stub) {
+	public void setStubMethod(String stub, String signature) {
 		this.stubMethod = stub;
+		this.stubSignature = signature;
 	}
 	
 	public void setTargetClass(Class<?> targetClass) {
 		this.targetClass = targetClass;
 	}
 
-	public void setTargetMethod(String method) {
+	public void setTargetMethod(String method, String signature) {
 		this.targetMethod = method;
+		this.targetMethodSignature = signature;
 	}
 	
-	public void setTargetMethodSignature(String signature) {
-		this.targetMethodSignature = signature;
+	public void setThis(Object that) {
+		this.that = that;
 	}
 	
 	public void setParameters(Object[] params) {
