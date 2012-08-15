@@ -4,6 +4,7 @@ import java.util.concurrent.Callable;
 
 import org.gridkit.lab.interceptor.ReflectionMethodCallSiteHookContext;
 
+@SuppressWarnings({"deprecation", "unused"})
 public class HookMocks implements Callable<String> {
 
 	@Override

@@ -1,5 +1,8 @@
 package org.gridkit.lab.interceptor;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -15,6 +18,7 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 	private Class<?> targetClass;
 	private String targetMethod;
 	private String targetMethodSignature;
+	private Method method;
 	private Object[] parameters;
 	private Object result;
 	private Throwable exception;
@@ -27,14 +31,97 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 
 	@Override
 	public Class<?> getHostClass() {
-		// TODO implement
-		return null;
+		return hostClass;
 	}
 
 	@Override
 	public Object getReflectionObject() {
-		// TODO implement
-		return null;
+		if (method == null) {
+			String[] pt = getParamTypes(targetMethodSignature);
+			for(Method m : targetClass.getDeclaredMethods()) {
+				if (m.getParameterTypes().length == pt.length) {
+					boolean match = true;
+					for(int i = 0; i != pt.length; ++i) {
+						if (!pt[i].equals(m.getParameterTypes()[i].getName().replace('.', '/'))) {
+							match = false;
+							break;
+						}
+					}
+					if (match) {
+						method = m;
+						break;
+					}
+				}
+			}
+		}
+		return method;
+	}
+
+	private static String[] getParamTypes(String signature) {
+		List<String> result = new ArrayList<String>();
+		StringBuilder sb = new StringBuilder();
+		int c = signature.lastIndexOf(')');
+		String types = signature.substring(1, c);
+		boolean longName = false;
+		for(int i = 0; i != types.length(); ++i) {
+			char x  = types.charAt(i);
+			if ('[' == x) {
+				sb.append(x);
+			}
+			else if (';' == x) {
+				sb.append(x);
+				result.add(toType(sb.toString()));
+				sb.setLength(0);
+				longName = false;
+			}
+			else if ('L' == x) {
+				sb.append(x);
+				longName = true;
+			}
+			else if (longName){
+				sb.append(x);
+			}
+			else {
+				sb.append(x);
+				result.add(toType(sb.toString()));
+				sb.setLength(0);
+			}
+		}
+		return result.toArray(new String[result.size()]);
+	}
+
+	
+	private static String toType(String spec) {
+		if (spec.startsWith("L")) {
+			return spec.substring(1, spec.length() - 1);
+		}
+		else if ("Z".equals(spec)) {
+			return "boolean";
+		}
+		else if ("B".equals(spec)) {
+			return "byte";
+		}
+		else if ("S".equals(spec)) {
+			return "short";
+		}
+		else if ("C".equals(spec)) {
+			return "char";
+		}
+		else if ("I".equals(spec)) {
+			return "int";
+		}
+		else if ("J".equals(spec)) {
+			return "long";
+		}
+		else if ("F".equals(spec)) {
+			return "float";
+		}
+		else if ("D".equals(spec)) {
+			return "double";
+		}
+		else {
+			return spec;
+		}
 	}
 
 	@Override
@@ -44,7 +131,7 @@ public class ReflectionMethodCallSiteHookContext implements Interception {
 
 	@Override
 	public Object call() throws ExecutionException {
-		throw new UnsupportedOperationException();
+		
 	}
 
 	public boolean isResultReady() {

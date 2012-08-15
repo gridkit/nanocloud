@@ -52,6 +52,13 @@ public class ClassRewriterTest {
 		hook.setResult(NEXT_RETURN);
 	}
 	
+	public static void checkInterception(int hookId, Interception hook) {
+		Assert.assertNotNull(hook.getHookType());
+		Assert.assertNotNull(hook.getReflectionObject());
+		Assert.assertNotNull(hook.getArguments());
+		Assert.assertNotNull(hook.getHostClass());		
+	}
+	
 	@Test
 	public void test_noop_rewrite() throws Exception {
 		final int[] callSiteCounter = new int[1];
@@ -938,6 +945,16 @@ public class ClassRewriterTest {
 	public void explode_object_call() throws Exception {
 		test_explosive_hook(ObjectHookTest_CRT.class, "objectIntegerCall", new IllegalArgumentException("test"));
 	}
+
+	@Test
+	public void check_interception_object_static_call() throws Exception {
+		test_invocation_object(ObjectHookTest_CRT.class, "objectIntegerStaticCall");
+	}
+	
+	@Test
+	public void check_interception_object_call() throws Exception {
+		test_invocation_object(ObjectHookTest_CRT.class, "objectIntegerCall");
+	}
 		
 	private void test_recorder_hook(Class<?> testClass, String method, Object... expected) throws Exception {
 		HookManager hookManager = new RecordingHookmanager(method);
@@ -979,7 +996,7 @@ public class ClassRewriterTest {
 		Assert.assertSame(cl, ti.getClass().getClassLoader());
 		
 		LAST_HOOK_PARAMS = null;
-		String result1 = ti.call();
+		ti.call();
 		Assert.assertNotNull(LAST_HOOK_PARAMS);
 		
 		hookManager = new ExplosiveHookmanager(method);
@@ -989,7 +1006,7 @@ public class ClassRewriterTest {
 		
 		NEXT_ERROR = e;
 		try {
-			String result2 = ti.call();
+			ti.call();
 			Assert.assertFalse("Exception expected",true);
 		}
 		catch(Exception ee) {
@@ -997,6 +1014,19 @@ public class ClassRewriterTest {
 		}
 	}
 	
+	private void test_invocation_object(Class<?> testClass, String method) throws Exception {
+		HookManager hookManager = new RecordingHookmanager(method) {
+			@Override
+			public String getInvocationTargetMethod() {
+				return "checkInterception";
+			}
+		};
+		TestClassLoader cl = new TestClassLoader(getClass().getClassLoader(), hookManager);
+		Callable<String> ti = cl.createTestInstance(testClass);
+		Assert.assertSame(cl, ti.getClass().getClassLoader());
+		ti.call();
+	}
+
 	private String toString(Object[] expected) {
 		StringBuilder sb = new StringBuilder();
 		for(Object o: expected) {
@@ -1085,7 +1115,6 @@ public class ClassRewriterTest {
 	private static class TestClassLoader extends ClassLoader {
 		
 		private ClassLoader parent;
-		private HookManager manager;
 		private ClassRewriter rewriter;
 		
 		public TestClassLoader(ClassLoader parent, HookManager manager) {

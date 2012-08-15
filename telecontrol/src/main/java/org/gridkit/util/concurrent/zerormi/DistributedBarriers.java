@@ -8,10 +8,10 @@ import org.gridkit.util.concurrent.LatchBarrier;
 
 public class DistributedBarriers {
 
-	public RemoteLatchBarrier export(LatchBarrier barrier) {
-		
-	}
-	
-	public static interface RemoteLatchBarrier extends BlockingBarrier, Latch, Remote {		
-	}
+//	public RemoteLatchBarrier export(LatchBarrier barrier) {
+//		
+//	}
+//	
+//	public static interface RemoteLatchBarrier extends BlockingBarrier, Latch, Remote {		
+//	}
 }
