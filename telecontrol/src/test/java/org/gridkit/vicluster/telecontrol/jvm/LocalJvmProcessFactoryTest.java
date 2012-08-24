@@ -23,7 +23,7 @@ public class LocalJvmProcessFactoryTest {
 		
 		LocalJvmProcessFactory factory = new LocalJvmProcessFactory();
 		
-		ControlledProcess process = factory.createProcess(new JvmConfig());
+		ControlledProcess process = factory.createProcess("test", new JvmConfig());
 		
 		Process p = process.getProcess();
 		p.getOutputStream().close();
@@ -43,7 +43,7 @@ public class LocalJvmProcessFactoryTest {
 		
 		LocalJvmProcessFactory factory = new LocalJvmProcessFactory();
 		
-		ControlledProcess process = factory.createProcess(new JvmConfig());
+		ControlledProcess process = factory.createProcess("test", new JvmConfig());
 		
 		String name = ManagementFactory.getRuntimeMXBean().getName();
 		Future<String> f = process.getExecutionService().submit(new Callable<String>() {

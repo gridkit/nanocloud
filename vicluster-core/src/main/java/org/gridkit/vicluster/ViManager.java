@@ -21,10 +21,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.gridkit.util.concurrent.BlockingBarrier;
@@ -45,10 +48,20 @@ public class ViManager implements ViNodeSet {
 	private Map<String, NodeSelector> dynamicSelectors = new LinkedHashMap<String, NodeSelector>();
 	
 	private ViNodeProvider provider;
-	private ExecutorService asyncInitThreads = Executors.newCachedThreadPool();
+	private ExecutorService asyncInitThreads;
 	
 	public ViManager(ViNodeProvider provider) {
+		this(provider, 16);
+	}
+
+	public ViManager(ViNodeProvider provider, int deferedTaskLimit) {
 		this.provider = provider;
+		if (deferedTaskLimit == 0) {
+			asyncInitThreads = Executors.newSingleThreadExecutor();
+		}
+		else {
+			asyncInitThreads = new ThreadPoolExecutor(deferedTaskLimit >> 2, deferedTaskLimit, 1, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1024));
+		}
 	}
 	
 	public ViNodeProvider getProvider() {
@@ -118,6 +131,12 @@ public class ViManager implements ViNodeSet {
 	@Override
 	public synchronized void shutdown() {
 		// TODO flag terminated state
+		asyncInitThreads.shutdown();
+		try {
+			asyncInitThreads.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			LOGGER.warn("ViManager shutdown: Defered task threads are still active");
+		}
 		ViGroup.group(liveNodes.values()).shutdown();
 	}
 	

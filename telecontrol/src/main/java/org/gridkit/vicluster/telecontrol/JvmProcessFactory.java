@@ -23,6 +23,6 @@ import java.io.IOException;
  */
 public interface JvmProcessFactory {
 	
-	public ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException;
+	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException;
 
 }

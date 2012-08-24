@@ -46,7 +46,7 @@ public class RmiChannelPipeTest {
 			@Override
 			public void run() {
 				try {
-					RmiGateway l = new RmiGateway();
+					RmiGateway l = new RmiGateway("l");
 					l.connect(leftSock);
 					left = l;
 				} catch (IOException e) {
@@ -59,7 +59,7 @@ public class RmiChannelPipeTest {
 			@Override
 			public void run() {
 				try {
-					RmiGateway r = new RmiGateway();
+					RmiGateway r = new RmiGateway("r");
 					r.connect(rightSock);
 					right = r;
 				} catch (IOException e) {

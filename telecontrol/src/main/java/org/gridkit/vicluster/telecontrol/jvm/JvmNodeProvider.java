@@ -47,7 +47,7 @@ public class JvmNodeProvider implements ViNodeProvider {
 		try {		
 			JvmConfig jvmConfig = new JvmConfig();
 			config.apply(new JvmOptionsInitializer(jvmConfig));
-			ControlledProcess process = factory.createProcess(jvmConfig);
+			ControlledProcess process = factory.createProcess(name, jvmConfig);
 			return new JvmNode(name, config, process);
 		} catch (IOException e) {
 			// TODO special exception for node creation failure

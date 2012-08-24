@@ -15,6 +15,7 @@
  */
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,8 +27,11 @@ import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 
@@ -53,12 +57,18 @@ class ClasspathUtils {
 	
 	public static byte[] createManifestJar(Manifest manifest) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
-		JarOutputStream jarOut = manifest == null ? new JarOutputStream(bos) : new JarOutputStream(bos, manifest);
+		ZipOutputStream jarOut = manifest == null ? new JarOutputStream(bos) : new ZipOutputStream(bos);
+		ZipEntry e = new ZipEntry(JarFile.MANIFEST_NAME);
+		jarOut.putNextEntry(e);
+		e.setTime(0l); // this to ensure equal hash for equal content
+		manifest.write(new BufferedOutputStream(jarOut));
+		jarOut.closeEntry();
 		jarOut.close();
 		byte[] jarFile = bos.toByteArray();
 		return jarFile;
 	}
 
+	// unused
 	public static byte[] createBootstraperJar(Manifest manifest) throws IOException {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
 		String path = Bootstraper.class.getName().replace('.', '/') + ".class";
@@ -111,28 +121,5 @@ class ClasspathUtils {
 			StreamHelper.copy(new URL(fpath).openStream(), jarOut);
 			jarOut.closeEntry();
 		}		
-	}
-	
-	public static void main(String[] args) throws MalformedURLException, IOException {
-		byte[] jar = createBootstraperJar(null);
-		System.out.println("Jar size: " + jar.length);
-		for(URL url: listCurrentClasspath()) {
-			System.out.println(url);
-		}
-		System.out.println();
-//		for(URL url: listCurrentEffectiveClasspath()) {
-//			System.out.println(url);
-//		}
-		
-//		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-//		String path = Bootstraper.class.getName().replace('.', '/') + ".class";
-//		URL url = cl.getResource(path);
-//		String urlp = url.toExternalForm();
-//		if (urlp.indexOf('?') > 0) {
-//			urlp = urlp.substring(0, urlp.indexOf('?'));
-//		}
-//		String urlBase = urlp.substring(0, urlp.lastIndexOf('/'));		
-//		InputStream is = new URL(urlBase).openStream();
-//		System.out.println("Bootstrap: " + StreamHelper.toString(is));
-	}
+	}	
 }

@@ -53,7 +53,7 @@ public class RemotingHub {
 		}
 	}
 	
-	public String newSession(SessionEventListener listener) {
+	public String newSession(String name, SessionEventListener listener) {
 		while(true) {
 			String uid = generateUID();
 			SessionContext ctx = new SessionContext();
@@ -62,7 +62,7 @@ public class RemotingHub {
 				if (connections.putIfAbsent(uid, ctx) != null) {
 					continue;
 				}
-				ctx.gateway = new RmiGateway();
+				ctx.gateway = new RmiGateway(name);
 				ctx.gateway.setStreamErrorHandler(ctx);
 			}
 			return uid;
@@ -118,6 +118,8 @@ public class RemotingHub {
 					ctx = connections.get(id);
 					if (ctx != null) {
 						if (ctx.stream != null) {
+							LOGGER.warn("New stream for " + id + " " + stream);
+							LOGGER.warn("Old stream for " + id + " would be disposed " + ctx.stream);
 							silentClose(ctx.stream);
 							ctx.gateway.disconnect();
 							if (ctx.stream != null) {
@@ -176,6 +178,13 @@ public class RemotingHub {
 			gateway.disconnect();
 			this.stream = null;
 			listener.interrupted(socket);
+		}
+
+		@Override
+		public void streamClosed(DuplexStream socket, Object stream) {
+			gateway.disconnect();
+			this.stream = null;
+			LOGGER.info("Closed: " + stream);
 		}
 	}
 	

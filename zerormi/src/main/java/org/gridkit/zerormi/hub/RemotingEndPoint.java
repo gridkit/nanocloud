@@ -18,8 +18,10 @@ package org.gridkit.zerormi.hub;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.rmi.RemoteException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
@@ -40,14 +42,41 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	
 	private RmiGateway gateway;
 	
-	private long pingInterval;
+	private long pingInterval = Long.valueOf(System.getProperty("org.gridkit.telecontrol.slave.heart-beat-period", "1000"));
+	private long heartBeatTimeout = Long.valueOf(System.getProperty("org.gridkit.telecontrol.slave.heart-beat-timeout", "60000"));
 	private Object pingSingnal = new Object();
+
+	private long lastHeartBeat = System.nanoTime(); 
 	
 	public RemotingEndPoint(String uid, SocketAddress addr) {
 		this.uid = uid;
 		this.addr = addr;
-		this.gateway = new RmiGateway();
+		this.gateway = new RmiGateway("master");
 		this.gateway.setStreamErrorHandler(this);
+	}
+	
+	public void enableHeartbeatDeatchWatch() {
+		Thread t = new Thread() {
+			@Override
+			public void run() {
+				while(true) {
+					Thread.currentThread().setName("HeatbeatDethWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
+					long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
+					if (stale > heartBeatTimeout) {
+						System.err.println("Terminating process due to heartbeat timeout");
+						Runtime.getRuntime().halt(0);
+					}
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// ignore;
+					}
+				}
+			}
+		};
+		t.setDaemon(true);
+		t.setName("HeatbeatDethWatch");
+		t.start();
 	}
 	
 	public void run() {
@@ -62,6 +91,7 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 			try {
 				if (!gateway.isConnected()) {
 				
+					LOGGER.info("Connecting to master socket");
 					final Socket sock = new Socket();
 					
 					try {
@@ -73,10 +103,13 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 					
 					byte[] magic = uid.getBytes();
 					sock.getOutputStream().write(magic);
+					sock.getOutputStream().flush();
 
+					LOGGER.info("Master socket connected");
 					DuplexStream ss = new SocketStream(sock);
 					
 					gateway.connect(ss);
+					LOGGER.info("Gateway connected");
 				}
 				
 				synchronized(pingSingnal) {
@@ -86,16 +119,19 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				LOGGER.debug("Ping");
 				try {
 					gateway.getRemoteExecutorService().submit(new Ping()).get();
+					lastHeartBeat = System.nanoTime();
 				}
 				catch(ExecutionException e) {
-					if (e.getCause() instanceof RemoteException) {
-						LOGGER.debug("Ping failed: " + e.getCause().toString());
+					if (!gateway.isConnected()) {
+						break;
 					}
+					LOGGER.warn("Ping failed: " + e.getCause().toString());
 				}
 			} catch (Exception e) {
 				LOGGER.error("Communication error", e);
 			}
-		}		
+		}
+		LOGGER.info("Slave has been discontinued");
 	}
 
 	@Override
@@ -111,5 +147,20 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 		} catch (IOException e) {
 			LOGGER.error("Stream error " + socket, e);
 		}
+	}
+
+	@Override
+	public void streamClosed(DuplexStream socket, Object stream) {
+		synchronized(pingSingnal) {
+			pingSingnal.notifyAll();
+		}
+		try {
+			// TODO WTF?
+			if (socket != null) {
+				socket.close();
+			}
+		} catch (IOException e) {
+			LOGGER.error("Stream error " + socket, e);
+		}		
 	}
 }

@@ -22,6 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -105,14 +110,14 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	}
 	
 	@Override
-	public ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException {
+	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 		ExecCommand jvmCmd = new ExecCommand(javaExecPath);
 		jvmCmd.setWorkDir(agentHome);
 		jvmArgs.apply(jvmCmd);
 		jvmCmd.addArg("-jar").addArg(bootJarPath);
 		
 		RemoteControlSession session = new RemoteControlSession();
-		String sessionId = hub.newSession(session);
+		String sessionId = hub.newSession(caption, session);
 		jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(controlPort));
 		jvmCmd.addArg(agentHome);
 		session.setSessionId(sessionId);
@@ -150,8 +155,13 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	}
 
 	private void initRemoteClassPath() throws IOException, SftpException {
-		StringBuilder remoterClasspath = new StringBuilder();
-		for(URL url: ClasspathUtils.listCurrentClasspath()) {
+		List<URL> cpURLs = new ArrayList<URL>(ClasspathUtils.listCurrentClasspath());
+
+		Map<String, String> pathMap = new HashMap<String, String>();
+		// random upload order improve performance if cache is on shared mount
+		List<URL> uploadURLs = new ArrayList<URL>(cpURLs);
+		Collections.shuffle(uploadURLs);
+		for(URL url: uploadURLs) {
 			byte[] data;
 			String lname;
 			try {
@@ -176,12 +186,17 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 				LOGGER.warn("Cannot copy to remote host URL " + url.toString(), e);
 				continue;
 			}
-			String name = remoteCache.upload(lname, data);
+			pathMap.put(url.toString(), remoteCache.upload(lname, data));
+		}
+
+		StringBuilder remoterClasspath = new StringBuilder();
+		for(URL url: cpURLs) {
 			if (remoterClasspath.length() > 0) {
 				remoterClasspath.append(' ');
 			}
-			remoterClasspath.append(name);
+			remoterClasspath.append(pathMap.get(url.toString()));			
 		}
+
 		Manifest mf = new Manifest();
 		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, remoterClasspath.toString());

@@ -92,10 +92,11 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 	
 	private List<ConfigEntry> entries = new ArrayList<ConfigEntry>();
 	
-	public ConfigurableSshSessionProvider() {		
+	public ConfigurableSshSessionProvider() {
 	}
 	
 	public ConfigurableSshSessionProvider(Properties props) {
+		this();
 		configure(this, props);
 	}	
 	

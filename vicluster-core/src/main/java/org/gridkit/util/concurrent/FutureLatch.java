@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class FutureLatch implements Future<Void> {
+public class FutureLatch implements Future<Void>, Latch {
 	
 	private CountDownLatch latch = new CountDownLatch(1);
 

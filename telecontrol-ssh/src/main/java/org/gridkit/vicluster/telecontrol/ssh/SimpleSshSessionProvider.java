@@ -74,8 +74,9 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 			host = host.substring(0, host.lastIndexOf(':'));
 			port = Integer.parseInt(p);
 		}
-			
+				
 		Session session = jsch.getSession(user, host, port);
+		session.setConfig("StrictHostKeyChecking", "no");
 		session.setDaemonThread(true);
 		session.setUserInfo(ui);		
 		session.connect();
@@ -151,7 +152,12 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 					logger.trace(message);
 					break;
 				case WARN: 
-					logger.warn(message);
+					if (message.endsWith("(RSA) to the list of known hosts.")) {
+						logger.info(message);
+					}
+					else {
+						logger.warn(message);
+					}
 					break;
 				case INFO: 
 					logger.debug(message);

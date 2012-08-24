@@ -73,4 +73,16 @@ public class RemoteCall implements RemoteMessage, Serializable {
 	public String toString() {
 		return "RemoteCall{" + method + "}." + callId;
 	}	
+	
+	public String toShortString() {
+		return toSimpleName(method.getClassName()) + "#" + method.getMethodName() + "()/" + callId;
+	}
+
+	private String toSimpleName(String className) {
+		int c = className.lastIndexOf('.');
+		if (c >= 0) {
+			className = className.substring(c + 1);
+		}
+		return className;
+	}
 }

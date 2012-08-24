@@ -143,7 +143,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	}
 	
 	@Override
-	public ControlledProcess createProcess(JvmConfig jvmArgs) throws IOException {
+	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 
 		ProcessBuilder pb;
 		RemoteControlSession session;
@@ -157,7 +157,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		synchronized(this) {
 			
 			session = new RemoteControlSession();
-			String sessionId = hub.newSession(session);
+			String sessionId = hub.newSession(caption, session);
 			jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(socket.getLocalPort()));
 			session.setSessionId(sessionId);
 			

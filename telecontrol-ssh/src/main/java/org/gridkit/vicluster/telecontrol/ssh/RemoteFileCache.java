@@ -70,17 +70,13 @@ public class RemoteFileCache {
 		
 		sftp.cd(agentHome);
 		agentHomePath = sftp.pwd();
-		if (!exists(sftp, CACHE_PATH)) {
-			sftp.mkdir(CACHE_PATH);
-		}
+		sftpMkdir(sftp, CACHE_PATH);
 	}
 	
 	public synchronized String upload(String id, byte[] data) throws SftpException {
 		if (! fileMapping.containsKey(id)) {
 			String digest = StreamHelper.digest(data, DIGEST_ALGO);
-			if (!exists(sftp, CACHE_PATH + "/" + digest)) {
-				sftp.mkdir(CACHE_PATH + "/" + digest);			
-			}
+			sftpMkdir(sftp, CACHE_PATH + "/" + digest);
 			String name = id;
 			if (name.indexOf('/') > 0) {
 				name = name.substring(name.lastIndexOf('/'));
@@ -89,20 +85,64 @@ public class RemoteFileCache {
 				name = name.substring(0, name.indexOf('?'));
 			}
 			String rname = CACHE_PATH + "/" + digest + "/" + name;
-			if (!exists(sftp, rname)) {
-				LOGGER.info("Uploading: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
-				sftp.put(new ByteArrayInputStream(data), rname);
-			}
-			else {
-				LOGGER.debug("Already exists: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
-			}
+			sftpUpload(rname, data);
 			
 			fileMapping.put(id, agentHomePath + "/" + rname);
 		}
 		return fileMapping.get(id);
 	}
 
-	private boolean exists(ChannelSftp sftp, String path) {
+	private void sftpUpload(String rname, byte[] data) throws SftpException {
+		int tries = 2;
+		while(tries > 0) {
+			--tries;
+			try {
+				if (!exists(sftp, rname)) {
+					LOGGER.info("Uploading: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
+					sftp.put(new ByteArrayInputStream(data), rname);
+				}
+				else {
+					LOGGER.debug("Already exists: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
+				}
+				return;
+			}
+			catch(SftpException e) {
+				if (tries > 0) {
+					LOGGER.warn("upload \"" + rname + "\" failed: " + e.toString());
+				}
+				else {
+					throw e;
+				}
+			}
+		}
+	}
+
+	private static void sftpMkdir(ChannelSftp sftp, String path) throws SftpException {
+		if (path.lastIndexOf('/') > 0) {
+			String parPath = path.substring(0, path.lastIndexOf('/'));
+			sftpMkdir(sftp, parPath);
+		}
+		int tries = 2;
+		while(tries > 0) {
+			--tries;
+			try {
+				if (!exists(sftp, path)) {
+					sftp.mkdir(path);			
+				}
+				return;
+			}
+			catch(SftpException e) {
+				if (tries > 0) {
+					LOGGER.warn("mkdir has failed: " + e.toString());
+				}
+				else {
+					throw e;
+				}
+			}
+		}
+	}
+
+	private static boolean exists(ChannelSftp sftp, String path) {
 		try {
 			return sftp.stat(path) != null;
 		} catch (SftpException e) {

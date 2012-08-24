@@ -62,8 +62,8 @@ public class RemotingHubTest {
 			}
 		};
 		
-		String uid1 = hub.newSession(sessionListener);
-		String uid2 = hub.newSession(sessionListener);
+		String uid1 = hub.newSession("side1", sessionListener);
+		String uid2 = hub.newSession("side2", sessionListener);
 		
 		
 		acceptor = new SimpleSocketAcceptor();

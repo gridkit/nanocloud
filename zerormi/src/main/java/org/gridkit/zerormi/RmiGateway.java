@@ -48,6 +48,7 @@ public class RmiGateway {
 	private boolean connected = false;
 	private boolean terminated = false; 
 	
+	private String name;
 	private DuplexStream socket;
 	private RmiObjectInputStream in;
 	private RmiObjectOutputStream out;
@@ -61,16 +62,22 @@ public class RmiGateway {
 		public void streamError(DuplexStream socket, Object stream, Exception error) {
 			shutdown();
 		}
+
+		@Override
+		public void streamClosed(DuplexStream socket, Object stream) {
+			shutdown();
+		}
 	};
 	
-	public RmiGateway() {
-		this(new SmartRmiMarshaler());
+	public RmiGateway(String name) {
+		this(name, new SmartRmiMarshaler());
 	}
 
-	public RmiGateway(RmiMarshaler marshaler) {
+	public RmiGateway(String name, RmiMarshaler marshaler) {
 		// TODO should include counter agent
-		this.channel = new RmiChannel(new MessageOut(), executor, marshaler);
+		this.channel = new RmiChannel1(new MessageOut(), executor, marshaler);
 		this.service = new RemoteExecutionService();
+		this.name = name;
 	}
 	
 	public ExecutorService getRemoteExecutorService() {
@@ -85,6 +92,8 @@ public class RmiGateway {
 		Thread readerThread = null;
 		synchronized(this) {
 			if (connected) {
+				
+				LOGGER.info("RMI gateway [" + name +"] disconneted.");
 				
 				readerThread = this.readerThread;
 				
@@ -131,6 +140,7 @@ public class RmiGateway {
 		if (terminated) {
 			return;
 		}
+		LOGGER.info("RMI gateway [" + name +"] terminated.");
 		terminated = true;
 		try {
 			out.close();
@@ -174,10 +184,11 @@ public class RmiGateway {
 					Object message = chin.readObject();
 					if (message != null) {
 						if ("close".equals(message)) {
+							LOGGER.info("RMI gateway [" + name + "], remote side has requested termination");
 							shutdown();
 						}
 						else {
-							channel.handleRemoteMessage((RemoteMessage) message);
+							channel.handleMessage((RemoteMessage) message);
 						}
 					}
 				}
@@ -194,8 +205,12 @@ public class RmiGateway {
 				readerThread = null;
 				LOGGER.debug("disconnecting");
 				disconnect();
-				LOGGER.debug("streamError(...)");
-				streamErrorHandler.streamError(socket, in, e);
+				if (IOHelper.isSocketTerminationException(e)) {
+					streamErrorHandler.streamClosed(socket, in);
+				}
+				else {
+					streamErrorHandler.streamError(socket, in, e);
+				}
 			}
 		}
 	}
@@ -273,6 +288,11 @@ public class RmiGateway {
 			Object r = channel.streamResolveObject(obj);
 			return r;
 		}
+
+		@Override
+		public String toString() {
+			return "RmiObjectInputStream[" + name + "]";
+		}
 	}
 
 	private class RmiObjectOutputStream extends ObjectOutputStream {
@@ -289,7 +309,7 @@ public class RmiGateway {
 		}
 	}
 	
-	private class MessageOut implements RmiChannel.OutputChannel {
+	private class MessageOut implements RmiChannel1.OutputChannel {
 		public void send(RemoteMessage message) throws IOException {
 			try {
 				synchronized(out) {
@@ -299,7 +319,7 @@ public class RmiGateway {
 			}
 			catch (NullPointerException e) {
 				if (out == null) {
-					throw new IOException("RMI channel is not connected");
+					throw new IOException("RMI gatway [" + name + "] channel is not connected");
 				}
 				else throw e;
 			}
@@ -316,6 +336,8 @@ public class RmiGateway {
 	public interface StreamErrorHandler {
 		
 		public void streamError(DuplexStream socket, Object stream, Exception error);
+		
+		public void streamClosed(DuplexStream socket, Object stream);
 		
 	}
 
