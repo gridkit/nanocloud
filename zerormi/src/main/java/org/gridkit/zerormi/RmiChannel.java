@@ -21,6 +21,7 @@ interface RmiChannel {
 	
 	public Object streamReplaceObject(Object obj) throws IOException;
 
+	@SuppressWarnings("rawtypes")
 	public Class classForName(String string) throws ClassNotFoundException;
 
 	public ClassLoader getClassLoader();

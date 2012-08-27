@@ -406,7 +406,8 @@ public class RmiChannel1 implements RmiChannel {
     
     private static class RemoteCallFuture extends FutureBox<Object> {
 
-    	RemoteCall remoteCall;
+    	@SuppressWarnings("unused")
+		RemoteCall remoteCall;
 
     	public RemoteCallFuture(RemoteCall remoteCall) {
     		this.remoteCall = remoteCall;
