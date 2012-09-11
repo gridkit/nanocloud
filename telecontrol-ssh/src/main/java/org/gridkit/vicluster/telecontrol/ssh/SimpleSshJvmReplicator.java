@@ -65,7 +65,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	private String agentHome; 
 	private String javaExecPath = "java";
 	
-	private Session ssh;
+	private List<SessionInfo> sessionCache = new ArrayList<SessionInfo>();
 	private RemoteFileCache remoteCache;
 	private Random random = new Random();
 	
@@ -89,20 +89,17 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	}
 
 	public void init() throws JSchException, SftpException, IOException, InterruptedException {
-		ssh = factory.getSession(host, account);
 		remoteCache = new RemoteFileCache();
 		remoteCache.setAgentHome(agentHome);
-		remoteCache.setSession(ssh);
+		remoteCache.setSession(getSession());
 		remoteCache.init();
 
 		initRemoteClassPath();
 		
-		initPortForwarding();
-		
 		ExecCommand halloWorldCmd = new ExecCommand(javaExecPath);
 		halloWorldCmd.setWorkDir(agentHome);
 		halloWorldCmd.addArg("-cp").addArg(bootJarPath).addArg(HalloWorld.class.getName());
-		RemoteSshProcess rp = new RemoteSshProcess(ssh, halloWorldCmd);
+		RemoteSshProcess rp = new RemoteSshProcess(getSession(), halloWorldCmd);
 		rp.getOutputStream().close();
 		BackgroundStreamDumper.link(rp.getInputStream(), System.out);
 		BackgroundStreamDumper.link(rp.getErrorStream(), System.err);
@@ -124,7 +121,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		
 		RemoteSshProcess rp;
 		try {
-			rp = new RemoteSshProcess(ssh, jvmCmd);
+			rp = new RemoteSshProcess(getSession(), jvmCmd);
 		} catch (JSchException e) {
 			throw new IOException(e);
 		}
@@ -133,11 +130,39 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		return session;
 	}
 	
-	public void shutdown() {
-		ssh.disconnect();
+	private synchronized Session getSession() throws JSchException {
+		if (sessionCache.isEmpty()) {
+			pushNewSession();
+			return sessionCache.get(0).session;
+		}
+		else {
+			SessionInfo ssh = sessionCache.get(0);
+			// TODO is 5 ok?
+			if (ssh.usage < 3) {
+				return ssh.session;
+			}
+			else {
+				pushNewSession();
+				return sessionCache.get(0).session;
+			}
+		}
+	}	
+
+	private void pushNewSession() throws JSchException {
+		Session ssh = factory.getSession(host, account);
+		initPortForwarding(ssh);
+		SessionInfo si = new SessionInfo(ssh);
+		si.usage = 1;
+		sessionCache.add(0, si);
 	}
 
-	private synchronized void initPortForwarding() {
+	public synchronized void shutdown() {
+		for(SessionInfo si: sessionCache) {
+			si.session.disconnect();
+		}
+	}
+
+	private synchronized void initPortForwarding(Session ssh) {
 		for(int i = 0; i != 10; ++i) {
 			int port;
 			try {
@@ -345,6 +370,15 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 			} catch (JSchException e) {
 				throw new RuntimeException(e);
 			}
+		}
+	}
+	
+	private static class SessionInfo {
+		Session session;
+		int usage;
+		
+		public SessionInfo(Session session) {
+			this.session = session;
 		}
 	}
 }
