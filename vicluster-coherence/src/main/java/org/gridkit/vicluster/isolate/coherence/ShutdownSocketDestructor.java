@@ -19,7 +19,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.net.DatagramSocket;
 
-import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.vicluster.isolate.OldIsolate;
 import org.gridkit.vicluster.isolate.ThreadKiller;
 
 /**
@@ -32,11 +32,11 @@ public class ShutdownSocketDestructor implements ThreadKiller, Runnable, Seriali
 
 	@Override
 	public void run() {
-		Isolate.currentIsolate().addThreadKiller(this);
+		OldIsolate.currentIsolate().addThreadKiller(this);
 	}
 
 	@Override
-	public boolean tryToKill(Isolate isolate, Thread t) {
+	public boolean tryToKill(OldIsolate isolate, Thread t) {
 		Object target = getField(t, "target");
 		if (target == null) {
 			return false;

@@ -42,7 +42,7 @@ public class RmiGateway {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RmiGateway.class);
 	
-	private final RmiChannel channel;
+	private final RmiInvocationHandler channel;
 	private final ExecutorService executor = Executors.newCachedThreadPool();
 	
 	private boolean connected = false;

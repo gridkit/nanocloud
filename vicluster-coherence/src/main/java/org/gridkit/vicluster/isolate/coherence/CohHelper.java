@@ -35,7 +35,7 @@ import javax.management.ObjectName;
 
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.vicluster.isolate.OldIsolate;
 import org.gridkit.vicluster.isolate.IsolateViNode;
 
 import com.tangosol.coherence.component.net.extend.RemoteService;
@@ -431,7 +431,7 @@ public class CohHelper {
 		public synchronized MBeanServer findMBeanServer(String sDefaultDomain) {
 			if (MSERVER == null) {
 				MSERVER = MBeanServerFactory.newMBeanServer(System.getProperty("isolate.name"));
-				Isolate.currentIsolate().setGlobal(CohHelper.class, "MBeanServer", MSERVER);
+				OldIsolate.currentIsolate().setGlobal(CohHelper.class, "MBeanServer", MSERVER);
 			}
 			return MSERVER;
 		}

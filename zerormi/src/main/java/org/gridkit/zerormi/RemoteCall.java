@@ -28,7 +28,7 @@ public class RemoteCall implements RemoteMessage, Serializable {
 	/**
 	 * Instance will receive the call
 	 */
-	RemoteInstance remoteInstance;
+	Object target;
 	
 	/**
 	 * Method's name
@@ -54,16 +54,16 @@ public class RemoteCall implements RemoteMessage, Serializable {
 		return callId;
 	}
 
-	public RemoteInstance getRemoteInstance() {
-		return remoteInstance;
+	public Object getTarget() {
+		return target;
 	}
-
+	
 	public RemoteMethodSignature getMethod() {
 		return method;
 	}
 
-	public RemoteCall(RemoteInstance remoteInstance, RemoteMethodSignature method, Object[] args, Long callId) {
-		this.remoteInstance = remoteInstance;
+	public RemoteCall(Object target, RemoteMethodSignature method, Object[] args, Long callId) {
+		this.target = target;
 		this.method = method;
 		this.args = args;
 		this.callId = callId;

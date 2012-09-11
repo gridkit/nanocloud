@@ -43,8 +43,10 @@
     </properties>
 
     <modules>
+        <module>conc-util</module>
         <module>vicluster-core</module>
         <module>vicluster-coherence</module>
+        <module>vicluster-isolate</module>
         <module>zerormi</module>
         <module>telecontrol</module>
         <module>telecontrol-ssh</module>

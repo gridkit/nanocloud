@@ -8,7 +8,7 @@ import java.io.ObjectOutputStream;
 
 import junit.framework.Assert;
 
-import org.gridkit.zerormi.SmartAnonMarshaler;
+import org.gridkit.zerormi.SmartRmiMarshaler;
 import org.junit.Test;
 
 public class SmartViMarshalerTest {
@@ -30,7 +30,7 @@ public class SmartViMarshalerTest {
 			}
 		};
 		
-		Object ms = SmartAnonMarshaler.marshal(task);
+		Object ms = SmartRmiMarshaler.marshal(task);
 		
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -41,6 +41,6 @@ public class SmartViMarshalerTest {
 		ObjectInputStream ois = new ObjectInputStream(bis);
 		Object md = ois.readObject();
 		
-		Assert.assertEquals("task.10.100", SmartAnonMarshaler.unmarshal(md).toString());		
+		Assert.assertEquals("task.10.100", SmartRmiMarshaler.unmarshal(md).toString());		
 	}		
 }

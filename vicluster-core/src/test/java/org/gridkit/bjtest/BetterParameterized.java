@@ -115,7 +115,7 @@ public class BetterParameterized extends Suite {
 
 		@Override
 		protected String testName(final FrameworkMethod method) {
-			return String.format("[%s]-%s", getName(), method.getName());
+			return String.format("%s", method.getName());
 		}
 
 		@Override
