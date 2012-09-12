@@ -1,5 +1,7 @@
 package org.gridkit.zerormi;
 
+import java.io.IOException;
+
 
 public interface ComponentSuperviser {
 
@@ -10,6 +12,7 @@ public interface ComponentSuperviser {
 	
 	public static int CODE_ERROR = 500;
 	public static int CODE_ERROR_UNEXPECTED = 501;
+	public static int CODE_ERROR_IO = 510;
 	
 	public void onWarning(SuperviserEvent event);
 
@@ -24,6 +27,10 @@ public interface ComponentSuperviser {
 			return new SuperviserEvent(source, CODE_TERMINATION_GRACEFUL, "", null);
 		}
 
+		public static SuperviserEvent newStreamError(Object source, IOException e) {
+			return new SuperviserEvent(source, CODE_ERROR_IO, "", e);
+		}
+		
 		public static SuperviserEvent newUnexpectedError(Object source, Throwable e) {
 			return new SuperviserEvent(source, CODE_ERROR_UNEXPECTED, e.getMessage(), e);
 		}

@@ -17,8 +17,7 @@ public interface DuplexBlobPipe {
 	
 		public FutureEx<Void> blobReceived(byte[] blob);
 		
-		public void closed();
-		
+		public void closed();		
 	}	
 	
 	public static class SyncBlobPipe implements DuplexBlobPipe {

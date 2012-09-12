@@ -1,9 +1,12 @@
 package org.gridkit.zerormi;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.zerormi.ComponentSuperviser.SuperviserEvent;
 
 public interface ByteStream {
 
@@ -11,16 +14,124 @@ public interface ByteStream {
 		
 		public void handle(ByteBuffer data);
 		
-		public void streamClose(Exception error);
+		public void brokenStream(Exception error);
+		
+		public void endOfStream();
 		
 	}
 	
-	public interface Duplex {
+	public interface InputSocket {
+
+		public void bindInput(ByteStream.Sink sink);
+		
+	}
+	
+	public interface Duplex extends InputSocket {
 
 		public ByteStream.Sink getOutput();
 		
 		public void bindInput(ByteStream.Sink sink);
 		
+	}
+	
+	public static class DuplexPair implements Duplex {
+		
+		private final String name;
+		private final InputSocket input;
+		private final Sink output;
+
+		public DuplexPair(String name, InputSocket input, Sink output) {
+			this.name = name;
+			this.input = input;
+			this.output = output;
+		}
+
+		@Override
+		public Sink getOutput() {
+			return output;
+		}
+
+		@Override
+		public void bindInput(Sink sink) {
+			input.bindInput(sink);
+		}
+		
+		public String toString() {
+			return name;
+		}
+	}
+	
+	public static class OutputStreamSink implements Sink, Component {
+
+		private final ComponentSuperviser superviser;
+		private final OutputStream output;
+		private boolean terminated;
+		private Exception lastError;
+		
+		public OutputStreamSink(ComponentSuperviser superviser, OutputStream output) {
+			this.superviser = superviser;
+			this.output = output;
+		}
+
+		@Override
+		public void handle(ByteBuffer data) {
+			try {
+				if (data.hasArray()) {
+					output.write(data.array(), data.arrayOffset() + data.position(), data.remaining());
+				}
+				else {
+					byte[] buf = new byte[data.remaining()];
+					data.get(buf);
+					output.write(buf);
+				}
+			}
+			catch(IOException e) {
+				lastError = e;
+				superviser.onFatalError(SuperviserEvent.newStreamError(this, e));
+			}
+		}
+
+		@Override
+		public void brokenStream(Exception error) {
+			lastError = error;
+			endOfStream();
+		}
+
+		@Override
+		public void endOfStream() {
+			try {
+				terminated = true;
+				output.close();
+			} catch (IOException e) {
+				// ignore
+			}
+			superviser.onTermination(SuperviserEvent.newClosedEvent(this));
+		}
+
+		@Override
+		public boolean isInitalized() {
+			return true;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return terminated;
+		}
+
+		@Override
+		public String getStatusLine() {
+			return lastError == null ? "" : lastError.toString();
+		}
+
+		@Override
+		public void shutdown() {
+			endOfStream();
+		}
+
+		@Override
+		public String toString() {
+			return output.toString();
+		}
 	}
 	
 	public static class SyncBytePipe implements Duplex, Sink {
@@ -70,8 +181,13 @@ public interface ByteStream {
 		}
 
 		@Override
-		public void streamClose(Exception error) {
-			other().streamClose(error);
+		public void brokenStream(Exception error) {
+			other().brokenStream(error);			
+		}
+
+		@Override
+		public void endOfStream() {
+			other().endOfStream();			
 		}
 
 		@Override

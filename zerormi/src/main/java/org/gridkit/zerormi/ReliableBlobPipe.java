@@ -525,11 +525,18 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 			stream.bindInput(this);
 		}		
 		
-		@Override
-		public void streamClose(Exception error) {
-			rejectStream(error);
-		}
 	
+		@Override
+		public void brokenStream(Exception error) {
+			rejectStream(error);			
+		}
+
+
+		@Override
+		public void endOfStream() {
+			rejectStream(null);			
+		}
+
 		@Override
 		public synchronized void handle(ByteBuffer data) {
 			try {

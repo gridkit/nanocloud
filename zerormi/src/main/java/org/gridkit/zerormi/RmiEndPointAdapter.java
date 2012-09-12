@@ -2,12 +2,11 @@ package org.gridkit.zerormi;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureEx;
 
-public class RmiEndPointAdapter implements RmiEndPoint {
+public class RmiEndPointAdapter implements RmiGateway {
 	
 	private RmiInvocationHandler channel;
 	private AdvancedExecutorAdapter executor;
@@ -68,11 +67,6 @@ public class RmiEndPointAdapter implements RmiEndPoint {
 		@Override
 		public <V> FutureEx<V> submit(Callable<V> task) {
 			return channel.invokeRemotely(task, callMethod);
-		}
-
-		@Override
-		public void schedule(Runnable task, long delay, TimeUnit tu) {
-			throw new UnsupportedOperationException();
 		}
 	}
 }

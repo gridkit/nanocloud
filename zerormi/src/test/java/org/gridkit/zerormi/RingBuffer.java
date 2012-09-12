@@ -45,7 +45,12 @@ public class RingBuffer implements ByteStream.Sink {
 	}
 
 	@Override
-	public void streamClose(Exception error) {
+	public void brokenStream(Exception error) {
+		// ignore
+	}
+
+	@Override
+	public void endOfStream() {
 		// ignore
 	}
 

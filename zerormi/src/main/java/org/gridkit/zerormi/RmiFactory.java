@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class RmiFactory {
 
-	public static RmiEndPoint createEndPoint(String name, ClassProvider cp, DuplexBlobPipe blobPipe, Executor executor, RmiMarshaler... extraMarshaler) {
+	public static RmiGateway createEndPoint(String name, ClassProvider cp, DuplexBlobPipe blobPipe, Executor executor, RmiMarshaler... extraMarshaler) {
 		
 		List<RmiMarshaler> mlist = new ArrayList<RmiMarshaler>();
 		

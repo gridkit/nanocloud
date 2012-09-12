@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.Thread.State;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -55,23 +56,23 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.util.concurrent.Box;
+import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.zerormi.ClassProvider;
-import org.gridkit.zerormi.DuplexBlobPipe;
-import org.gridkit.zerormi.RmiEndPoint;
-import org.gridkit.zerormi.RmiFactory;
-import org.gridkit.zerormi.SimpleClassProvider;
-import org.gridkit.zerormi.SmartRmiMarshaler;
+import org.gridkit.zerormi.RmiGateway;
 
 /**
  *	@author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class Isolate implements AdvancedExecutor {
+	
+	static boolean VERBOSE_CLASSES = true;
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
 	
@@ -155,8 +156,8 @@ public class Isolate implements AdvancedExecutor {
 
 	private List<ThreadKiller> threadKillers = new ArrayList<ThreadKiller>();
 	
-	private RmiEndPoint inside;
-	private RmiEndPoint outside;
+	private RmiFacility outside;
+	private RmiFacility inside;
 	
 	private boolean terminated = false;
 
@@ -183,17 +184,15 @@ public class Isolate implements AdvancedExecutor {
 		stdErr = new PrintStream(wrpErr);
 		
 		threadPool = Executors.newCachedThreadPool(threadGroup);
-		
-		initRmi();
 	}
 	
 	private void initRmi() {
 		
-		ClassProvider inCl = new SimpleClassProvider(cl);
-		ClassProvider outCl = new SimpleClassProvider(cl.getBaseClassLoader());
+		ClassLoader inCl = cl;
+		ClassLoader outCl = cl.getBaseClassLoader();
 		
-		DuplexBlobPipe.SyncBlobPipe sideA = new DuplexBlobPipe.SyncBlobPipe();
-		DuplexBlobPipe.SyncBlobPipe sideB = new DuplexBlobPipe.SyncBlobPipe();
+		SyncBlobPipe sideA = new SyncBlobPipe();
+		SyncBlobPipe sideB = new SyncBlobPipe();
 		
 		sideA.bind(sideB);
 		
@@ -217,9 +216,20 @@ public class Isolate implements AdvancedExecutor {
 				threadPool.execute(new IsolateTaskMarker(command));
 			}
 		};
+
+		outside = (RmiFacility) new IsolateRmiFacility();
+		outside.startRmi(name + "-outbound", outCl, sideB, outExec);		
+
+		try {
+			Constructor<?> cc = inCl.loadClass(IsolateRmiFacility.class.getName()).getDeclaredConstructor();
+			cc.setAccessible(true);
+			inside = (RmiFacility) cc.newInstance();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		inside.startRmi(name + "-inbound", inCl, sideA, inExec);
 		
-		inside = RmiFactory.createEndPoint(name + "-inbound", inCl, sideA, inExec, new SmartRmiMarshaler());
-		outside = RmiFactory.createEndPoint(name + "-outbound", outCl, sideB, outExec, new SmartRmiMarshaler());		
 	}
 
 	public String getName() {
@@ -239,13 +249,24 @@ public class Isolate implements AdvancedExecutor {
 	}
 	
 	public synchronized void addPackage(String packageName) {
+		checkInternalPackage(packageName);
 		cl.addPackage(packageName);
+	}
+	
+	public void checkInternalPackage(String name) {
+		if (inside != null) {
+			if (FutureEx.class.getName().startsWith(name)
+				|| RmiGateway.class.getName().startsWith(name)) {
+				throw new IllegalArgumentException("Package '" + name + "' is used interally, you can add/remove it to isolate only before first usage");
+			}
+		}
 	}
 	
 	/**
 	 * Classes marked as "excluded" will always be loaded from parent class loader.
 	 */
 	public synchronized void exclude(String exclude) {
+		checkInternalPackage(exclude.substring(0, exclude.lastIndexOf('.')));
 		cl.exclude(exclude);
 	}
 
@@ -289,7 +310,7 @@ public class Isolate implements AdvancedExecutor {
 		}
 	}
 
-	public void exec(Runnable task) {
+	public synchronized void exec(Runnable task) {
 		try {
 			submit(task).get();
 		}
@@ -301,7 +322,7 @@ public class Isolate implements AdvancedExecutor {
 		}
 	}
 
-	public <V> V exec(Callable<V> task) {
+	public synchronized <V> V exec(Callable<V> task) {
 		try {
 			return submit(task).get();
 		}
@@ -315,26 +336,37 @@ public class Isolate implements AdvancedExecutor {
 		}
 	}
 	
+	private synchronized RmiFacility ensureRmi() {
+		if (inside == null) {
+			initRmi();
+		}
+		return outside;
+	}
+	
+	private synchronized void stopRmi() {
+		if (inside != null) {
+			inside.stop();
+		}
+		if (outside != null) {
+			outside.stop();
+		}
+	}
+	
 	@Override
 	public void execute(Runnable task) {
-		outside.asExecutor().execute(task);
+		ensureRmi().submit(task);
 	}
 
 	@Override
 	public FutureEx<Void> submit(Runnable task) {
-		return outside.asExecutor().submit(task);
+		return new IsolateFutures.FutureUnproxy<Void>(ensureRmi().submit(task));
 	}
 
 	@Override
 	public <V> FutureEx<V> submit(Callable<V> task) {
-		return outside.asExecutor().submit(task);
+		return new IsolateFutures.FutureUnproxy<V>(ensureRmi().submit(task));
 	}
-
-	@Override
-	public void schedule(Runnable task, long delay, TimeUnit tu) {
-		throw new UnsupportedOperationException();
-	}
-
+	
 	private void weaveAndRethrow(Throwable e) {
 		Exception d = new Exception();
 		
@@ -427,8 +459,7 @@ public class Isolate implements AdvancedExecutor {
 			terminated = true;
 		}
  		
-		inside.shutdown();
-		outside.shutdown();
+		stopRmi();
 		
 		try {		
 			threadPool.shutdown();
@@ -829,6 +860,14 @@ public class Isolate implements AdvancedExecutor {
 						if (cl == null) {
 							throw new ClassNotFoundException(name);
 						}
+						if (VERBOSE_CLASSES) {
+							if (cl.getClassLoader() == this) {
+								System.out.println("[" + Isolate.this.name + "] " + name + " loaded from isolate");
+							}
+							else {
+								System.out.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
+							}
+						}
 						return cl;
 					}
 				}
@@ -836,15 +875,18 @@ public class Isolate implements AdvancedExecutor {
 			if (name.equals("sun.awt.AppContext")) {
 				new Exception("loading AppContext").printStackTrace();
 			}
+			if (VERBOSE_CLASSES) {
+				System.out.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
+			}
 			Class<?> cc = baseClassloader.loadClass(name);
 			return cc;
 		}
 		
-		private boolean isInternallyExcluded(String name) {
+		private boolean isInternallyShared(String name) {
 			if (name.equals(Isolate.class.getName()) 
 					|| name.startsWith(Isolate.class.getName() + "$")
 					|| name.equals(ThreadKiller.class.getName())
-					|| name.startsWith("org.gridkit.zerormi.")
+//					|| name.startsWith("org.gridkit.zerormi.")
 					) {
 				return true;
 			}
@@ -854,7 +896,7 @@ public class Isolate implements AdvancedExecutor {
 		}
 		
 		private boolean isExcluded(String name) {	
-			if (isInternallyExcluded(name)) {
+			if (isInternallyShared(name)) {
 				return true;
 			}
 			else {
@@ -905,20 +947,29 @@ public class Isolate implements AdvancedExecutor {
 					}
 				}
 				byte[] cd = bos.toByteArray();
-				try {
-					return defineClass(url, classname, cd);
+				try {					
+					return defineIsolatedClass(classname, url, cd);
 				}
 				catch(OutOfMemoryError e) {
-					// try it again
+					// try it again once
 					System.gc();
 					System.runFinalization();
 					System.gc();
-					return defineClass(url, classname, cd);
+					return defineIsolatedClass(classname, url, cd);
 				}
 			}
 			catch(Exception e) {
 				throw new ClassNotFoundException(classname);
 			}
+		}
+
+		private Class<?> defineIsolatedClass(String classname, URL url,
+				byte[] cd) throws ClassFormatError {
+			Class<?> cl = defineClass(url, classname, cd);
+			if (VERBOSE_CLASSES) {
+				System.out.println("[" + Isolate.this.name + "] " + classname + " loaded in isolate");
+			}
+			return cl;
 		}
 
 		private Class<?> defineClass(URL url, String classname, byte[] cd) throws ClassFormatError {
@@ -1290,6 +1341,127 @@ public class Isolate implements AdvancedExecutor {
 
 		public void list(PrintWriter out) {
 			resolve().list(out);
+		}
+	}
+	
+	/**
+	 * Package visibility does not work between class loader.
+	 * Have to make them public.
+	 */
+	public static interface FutureProxy<V> extends Future<V> {
+		
+		public void addListener(BoxProxy<? super V> box);
+		
+	}
+	
+	public static interface BoxProxy<V> {
+
+		public void setData(V data);
+
+		public void setError(Throwable e);		
+	}
+	
+	/**
+	 * Package visibility does not work between class loader.
+	 * Have to make them public.
+	 */
+	public static interface RmiFacility {
+		
+		public void startRmi(String name, ClassLoader cl, BlobDuplex bd, Executor exec);
+		
+		public FutureProxy<Void> submit(Runnable task);
+
+		public <V> FutureProxy<V> submit(Callable<V> task);
+		
+		public void stop();
+	}
+	
+	/**
+	 * Package visibility does not work between class loader.
+	 * Have to make them public.
+	 */
+	public static interface BlobDuplex {
+		
+		public void bind(BlobSink receiver);
+		
+		public FutureProxy<Void> sendBinary(byte[] bytes);
+		
+		public void close();	
+	}
+	
+	/**
+	 * Package visibility does not work between class loader.
+	 * Have to make them public.
+	 */
+	public static interface BlobSink {
+		
+		public FutureProxy<Void> blobReceived(byte[] blob);
+		
+		public void closed();
+	}
+	
+	/** It should be declared as inner class to be shared between isolates */
+	private static class SyncBlobPipe implements BlobDuplex {
+		
+		private SyncBlobPipe counterParty;
+		private FutureBox<BlobSink> counterSink = new FutureBox<BlobSink>();
+
+		public SyncBlobPipe() {			
+		}
+		
+		public void bind(SyncBlobPipe cp) {
+			if (counterParty != null || cp.counterParty != null) {
+				throw new IllegalStateException("Already bound");
+			}
+			else {
+				counterParty = cp;
+				cp.counterParty = this;
+			}
+		}
+		
+		@Override
+		public void bind(BlobSink receiver) {
+			if (counterParty == null) {
+				throw new IllegalStateException("Not bound");
+				
+			}
+			counterParty.counterSink.setData(receiver);
+		}
+		
+		private BlobSink other() {
+			try {
+				return counterSink.get();
+			} catch (Exception e) {
+				throw new RuntimeException();
+			}			
+		}
+		
+		@Override
+		public FutureProxy<Void> sendBinary(final byte[] data) {
+			if (!counterSink.isDone()) {
+				final FutureBox<Void> ack = new FutureBox<Void>();
+				counterSink.addListener(new Box<BlobSink>() {
+					@Override
+					public void setData(BlobSink receiver) {
+						receiver.blobReceived(data).addListener(new IsolateFutures.BoxEnproxy<Void>(ack));					
+					}
+	
+					@Override
+					public void setError(Throwable e) {
+						ack.setError(e);
+					}
+				});
+				return new IsolateFutures.FutureEnproxy<Void>(ack);
+			}
+			else {
+				return other().blobReceived(data);
+			}
+		}
+				
+		@Override
+		public void close() {
+			// ignore
+			//other().closed();			
 		}
 	}
 }

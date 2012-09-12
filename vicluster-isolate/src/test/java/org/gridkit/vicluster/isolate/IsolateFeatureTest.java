@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViGroup;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
@@ -307,6 +308,37 @@ public class IsolateFeatureTest {
 		}
 	}
 
+	@Test(expected=IllegalArgumentException.class)
+	public void verify_late_classpath_config_error() {
+		
+		ViNode node = createIsolateViHost("node-1");
+		node.exec(new Runnable() {			
+			@Override
+			public void run() {
+				// do nothing				
+			}
+		});
+		
+		node.setProps(ISOLATE_PROPS);
+		Assert.assertFalse("Should not reach here", true);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void verify_late_classpath_config_error2() {
+		
+		ViNode node = createIsolateViHost("node-1");
+		node.setProps(ISOLATE_PROPS);
+		node.exec(new Runnable() {			
+			@Override
+			public void run() {
+				// do nothing				
+			}
+		});
+		
+		node.setProp("isolate:shared:" + FutureEx.class.getName(), "");
+		Assert.assertFalse("Should not reach here", true);
+	}
+
 	private void assertLocalStackTrace(IllegalArgumentException e) {
 		Exception local = new Exception();
 		int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
@@ -361,6 +393,7 @@ public class IsolateFeatureTest {
 		node.setProps(ISOLATE_PROPS);
 		
 		URL jar = getClass().getResource("/marker-override.jar");
+		Assert.assertNotNull("marker-override.jar schould be present in classpath", jar);
 		URL path = new URL("jar:" + jar.toString() + "!/");
 		IsolateViNode.addToClasspath(node, path);
 		

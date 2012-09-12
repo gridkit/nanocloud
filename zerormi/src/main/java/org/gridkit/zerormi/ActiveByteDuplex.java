@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.util.concurrent.TaskService;
 import org.gridkit.zerormi.ByteStream.Sink;
 
 public class ActiveByteDuplex implements ByteStream.Duplex, ByteStream.Sink {
@@ -15,13 +16,13 @@ public class ActiveByteDuplex implements ByteStream.Duplex, ByteStream.Sink {
 	private final String name;
 	private final InputStream is;
 	private final OutputStream os;
-	private final AdvancedExecutor scheduler;
+	private final TaskService scheduler;
 	
 	private final byte[] buffer;
 
 	private Sink receiver;
 	
-	public ActiveByteDuplex(String name, InputStream is, OutputStream os, AdvancedExecutor scheduler) {
+	public ActiveByteDuplex(String name, InputStream is, OutputStream os, TaskService scheduler) {
 		this.name = name;
 		this.is = is;
 		this.os = os;
@@ -33,8 +34,6 @@ public class ActiveByteDuplex implements ByteStream.Duplex, ByteStream.Sink {
 	public Sink getOutput() {
 		return this;
 	}
-	
-	
 
 	@Override
 	public synchronized void bindInput(Sink sink) {
