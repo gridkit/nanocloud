@@ -3,7 +3,6 @@ package org.gridkit.vicluster.isolate;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -14,8 +13,6 @@ import java.util.concurrent.Callable;
 import org.gridkit.vicluster.ViGroup;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.isolate.Isolate;
-import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -295,7 +292,7 @@ public class IsolateFeatureTest {
 	}	
 	
 	@Test
-	public void test_classpath_extention() throws MalformedURLException {
+	public void test_classpath_extention() throws IOException {
 		
 		ViNode node = createIsolateViHost("test-node");
 		node.setProps(ISOLATE_PROPS);
@@ -304,11 +301,29 @@ public class IsolateFeatureTest {
 		URL path = new URL("jar:" + jar.toString() + "!/");
 		IsolateViNode.addToClasspath(node, path);
 		
-		node.exec(new CheckMarker("Marker from jar"));
+		node.exec(new Callable<Void>() {
+			
+			@Override
+			public Void call() throws Exception {
+				String marker = readMarkerFromResources();
+				Assert.assertEquals("Marker from jar", marker);
+				return null;
+			}
+
+		});
 		
-		new CheckMarker("Default marker").run();
+		Assert.assertEquals("Default marker", readMarkerFromResources());
 	}
 
+	private static String readMarkerFromResources() throws IOException {
+		URL url = IsolateFeatureTest.class.getResource("/marker.txt");
+		Assert.assertNotNull(url);
+		BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
+		String marker = r.readLine();
+		r.close();
+		return marker;
+	}
+	
 	@Test(expected = NoClassDefFoundError.class)
 	public void test_classpath_limiting() throws MalformedURLException {
 		ViNode node = createIsolateViHost("test-node");
@@ -329,31 +344,6 @@ public class IsolateFeatureTest {
 				Assert.assertTrue(true);
 			}
 		});		
-	}
-	
-	@SuppressWarnings("serial")
-	public static class CheckMarker implements Runnable, Serializable {
-
-		private String expected;
-		
-		public CheckMarker(String expected) {
-			this.expected = expected;
-		}
-
-		@Override
-		public void run() {
-			try {
-				URL url = getClass().getResource("/marker.txt");
-				Assert.assertNotNull(url);
-				BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
-				if (expected != null) {
-					Assert.assertEquals(r.readLine(), expected);
-				}
-				r.close();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}			
-		}
 	}
 	
 	@Test
