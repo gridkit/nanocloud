@@ -1,6 +1,7 @@
 package org.gridkit.zerormi;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.net.SocketException;
 
 
@@ -17,6 +18,11 @@ class IOHelper {
 			if ("socket closed".equals(e.getMessage().toLowerCase())) {
 				return true;
 			}
+		}
+		else if (e.getClass() == IOException.class) {
+			if ("Stream closed.".equals(e.getMessage())) {
+				return true;
+			}			
 		}
 		
 		// otherwise

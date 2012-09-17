@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.MassExec;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
@@ -43,8 +43,8 @@ import org.gridkit.vicluster.telecontrol.ControlledProcess;
 class JvmNode implements ViNode {
 
 	private String name;
-	private Process process;
-	private ExecutorService executor;
+	private ControlledProcess process;
+	private AdvancedExecutor executor;
 	
 	private WrapperPrintStream stdOut;
 	private WrapperPrintStream stdErr;
@@ -55,7 +55,7 @@ class JvmNode implements ViNode {
 	
 	public JvmNode(String name, ViNodeConfig config, ControlledProcess cp) throws IOException {
 		this.name = name;
-		this.process = cp.getProcess();
+		this.process = cp;
 		this.executor = cp.getExecutionService();
 		
 		config.apply(this.config);
@@ -63,9 +63,10 @@ class JvmNode implements ViNode {
 		stdOut = new WrapperPrintStream("[" + name + "] ", System.out);
 		stdErr = new WrapperPrintStream("[" + name + "] ", System.err);
 		
-		process.getOutputStream().close();
-		BackgroundStreamDumper.link(process.getInputStream(), stdOut);
-		BackgroundStreamDumper.link(process.getErrorStream(), stdErr);
+		Process p = process.getProcess();
+		p.getOutputStream().close();
+		BackgroundStreamDumper.link(p.getInputStream(), stdOut);
+		BackgroundStreamDumper.link(p.getErrorStream(), stdErr);
 		
 		initPropperteis();
 		runStartupHooks();
@@ -117,7 +118,7 @@ class JvmNode implements ViNode {
 	}
 
 	public Process getProcess() {
-		return process;
+		return process.getProcess();
 	}
 	
 	@Override
@@ -155,7 +156,6 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Future<Void> submit(Runnable task) {
 		ensureStarted();
 		return (Future<Void>) executor.submit(task);
@@ -259,13 +259,13 @@ class JvmNode implements ViNode {
 
 	@Override
 	public synchronized void shutdown() {
-		// TODO call shutdown hooks
 		if (active) {
 			try {
 				runShutdownHooks();
 			} catch (IOException e) {
 				e.printStackTrace(); // TODO logging
 			}
+			// TODO do I really want system.exit() here
 			Future<Void> f = submit(new Runnable() {
 				@Override
 				public void run() {
@@ -276,8 +276,7 @@ class JvmNode implements ViNode {
 				f.get(100, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				// it doesn't matter 
-			}
-			executor.shutdown();
+			}			
 			process.destroy();
 			
 			active = false;

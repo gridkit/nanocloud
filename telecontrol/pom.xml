@@ -55,6 +55,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>vicluster-isolate</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>

@@ -57,7 +57,12 @@ public class SimpleSocketAcceptor implements Runnable {
 				hub.dispatch(ds);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();			
+			if (socket.isClosed()) {
+				// ignore
+			}
+			else {
+				e.printStackTrace();
+			}
 		}
 	}
 	

@@ -1,6 +1,7 @@
 package org.gridkit.util.concurrent;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -14,7 +15,7 @@ public class SimpleTaskService implements TaskService {
 	private Set<TaskWrapper> activeTasks = new HashSet<TaskWrapper>();
 	
 	public SimpleTaskService(int corePoolSize) {
-		threadPool = new ThreadPool(corePoolSize, new WorkerThreadFactory(), new RejectionHandler());	
+		threadPool = new ThreadPool(100, new WorkerThreadFactory(), new RejectionHandler());	
 	}
 
 	@Override
@@ -66,12 +67,13 @@ public class SimpleTaskService implements TaskService {
 					return;
 				}
 				else {
-					wrapper = activeTasks.iterator().next();
+					Iterator<TaskWrapper> it = activeTasks.iterator();
+					wrapper = it.next();
+					it.remove();
 				}				
 			}
 			wrapper.abort();
 		}
-		
 	}
 	
 	private class TaskWrapper implements Runnable {

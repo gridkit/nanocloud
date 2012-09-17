@@ -15,7 +15,7 @@ public class InterceptorClassTransformer {
 	
 	public InterceptorClassTransformer(ClassLoader cl) {
 		this.hostClassloader = cl;
-		CLMAP
+		//CLMAP
 	}
 	
 	private static class InterceptorInfo {

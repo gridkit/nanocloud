@@ -17,9 +17,8 @@ package org.gridkit.vicluster.telecontrol.bootstraper;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
-import java.util.TimerTask;
 
+import org.gridkit.zerormi.hub.DirectConnectSocket;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 
 /**
@@ -40,7 +39,7 @@ public class Bootstraper {
 	}
 
 	public void start() {
-		endpoint = new RemotingEndPoint(id, new InetSocketAddress(host, port));
+		endpoint = new RemotingEndPoint("slave", id, new DirectConnectSocket(host, port));
 		endpoint.enableHeartbeatDeatchWatch();
 		endpoint.run();
 	}

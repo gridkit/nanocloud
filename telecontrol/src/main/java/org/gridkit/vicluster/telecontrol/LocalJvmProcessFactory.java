@@ -25,11 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.zerormi.DuplexStream;
+import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.SocketStream;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
@@ -173,7 +174,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		}
 		
 		while(true) {
-			ExecutorService exec = session.ensureRemoteExecutor(100);
+			AdvancedExecutor exec = session.ensureRemoteExecutor(100);
 			if (exec != null) {
 				break;
 			}
@@ -205,7 +206,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		
 		String sessionId;
 		Process process;
-		ExecutorService executor;
+		RmiGateway gateway;
 		CountDownLatch connected = new CountDownLatch(1);
 		
 		@Override
@@ -214,7 +215,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		}
 		
 		@Override
-		public ExecutorService getExecutionService() {
+		public AdvancedExecutor getExecutionService() {
 			return ensureRemoteExecutor(-1);
 		}
 
@@ -231,7 +232,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 			return connected.getCount() == 0;
 		}
 		
-		private ExecutorService ensureRemoteExecutor(long timeout) {
+		private AdvancedExecutor ensureRemoteExecutor(long timeout) {
 			try {
 				if (timeout < 0) {
 					connected.await();
@@ -242,12 +243,12 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
-			return executor;
+			return gateway == null ? null : gateway.asExecutor();
 		}
 		
 		@Override
 		public void connected(DuplexStream stream) {
-			executor = hub.getExecutionService(sessionId);
+			gateway = hub.getGateway(sessionId);
 			connected.countDown();
 			LOGGER.info("Conntected: " + stream);
 		}
@@ -267,6 +268,12 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 			LOGGER.info("Closed");
 			process.destroy();
 			unlist(process);
+		}
+
+		@Override
+		public void destroy() {
+			hub.closeConnection(sessionId);
+			process.destroy();
 		}
 	}	
 }

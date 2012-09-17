@@ -25,6 +25,11 @@ public class PumpedWriteAdapter implements ByteStream.Duplex {
 	}
 	
 	@Override
+	public boolean isConnected() {
+		return true;
+	}
+
+	@Override
 	public Sink getOutput() {
 		return buffer;
 	}

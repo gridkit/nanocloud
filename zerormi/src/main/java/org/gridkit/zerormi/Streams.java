@@ -3,15 +3,21 @@ package org.gridkit.zerormi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.TaskService;
+import org.gridkit.zerormi.ByteStream.DuplexPair;
 import org.gridkit.zerormi.ByteStream.Sink;
 import org.gridkit.zerormi.ByteStream.SyncBytePipe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Streams {
+	
+	static final Logger LOGGER = LoggerFactory.getLogger(Streams.class);
 
 	public static ByteStream.Duplex[] newSyncPipe() {
 		SyncBytePipe sideA = new SyncBytePipe();
@@ -24,7 +30,7 @@ public class Streams {
 		return new ByteStream.DuplexPair(name, in, out);
 	}
 	
-	public static ByteStream.Sink toSink(OutputStream os, ComponentSuperviser superviser) {
+	public static ByteStream.Sink toSink(OutputStream os, Superviser superviser) {
 		return new ByteStream.OutputStreamSink(superviser, os);
 	}
 
@@ -37,10 +43,104 @@ public class Streams {
 		}
 	}
 	
+	public static ByteStream.Duplex toDuplex(final Socket socket, TaskService taskService) throws IOException {
+
+		Superviser superviser = new Superviser.GenericSuperviser() {
+			
+			@Override
+			protected void report(SuperviserEvent event) {
+				if (event.isWarning()) {
+					LOGGER.warn(event.toString());
+				}
+				else if (event.isError()) {
+					LOGGER.error(event.toString());
+				}
+				else {
+					LOGGER.info(event.toString());
+				}
+			}
+			
+			@Override
+			protected void onTerminate(Object object) {
+				try {
+					socket.close();
+				} catch(IOException e) {
+					// ignore
+				}				
+			}
+			
+			@Override
+			protected void onError(Object object) {
+				try {
+					socket.close();
+				} catch (IOException e) {
+					// ignore
+				}				
+			}
+		};
+		
+		ByteStream.InputSocket sock = toSocket(socket.getInputStream(), taskService, false);
+		ByteStream.Sink sink = toSink(socket.getOutputStream(), superviser);
+		
+		return new DuplexPair(socket.toString(), sock, sink) {
+			@Override
+			public boolean isConnected() {
+				return socket.isConnected() && !socket.isClosed();
+			}
+		};
+	}
+
+	public static ByteStream.Duplex toDuplex(final DuplexStream stream, TaskService taskService) throws IOException {
+		
+		Superviser superviser = new Superviser.GenericSuperviser() {
+			
+			@Override
+			protected void report(SuperviserEvent event) {
+				if (event.isWarning()) {
+					LOGGER.warn(event.toString());
+				}
+				else if (event.isError()) {
+					LOGGER.error(event.toString());
+				}
+				else {
+					LOGGER.info(event.toString());
+				}
+			}
+			
+			@Override
+			protected void onTerminate(Object object) {
+				try {
+					stream.close();
+				} catch(IOException e) {
+					// ignore
+				}				
+			}
+			
+			@Override
+			protected void onError(Object object) {
+				try {
+					stream.close();
+				} catch (IOException e) {
+					// ignore
+				}				
+			}
+		};
+		
+		ByteStream.InputSocket sock = toSocket(stream.getInput(), taskService, false);
+		ByteStream.Sink sink = toSink(stream.getOutput(), superviser);
+		
+		return new DuplexPair(stream.toString(), sock, sink) {
+			@Override
+			public boolean isConnected() {
+				return !stream.isClosed();
+			}
+		};
+	}
+	
 	/**
 	 * Simple and economic InputStream pumper relaying of {@link InputStream#available()} method.
 	 */
-	public static class LazyInputStreamPumper implements ByteStream.InputSocket, TaskService.Task {
+	static class LazyInputStreamPumper implements ByteStream.InputSocket, TaskService.Task {
 		
 		private static final int BUFFER_LIMIT = 16 << 10;
 		private static final long POLL_DELAY = TimeUnit.MILLISECONDS.toNanos(10);
@@ -84,8 +184,12 @@ public class Streams {
 				}
 			}
 			catch(Exception e) {
-				// TODO detect valid socket close cases
-				receiver.brokenStream(e);
+				if (IOHelper.isSocketTerminationException(e)) {
+					receiver.endOfStream();
+				}
+				else {
+					receiver.brokenStream(e);
+				}
 			}			
 		}
 

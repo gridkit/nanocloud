@@ -116,13 +116,18 @@ public class SmartObjectSerializer implements DuplexObjectPipe, DuplexBlobPipe.B
 	}
 
 	@Override
-	public synchronized void close() {
-		if (!terminated) {
-			terminated = true;
-			binaryPipe.close();
-			if (receiver !=null) {
-				receiver.closed();
+	public void close() {
+		synchronized(this) {
+			if (terminated) {
+				return;
 			}
+			else {
+				terminated = true;
+			}
+		}
+		binaryPipe.close();
+		if (receiver !=null) {
+			receiver.closed();
 		}
 	}
 	

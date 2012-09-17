@@ -15,7 +15,7 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
-import java.util.concurrent.ExecutorService;
+import org.gridkit.util.concurrent.AdvancedExecutor;
 
 /**
  * 
@@ -25,6 +25,8 @@ public interface ControlledProcess {
 
 	public Process getProcess();
 	
-	public ExecutorService getExecutionService();
+	public AdvancedExecutor getExecutionService();
+	
+	public void destroy();
 	
 }

@@ -18,7 +18,8 @@ package org.gridkit.vicluster;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
+
+import org.gridkit.util.concurrent.AdvancedExecutor;
 
 /**
  * 
@@ -108,7 +109,7 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		}
 	}
 
-	public void runStartupHooks(ExecutorService executor) {
+	public void runStartupHooks(AdvancedExecutor executor) {
 		for(HookInfo hi : startupHooks.values()) {
 			if (hi.hook instanceof HostSideHook) {
 				((HostSideHook)hi.hook).hostRun(false);				
@@ -123,7 +124,7 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		}
 	}
 
-	public void runShutdownHooks(ExecutorService executor) {
+	public void runShutdownHooks(AdvancedExecutor executor) {
 		for(HookInfo hi : shutdownHooks.values()) {
 			if (hi.hook instanceof HostSideHook) {
 				((HostSideHook)hi.hook).hostRun(true);				

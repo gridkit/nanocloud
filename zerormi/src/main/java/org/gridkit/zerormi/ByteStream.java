@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
-import org.gridkit.zerormi.ComponentSuperviser.SuperviserEvent;
+import org.gridkit.zerormi.Superviser.SuperviserEvent;
 
 public interface ByteStream {
 
@@ -28,9 +28,17 @@ public interface ByteStream {
 	
 	public interface Duplex extends InputSocket {
 
+		public boolean isConnected();
+		
 		public ByteStream.Sink getOutput();
 		
 		public void bindInput(ByteStream.Sink sink);
+		
+	}
+	
+	public interface DuplexConsumer {
+		
+		public void setStream(ByteStream.Duplex duplex);
 		
 	}
 	
@@ -45,6 +53,13 @@ public interface ByteStream {
 			this.input = input;
 			this.output = output;
 		}
+
+		@Override
+		public boolean isConnected() {
+			return true;
+		}
+
+
 
 		@Override
 		public Sink getOutput() {
@@ -63,12 +78,12 @@ public interface ByteStream {
 	
 	public static class OutputStreamSink implements Sink, Component {
 
-		private final ComponentSuperviser superviser;
+		private final Superviser superviser;
 		private final OutputStream output;
 		private boolean terminated;
 		private Exception lastError;
 		
-		public OutputStreamSink(ComponentSuperviser superviser, OutputStream output) {
+		public OutputStreamSink(Superviser superviser, OutputStream output) {
 			this.superviser = superviser;
 			this.output = output;
 		}
@@ -142,6 +157,11 @@ public interface ByteStream {
 		public SyncBytePipe() {			
 		}
 		
+		@Override
+		public boolean isConnected() {
+			return true;
+		}
+
 		public void bind(SyncBytePipe cp) {
 			if (counterParty != null || cp.counterParty != null) {
 				throw new IllegalStateException("Already bound");

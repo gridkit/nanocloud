@@ -2,23 +2,27 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.rmi.Remote;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.gridkit.zerormi.DuplexStream;
+import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.zerormi.hub.DirectConnectSocket;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.RemotingHub;
-import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
+import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -30,8 +34,10 @@ public class RemotingHubTest {
 	private RemotingEndPoint endPoint1;
 	private RemotingEndPoint endPoint2;
 	private SimpleSocketAcceptor acceptor;
-	private ExecutorService remoteExecutor1;
-	private ExecutorService remoteExecutor2;
+	private RmiGateway gateway1;
+	private RmiGateway gateway2;
+	private AdvancedExecutor remoteExecutor1;
+	private AdvancedExecutor remoteExecutor2;
 	
 	@Before
 	public void initHub() throws InterruptedException, BrokenBarrierException, TimeoutException {
@@ -77,21 +83,26 @@ public class RemotingHubTest {
 		acceptor.bind(ssock, hub);
 		acceptor.start();
 		
-		endPoint1 = new RemotingEndPoint(uid1, new InetSocketAddress("localhost", 21000));
+		endPoint1 = new RemotingEndPoint("slave1", uid1, new DirectConnectSocket("localhost", 21000));
 		new Thread(endPoint1).start();
 		
-		remoteExecutor1 = hub.getExecutionService(uid1);
+		gateway1 = hub.getGateway(uid1);
+		remoteExecutor1 = gateway1.asExecutor();
 
-		endPoint2 = new RemotingEndPoint(uid2, new InetSocketAddress("localhost", 21000));
+		endPoint2 = new RemotingEndPoint("slave2", uid2, new DirectConnectSocket("localhost", 21000));
 		new Thread(endPoint2).start();
 		
-		remoteExecutor2 = hub.getExecutionService(uid2);
+		gateway2 = hub.getGateway(uid2);
+		remoteExecutor2 = gateway2.asExecutor();
 		
 		latch.await(5000, TimeUnit.MILLISECONDS);
 	}
 	
 	@After
 	public void shutdown() {
+		gateway1.shutdown();
+		gateway2.shutdown();
+		hub.closeAllConnections();
 		acceptor.close();
 	}
 	
@@ -114,6 +125,72 @@ public class RemotingHubTest {
 		Assert.assertEquals("123", result);		
 	}
 	
+	@Test
+	public void test_resource_leak() throws InterruptedException, ExecutionException {
+
+		SessionEventListener listener = new SessionEventLogger();		
+		
+		Random rnd = new Random(1);
+		Map<String, RemotingEndPoint> slaves = new HashMap<String, RemotingEndPoint>(); 
+		List<String> sessions = new ArrayList<String>();
+		for(int i = 0; i != 10000; ++i) {
+			if (sessions.size() < 10) {
+				String id = hub.newSession("slave-" + i, listener);
+				RemotingEndPoint slave = createSlave("slave-" + i, id);
+				sessions.add(id);
+				slaves.put(id, slave);
+				
+				hub.getGateway(id).asExecutor().submit(new Callable<String>() {
+					@Override
+					public String call() throws Exception {
+						return "Ping";
+					}					
+				}).get();
+			}
+			int n = rnd.nextInt(sessions.size());
+			hub.getGateway(sessions.get(n)).asExecutor().submit(new Callable<String>() {
+				@Override
+				public String call() throws Exception {
+					return "Ping";
+				}					
+			}).get();
+			if (rnd.nextInt(100) < 30) {
+				String id = sessions.remove(n);
+				slaves.remove(id).shutdown();
+				hub.closeConnection(id);
+			}
+		}
+	}
+	
+	private RemotingEndPoint createSlave(String name, String id) {
+		RemotingEndPoint endPoint = new RemotingEndPoint(name, id, new DirectConnectSocket("localhost", 21000));
+		new Thread(endPoint).start();
+		return endPoint;
+	}
+
+	private final class SessionEventLogger implements
+			SessionEventListener {
+		@Override
+		public void reconnected(DuplexStream stream) {
+			System.out.println("HUB: reconnected: " + stream);
+		}
+
+		@Override
+		public void interrupted(DuplexStream stream) {
+			System.out.println("HUB: interrupted: " + stream);
+		}
+
+		@Override
+		public void connected(DuplexStream stream) {
+			System.out.println("HUB: connected: " + stream);
+		}
+
+		@Override
+		public void closed() {
+			System.out.println("HUB: closed");
+		}
+	}
+
 	@SuppressWarnings("serial")
 	public static class Echo<V> implements Callable<V>, Serializable {
 

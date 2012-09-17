@@ -79,6 +79,13 @@
         	<groupId>org.gridkit.lab</groupId>
         	<artifactId>telecontrol</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>vicluster-isolate</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
     </dependencies>
 
     <build>

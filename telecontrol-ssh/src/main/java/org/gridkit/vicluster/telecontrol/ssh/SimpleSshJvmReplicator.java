@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
@@ -41,6 +41,7 @@ import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.vicluster.telecontrol.bootstraper.HalloWorld;
 import org.gridkit.zerormi.DuplexStream;
+import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.slf4j.Logger;
@@ -217,7 +218,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	private class RemoteControlSession implements SessionEventListener, ControlledProcess {
 		
 		String sessionId;
-		ExecutorService remoteExecutorService;
+		RmiGateway gateway;
 		RemoteSshProcess process;
 		CountDownLatch connected = new CountDownLatch(1);
 		
@@ -227,7 +228,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		}
 
 		@Override
-		public ExecutorService getExecutionService() {
+		public AdvancedExecutor getExecutionService() {
 			return getRemoteExecutor();
 		}
 
@@ -239,18 +240,18 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 			this.process = process;
 		}
 
-		public ExecutorService getRemoteExecutor() {
+		public AdvancedExecutor getRemoteExecutor() {
 			try {
 				connected.await();
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
-			return remoteExecutorService;
+			return gateway == null ? null : gateway.asExecutor();
 		}
 		
 		@Override
 		public void connected(DuplexStream stream) {
-			remoteExecutorService = hub.getExecutionService(sessionId);
+			gateway = hub.getGateway(sessionId);
 			connected.countDown();
 			LOGGER.info("Conntected: " + stream);
 		}
@@ -269,6 +270,12 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		public void closed() {
 			LOGGER.info("Closed");
 			process.destroy();
+		}
+
+		@Override
+		public void destroy() {
+			hub.closeConnection(sessionId);
+			process.destroy();			
 		}
 	}
 	

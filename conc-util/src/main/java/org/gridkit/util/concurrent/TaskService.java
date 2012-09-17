@@ -24,5 +24,11 @@ public interface TaskService {
 		
 		public void cancled();
 		
-	}	
+	}
+	
+	public interface Component extends TaskService {
+		
+		public void shutdown();
+		
+	}
 }

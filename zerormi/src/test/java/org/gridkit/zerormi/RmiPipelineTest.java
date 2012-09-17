@@ -21,18 +21,17 @@ import org.gridkit.zerormi.ByteStream.Duplex;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BetterParameterized.class)
 public class RmiPipelineTest {
 
-	private static final int TEST_TIMEOUT = Integer.MAX_VALUE;
-//	private static final int TEST_TIMEOUT = 1000;	
+//	private static final int TEST_TIMEOUT = Integer.MAX_VALUE;
+	private static final int TEST_TIMEOUT = 1000;	
 	
 
-	@BeforeClass
+//	@BeforeClass
 	public static void enableTrace() {
 		ReliableBlobPipe.TRACE = true;
 		SmartObjectSerializer.TRACE = true;

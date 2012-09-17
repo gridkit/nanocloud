@@ -11,5 +11,5 @@ public interface AdvancedExecutor extends Executor {
 	public FutureEx<Void> submit(Runnable task);
 
 	public <V> FutureEx<V> submit(Callable<V> task);
-
+	
 }

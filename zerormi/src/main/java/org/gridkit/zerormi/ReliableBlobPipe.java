@@ -10,9 +10,9 @@ import java.util.TreeMap;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.zerormi.ComponentSuperviser.SuperviserEvent;
+import org.gridkit.zerormi.Superviser.SuperviserEvent;
 
-public class ReliableBlobPipe implements DuplexBlobPipe {
+public class ReliableBlobPipe implements DuplexBlobPipe, ByteStream.DuplexConsumer {
 
 	static boolean TRACE = false;
 	private static int MAX_PACKET_SIZE = 64 << 20;
@@ -61,19 +61,25 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 		}
 	}
 
-	public synchronized void setStream(ByteStream.Duplex stream) {
-		if (terminated) {
-			throw new IllegalStateException("Terminated");
+	@Override
+	public void setStream(ByteStream.Duplex stream) {
+		synchronized(this) {
+			if (terminated) {
+				throw new IllegalStateException("Terminated");
+			}
+			if (receiver == null) {
+				throw new IllegalStateException("Bind receiver first");
+			}
+			disconnectStream();
+			if (stream == null) {
+				return;
+			}
+			else {
+				activeStream = stream;
+				inputHander = new InputHandler(activeStream);
+			}
 		}
-		if (receiver == null) {
-			throw new IllegalStateException("Bind receiver first");
-		}
-		disconnectStream();
-		if (stream != null) {
-			activeStream = stream;
-			inputHander = new InputHandler(activeStream);
-			resync();
-		}
+		resync();
 	}
 	
 	@Override
@@ -91,15 +97,22 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 	}
 
 	@Override
-	public synchronized void close() {
-		terminated = true;
-		disconnectStream();
-		for(Message msg: outQ.values()) {
-			try {
-				msg.ack.setError(new EOFException("Closed"));
+	public void close() {
+		synchronized(this) {
+			if (terminated) {
+				return;
 			}
-			catch(Exception e) {
-				// ignore;
+			else {
+				terminated = true;
+				disconnectStream();
+				for(Message msg: outQ.values()) {
+					try {
+						msg.ack.setError(new EOFException("Closed"));
+					}
+					catch(Exception e) {
+						// ignore;
+					}
+				}
 			}
 		}
 		superviser.onTermination(SuperviserEvent.newClosedEvent(this));				
@@ -131,48 +144,52 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 	}
 
 	private synchronized void resync() {
-		if (online()) {
-			if (!inQ.isEmpty()) {
-				// TODO retransmit also, recent ACKNACKs
-				byte[] rsync = initPacket(4 * inQ.size());
-
-				if (TRACE) {
-					StringBuilder sb = new StringBuilder();
-					for(Message msg: inQ.values()) {
-						if (sb.length() > 0) {
-							sb.append(", ");
+		byte[] rsync = null;
+		synchronized(this) {
+			if (online()) {
+				if (!inQ.isEmpty()) {
+					// TODO retransmit also, recent ACKNACKs
+					rsync = initPacket(4 * inQ.size());
+	
+					if (TRACE) {
+						StringBuilder sb = new StringBuilder();
+						for(Message msg: inQ.values()) {
+							if (sb.length() > 0) {
+								sb.append(", ");
+							}
+							if (msg.acked) {
+								sb.append("ack2 " +msg.id);
+							}
+							else {
+								sb.append("ack1 " +msg.id);
+							}
 						}
+						
+						System.out.println(name + ": sendResync-> " + sb);
+					}
+	
+					ByteBuffer bb = ByteBuffer.wrap(rsync);
+					bb.getInt();
+					for(Message msg: inQ.values()) {
+						int ack;
 						if (msg.acked) {
-							sb.append("ack2 " +msg.id);
+							ack = MACK2;
 						}
 						else {
-							sb.append("ack1 " +msg.id);
+							ack = MACK1;
 						}
+						bb.putInt(ackQuard(ack, msg.id));
 					}
-					
-					System.out.println(name + ": sendResync-> " + sb);
 				}
-
-				ByteBuffer bb = ByteBuffer.wrap(rsync);
-				bb.getInt();
-				for(Message msg: inQ.values()) {
-					int ack;
-					if (msg.acked) {
-						ack = MACK2;
-					}
-					else {
-						ack = MACK1;
-					}
-					bb.putInt(ackQuard(ack, msg.id));
-				}
-				sendPacket(rsync);
-				resyncing = true;
 			}
-			else {
-				sendSync();
-				resyncing = true;
-			}
-		}		
+			resyncing = true;
+		}
+		if (rsync == null) {
+			sendSync();
+		}
+		else {
+			sendPacket(rsync);
+		}
 	}
 	
 	private synchronized void retransmit() {
@@ -220,12 +237,16 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 		rejectStream(new IOException("Corrupt data stream: " + reason));		
 	}
 
-	private synchronized void rejectStream(Exception error) {
-		if (activeStream != null) {
-			ByteStream.Duplex oldStream = activeStream;
+	private void rejectStream(Exception error) {
+		ByteStream.Duplex oldStream;
+		synchronized(this) {
+			if (activeStream == null) {
+				return;
+			}
+			oldStream = activeStream;
 			activeStream = null;
-			superviser.onStreamRejected(this, oldStream, error);
 		}
+		superviser.onStreamRejected(this, oldStream, error);
 	}
 
 	private synchronized void processMessage(byte[] bytes) {
@@ -317,7 +338,7 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 		}				
 	}
 
-	private synchronized void sendSync() {
+	private void sendSync() {
 		if (online()) {
 			byte[] packet = newPacketSync();
 			if (TRACE) {
@@ -328,6 +349,7 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 	}
 	
 	private void sendPacket(byte[] packet) {
+		// TODO handle concurrency
 		try {
 			if (TRACE) {
 				System.out.println(name + ": wire-> " + packet.length + " bytes, " + Arrays.toString(packet));
@@ -611,7 +633,7 @@ public class ReliableBlobPipe implements DuplexBlobPipe {
 		}
 	}
 
-	public interface PipeSuperviser extends ComponentSuperviser {
+	public interface PipeSuperviser extends Superviser {
 		
 		public void onStreamRejected(ReliableBlobPipe pipe, ByteStream.Duplex stream, Exception e);
 		

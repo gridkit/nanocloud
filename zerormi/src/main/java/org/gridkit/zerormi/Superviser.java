@@ -3,16 +3,18 @@ package org.gridkit.zerormi;
 import java.io.IOException;
 
 
-public interface ComponentSuperviser {
+public interface Superviser {
 
 	public static int CODE_TERMINATION = 400; 
 	public static int CODE_TERMINATION_GRACEFUL = 401; 
 
 	public static int CODE_WARNING = 300;
+	public static int CODE_WARNING_MAX = 399;
 	
 	public static int CODE_ERROR = 500;
 	public static int CODE_ERROR_UNEXPECTED = 501;
 	public static int CODE_ERROR_IO = 510;
+	public static int CODE_ERROR_MAX = 599;
 	
 	public void onWarning(SuperviserEvent event);
 
@@ -61,6 +63,14 @@ public interface ComponentSuperviser {
 			this.additionalInfo = additionalInfo;
 		}
 
+		public boolean isWarning() {
+			return eventCode >= CODE_WARNING && eventCode < CODE_WARNING_MAX;
+		}
+
+		public boolean isError() {
+			return eventCode >= CODE_ERROR && eventCode < CODE_ERROR_MAX;
+		}
+		
 		public Object getComponent() {
 			return component;
 		}
@@ -124,4 +134,29 @@ public interface ComponentSuperviser {
 		}
 	}
 	
+	public static abstract class GenericSuperviser implements Superviser {
+
+		@Override
+		public void onWarning(SuperviserEvent event) {
+			report(event);			
+		}
+
+		@Override
+		public void onTermination(SuperviserEvent event) {
+			report(event);
+			onTerminate(event.getComponent());
+		}
+
+		@Override
+		public void onFatalError(SuperviserEvent event) {
+			report(event);			
+			onError(event.getComponent());
+		}
+
+		protected abstract void report(SuperviserEvent event);	
+
+		protected abstract void onTerminate(Object object);	
+
+		protected abstract void onError(Object object);	
+	}
 }

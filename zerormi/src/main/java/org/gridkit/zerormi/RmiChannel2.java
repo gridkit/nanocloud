@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.zerormi.ComponentSuperviser.SuperviserEvent;
+import org.gridkit.zerormi.Superviser.SuperviserEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     private static AtomicLong CALL_COUNTER = new AtomicLong(0L);
 
     private final String name;
-    private final ComponentSuperviser superviser;
+    private final Superviser superviser;
     private final ClassProvider classProvider;
     private final Executor defaultCallDispatcher;
 
@@ -68,7 +68,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 
     private volatile boolean terminated = false;
 
-    public RmiChannel2(String name, ComponentSuperviser superviser, ClassProvider provider, Executor callDispatcher) {
+    public RmiChannel2(String name, Superviser superviser, ClassProvider provider, Executor callDispatcher) {
         this.name = name;
         this.superviser = superviser;
     	this.classProvider = provider;
@@ -85,10 +85,13 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     	}    	
     }
     
-    private synchronized void handleMessage(RemoteMessage message) {
+    private void handleMessage(RemoteMessage message) {
     	
-    	if (terminated) {
-    		throw new IllegalStateException("Terminated [" + name +"]");
+    	synchronized(this) {
+	    	if (terminated) {
+	    		// TODO may add logging
+	    		return;
+	    	}
     	}
     	
         if (message instanceof RemoteCall) {
@@ -117,7 +120,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
         }
     }
 
-    public synchronized void destroy() {
+    public void destroy() {
 
     	synchronized(this) {
 	    	if (terminated) {
@@ -139,8 +142,8 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 	        	}
 	        }
 	        remoteReturnWaiters.clear();
-	        pipe.close();
     	}
+    	superviser.onTermination(SuperviserEvent.newClosedEvent(this));
     }
 
 	private RemoteException newChannelClosedExceptions() {
@@ -274,32 +277,35 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     	return future;
     }
     
-    private synchronized void registerCall(OutboundCallFuture future) {
-    	if (terminated) {
-    		future.setError(newChannelClosedExceptions());
+    private void registerCall(OutboundCallFuture future) {
+    	final long callId;
+    	synchronized(this) {
+	    	if (terminated) {
+	    		future.setError(newChannelClosedExceptions());
+	    		return;
+	    	}
+			callId = future.remoteCall.getCallId();
+	    	remoteReturnWaiters.put(future.remoteCall.getCallId(), future);
     	}
-    	else {
-    		final long callId = future.remoteCall.getCallId();
-    		try {
-    			remoteReturnWaiters.put(future.remoteCall.getCallId(), future);
-				final FutureEx<Void> sendFuture = sendMessage(future.remoteCall);
-				sendFuture.addListener(new Box<Void>() {
+		try {
+			FutureEx<Void> sendFuture;
+			sendFuture = sendMessage(future.remoteCall);
+			sendFuture.addListener(new Box<Void>() {
 
-					@Override
-					public void setData(Void data) {
-						// do nothing
-					}
+				@Override
+				public void setData(Void data) {
+					// do nothing
+				}
 
-					@Override
-					public void setError(Throwable e) {
-						abortCall(callId, e);
-					}
-				});
-			} catch (Exception e) {
-				abortCall(callId, e);
-				return;
-			}
-    	}
+				@Override
+				public void setError(Throwable e) {
+					abortCall(callId, e);
+				}
+			});
+		} catch (Exception e) {
+			abortCall(callId, e);
+			return;
+		}
 	}
 
     private synchronized void abortCall(long callId, Throwable e) {
@@ -307,7 +313,9 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     	if (future == null) {
     		superviser.onFatalError(SuperviserEvent.newUnexpectedError(this, "Call future is missing " + callId));
     	}
-    	future.setError(e);
+    	else {
+    		future.setError(e);
+    	}
     }
     
     private Object getProxyFromRemoteInstance(RemoteInstance remoteInstance) throws IOException {
