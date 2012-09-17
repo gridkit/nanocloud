@@ -5,7 +5,6 @@ import java.util.concurrent.Callable;
 import org.gridkit.vicluster.ViGroup;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.isolate.IsolateViNode;
-import org.gridkit.vicluster.isolate.coherence.CohHelper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,7 +13,7 @@ import com.tangosol.net.CacheFactory;
 import com.tangosol.net.NamedCache;
 
 public class ViClusterSamplesTest {
-	
+		
 	ViGroup cluster;
 	
 	@Test

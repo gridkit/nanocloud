@@ -15,6 +15,8 @@
  */
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -54,6 +56,18 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 	
 	public void setKeyFile(String fileName) {
 		try {
+			File f = new File(fileName);
+			if (!f.exists()) {
+				// Try to lookup files in home directory
+				File home = new File(System.getProperty("user.home"));
+				if (new File(home, fileName).exists()) {
+					try {
+						fileName = new File(home, fileName).getCanonicalPath();
+					} catch (IOException e) {
+						// ignore
+					}
+				}
+			}
 			jsch.addIdentity(fileName);
 		} catch (JSchException e) {
 			throw new IllegalArgumentException(e);

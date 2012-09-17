@@ -26,6 +26,10 @@ public class ViProps {
 	 */
 	public static final String NODE_TYPE = "node:type";
 	
+	public static final String NODE_TYPE_ISOLATE = "isolate";
+	public static final String NODE_TYPE_LOCAL = "local";
+	public static final String NODE_TYPE_REMOTE = "remote";
+	
 	/**
 	 * Name of node.
 	 */

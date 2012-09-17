@@ -34,6 +34,10 @@ public class RemoteNodeProps {
 	 */
 	public static String ACCOUNT = "remote:account";
 
+	public static String PASSWORD = "remote:password";
+
+	public static String SSH_KEY_FILE = "remote:ssh-key-file";
+
 	/**
 	 * Hint, remote path to java executable 
 	 */	

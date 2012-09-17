@@ -72,10 +72,12 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 				throw new IllegalArgumentException("Remote host is not specified");
 			}
 			String account = effectiveConfig.getProp(RemoteNodeProps.ACCOUNT);
+			String password = effectiveConfig.getProp(RemoteNodeProps.PASSWORD);
+			String keyFile = effectiveConfig.getProp(RemoteNodeProps.SSH_KEY_FILE);
 			String javaExec = effectiveConfig.getProp(RemoteNodeProps.JAVA_EXEC);
 			String jarCache = effectiveConfig.getProp(RemoteNodeProps.JAR_CACHE_PATH);
 	
-			String key = host + "|" + account + "|" + javaExec + "|" + jarCache;
+			String key = host + "|" + account + "|" + password + "|" + keyFile + "|" + javaExec + "|" + jarCache;
 			
 			session = sessions.get(key);
 			
@@ -83,6 +85,8 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 				session = new SessionInfo();
 				session.host = host;
 				session.account = account.length() == 0 ? null : account;
+				session.password = password;
+				session.keyFile = keyFile;
 				session.javaExec = javaExec;
 				session.jarCachePath = jarCache;
 				sessions.put(key, session);
@@ -91,7 +95,19 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		
 		synchronized (session) {
 			if (session.session == null) {
-				session.session = new SimpleSshJvmReplicator(session.host, session.account, sshFactory);
+				SshSessionFactory ssh = sshFactory;
+				if (session.password != null || session.keyFile != null) {
+					SimpleSshSessionProvider simpleSsh = new SimpleSshSessionProvider();
+					simpleSsh.setUser(session.account);
+					if (session.password != null) {
+						simpleSsh.setPassword(session.password);
+					}
+					if (session.keyFile != null) {
+						simpleSsh.setKeyFile(session.keyFile);
+					}
+					ssh = simpleSsh;
+				}
+				session.session = new SimpleSshJvmReplicator(session.host, session.account, ssh);
 				try {
 					session.session.setJavaExecPath(session.javaExec);
 					session.session.setAgentHome(session.jarCachePath);
@@ -138,6 +154,8 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 	private static class SessionInfo {
 		String host;
 		String account;
+		String password;
+		String keyFile;
 		String javaExec;
 		String jarCachePath;		
 		SimpleSshJvmReplicator session;
