@@ -3,7 +3,6 @@ package org.gridkit.vicluster.isolate;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
-import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.isolate.Isolate.FutureProxy;
 import org.gridkit.zerormi.DuplexBlobPipe;
 import org.gridkit.zerormi.RmiFactory;

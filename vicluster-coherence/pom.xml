@@ -55,6 +55,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>vicluster-isolate</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.oracle.coherence</groupId>
             <artifactId>coherence</artifactId>
             <!-- 

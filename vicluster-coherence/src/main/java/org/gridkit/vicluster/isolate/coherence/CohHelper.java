@@ -19,24 +19,41 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.Socket;
+import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceAlreadyExistsException;
 import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
+import javax.management.InvalidAttributeValueException;
+import javax.management.ListenerNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerConnection;
 import javax.management.MBeanServerFactory;
+import javax.management.NotCompliantMBeanException;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
+import javax.management.ObjectInstance;
 import javax.management.ObjectName;
+import javax.management.QueryExp;
+import javax.management.ReflectionException;
 
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.isolate.OldIsolate;
-import org.gridkit.vicluster.isolate.IsolateViNode;
 
 import com.tangosol.coherence.component.net.extend.RemoteService;
 import com.tangosol.coherence.component.net.extend.connection.TcpConnection;
@@ -214,7 +231,7 @@ public class CohHelper {
 	
 	private static Object jmxAttribute(ViNode node, ObjectName name, String attribute) {
 		try {
-			MBeanServer mserver = getMBeanServer(node);
+			MBeanServerConnection mserver = getMBeanServer(node);
 			Object bi = mserver.getAttribute(name, attribute);
 			if (bi == null) {
 				return 0;
@@ -287,34 +304,38 @@ public class CohHelper {
 	}
 
 	public static void jmxCloseProxyConnections(ViNode node, String proxyServiceName) {		
-		final MBeanServer server = getMBeanServer(node);
-		int id = jmxMemberId(node);
-		for(final ObjectName name : server.queryNames(null, null)) {
-			if (isConnectionBean(name) && String.valueOf(id).equals(name.getKeyProperty("nodeId"))) {
-				if (!"*".equals(proxyServiceName)) {
-					if (!proxyServiceName.equals(name.getKeyProperty("name"))) {
-						continue;
-					}
-				}
-				// Separate thread is required if we are executing on that connection
-				Thread thread = new Thread() {
-					@Override
-					public void run() {
-						try {
-							server.invoke(name, "closeConnection", new Object[0], new String[0]);
-							System.err.println("Extend conntection closed: " + name);
-						} catch (Exception e) {
-							e.printStackTrace();
+		try {
+			final MBeanServerConnection server = getMBeanServer(node);
+			int id = jmxMemberId(node);
+			for(final ObjectName name : server.queryNames(null, null)) {
+				if (isConnectionBean(name) && String.valueOf(id).equals(name.getKeyProperty("nodeId"))) {
+					if (!"*".equals(proxyServiceName)) {
+						if (!proxyServiceName.equals(name.getKeyProperty("name"))) {
+							continue;
 						}
 					}
-				};
-				thread.start();
-				try {
-					thread.join();
-				} catch (InterruptedException e) {
-					// ignore
+					// Separate thread is required if we are executing on that connection
+					Thread thread = new Thread() {
+						@Override
+						public void run() {
+							try {
+								server.invoke(name, "closeConnection", new Object[0], new String[0]);
+								System.err.println("Extend conntection closed: " + name);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					};
+					thread.start();
+					try {
+						thread.join();
+					} catch (InterruptedException e) {
+						// ignore
+					}
 				}
 			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -323,20 +344,24 @@ public class CohHelper {
 	}
 
 	public static Collection<ObjectName> jmxListProxyConnections(ViNode node, String proxyServiceName) {		
-		final MBeanServer server = getMBeanServer(node);
-		int id = jmxMemberId(node);
-		List<ObjectName> result = new ArrayList<ObjectName>();
-		for(final ObjectName name : server.queryNames(null, null)) {
-			if (isConnectionBean(name) && String.valueOf(id).equals(name.getKeyProperty("nodeId"))) {
-				if (!"*".equals(proxyServiceName)) {
-					if (!proxyServiceName.equals(name.getKeyProperty("name"))) {
-						continue;
+		try {
+			final MBeanServerConnection server = getMBeanServer(node);
+			int id = jmxMemberId(node);
+			List<ObjectName> result = new ArrayList<ObjectName>();
+			for(final ObjectName name : server.queryNames(null, null)) {
+				if (isConnectionBean(name) && String.valueOf(id).equals(name.getKeyProperty("nodeId"))) {
+					if (!"*".equals(proxyServiceName)) {
+						if (!proxyServiceName.equals(name.getKeyProperty("name"))) {
+							continue;
+						}
 					}
+					result.add(name);
 				}
-				result.add(name);
 			}
+			return result;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
-		return result;
 	}
 	
 	private static boolean isConnectionBean(ObjectName name) {
@@ -389,19 +414,39 @@ public class CohHelper {
 	}
 
 	public static void jmxDumpMBeans(ViNode node) {
-		MBeanServer server = getMBeanServer(node);
-		for(ObjectName name : server.queryNames(null, null)) {
-			System.out.println(name);
+		try {
+			MBeanServerConnection server = getMBeanServer(node);
+			for(ObjectName name : server.queryNames(null, null)) {
+				System.out.println(name);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 	
-	private static MBeanServer getMBeanServer(ViNode node) {
+	private static MBeanServerConnection getMBeanServer(ViNode node) {
 		if (node != null) {
 			// cluster connection my take sometime
 			long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(3500);
-			MBeanServer server = null;
-			while(deadline > System.nanoTime()) {			
-				server = (MBeanServer) ((IsolateViNode)node).getIsolate().getGlobal(CohHelper.class, "MBeanServer");
+			MBeanServerConnection server = null;
+			while(deadline > System.nanoTime()) {	
+				
+				try {
+					server = node.submit(new Callable<MBeanServerConnection>() {
+						@Override
+						public MBeanServerConnection call() throws Exception {
+							return IsolateMBeanFinder.MPROXY;
+						}					
+					}).get();
+				} catch (InterruptedException e) {
+					// ignore
+				} catch (ExecutionException e) {
+					if (e.getCause() instanceof RuntimeException) {
+						throw ((RuntimeException)e.getCause());
+					}
+					throw new RuntimeException(e.getCause());
+				}
+				
 				if (server == null) {
 					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
 				}
@@ -423,17 +468,188 @@ public class CohHelper {
 		}
 	}
 	
-	public static class IsolateMBeanFinder implements MBeanServerFinder {
+	static class IsolateMBeanFinder implements MBeanServerFinder {
 
 		static MBeanServer MSERVER = null;
+		static MBeanServerProxy MPROXY = null;
 		
 		@Override
 		public synchronized MBeanServer findMBeanServer(String sDefaultDomain) {
 			if (MSERVER == null) {
 				MSERVER = MBeanServerFactory.newMBeanServer(System.getProperty("isolate.name"));
-				OldIsolate.currentIsolate().setGlobal(CohHelper.class, "MBeanServer", MSERVER);
+				MPROXY = new MBeanServerBridge(MSERVER);
 			}
 			return MSERVER;
 		}
+		
+		public MBeanServerProxy getProxy() {
+			findMBeanServer("");
+			return MPROXY;
+		}
 	}
+	
+	static interface MBeanServerProxy extends MBeanServerConnection, Remote {
+		
+	}
+	
+	static class MBeanServerBridge implements MBeanServerProxy {
+		
+		private final MBeanServerConnection conn;
+
+		public MBeanServerBridge(MBeanServerConnection conn) {
+			this.conn = conn;
+		}
+
+		public ObjectInstance createMBean(String className, ObjectName name)
+				throws ReflectionException, InstanceAlreadyExistsException,
+				MBeanRegistrationException, MBeanException,
+				NotCompliantMBeanException, IOException {
+			return conn.createMBean(className, name);
+		}
+
+		public ObjectInstance createMBean(String className, ObjectName name,
+				ObjectName loaderName) throws ReflectionException,
+				InstanceAlreadyExistsException, MBeanRegistrationException,
+				MBeanException, NotCompliantMBeanException,
+				InstanceNotFoundException, IOException {
+			return conn.createMBean(className, name, loaderName);
+		}
+
+		public ObjectInstance createMBean(String className, ObjectName name,
+				Object[] params, String[] signature)
+				throws ReflectionException, InstanceAlreadyExistsException,
+				MBeanRegistrationException, MBeanException,
+				NotCompliantMBeanException, IOException {
+			return conn.createMBean(className, name, params, signature);
+		}
+
+		public ObjectInstance createMBean(String className, ObjectName name,
+				ObjectName loaderName, Object[] params, String[] signature)
+				throws ReflectionException, InstanceAlreadyExistsException,
+				MBeanRegistrationException, MBeanException,
+				NotCompliantMBeanException, InstanceNotFoundException,
+				IOException {
+			return conn.createMBean(className, name, loaderName, params,
+					signature);
+		}
+
+		public void unregisterMBean(ObjectName name)
+				throws InstanceNotFoundException, MBeanRegistrationException,
+				IOException {
+			conn.unregisterMBean(name);
+		}
+
+		public ObjectInstance getObjectInstance(ObjectName name)
+				throws InstanceNotFoundException, IOException {
+			return conn.getObjectInstance(name);
+		}
+
+		public Set<ObjectInstance> queryMBeans(ObjectName name, QueryExp query)
+				throws IOException {
+			return conn.queryMBeans(name, query);
+		}
+
+		public Set<ObjectName> queryNames(ObjectName name, QueryExp query)
+				throws IOException {
+			return conn.queryNames(name, query);
+		}
+
+		public boolean isRegistered(ObjectName name) throws IOException {
+			return conn.isRegistered(name);
+		}
+
+		public Integer getMBeanCount() throws IOException {
+			return conn.getMBeanCount();
+		}
+
+		public Object getAttribute(ObjectName name, String attribute)
+				throws MBeanException, AttributeNotFoundException,
+				InstanceNotFoundException, ReflectionException, IOException {
+			return conn.getAttribute(name, attribute);
+		}
+
+		public AttributeList getAttributes(ObjectName name, String[] attributes)
+				throws InstanceNotFoundException, ReflectionException,
+				IOException {
+			return conn.getAttributes(name, attributes);
+		}
+
+		public void setAttribute(ObjectName name, Attribute attribute)
+				throws InstanceNotFoundException, AttributeNotFoundException,
+				InvalidAttributeValueException, MBeanException,
+				ReflectionException, IOException {
+			conn.setAttribute(name, attribute);
+		}
+
+		public AttributeList setAttributes(ObjectName name,
+				AttributeList attributes) throws InstanceNotFoundException,
+				ReflectionException, IOException {
+			return conn.setAttributes(name, attributes);
+		}
+
+		public Object invoke(ObjectName name, String operationName,
+				Object[] params, String[] signature)
+				throws InstanceNotFoundException, MBeanException,
+				ReflectionException, IOException {
+			return conn.invoke(name, operationName, params, signature);
+		}
+
+		public String getDefaultDomain() throws IOException {
+			return conn.getDefaultDomain();
+		}
+
+		public String[] getDomains() throws IOException {
+			return conn.getDomains();
+		}
+
+		public void addNotificationListener(ObjectName name,
+				NotificationListener listener, NotificationFilter filter,
+				Object handback) throws InstanceNotFoundException, IOException {
+			conn.addNotificationListener(name, listener, filter, handback);
+		}
+
+		public void addNotificationListener(ObjectName name,
+				ObjectName listener, NotificationFilter filter, Object handback)
+				throws InstanceNotFoundException, IOException {
+			conn.addNotificationListener(name, listener, filter, handback);
+		}
+
+		public void removeNotificationListener(ObjectName name,
+				ObjectName listener) throws InstanceNotFoundException,
+				ListenerNotFoundException, IOException {
+			conn.removeNotificationListener(name, listener);
+		}
+
+		public void removeNotificationListener(ObjectName name,
+				ObjectName listener, NotificationFilter filter, Object handback)
+				throws InstanceNotFoundException, ListenerNotFoundException,
+				IOException {
+			conn.removeNotificationListener(name, listener, filter, handback);
+		}
+
+		public void removeNotificationListener(ObjectName name,
+				NotificationListener listener)
+				throws InstanceNotFoundException, ListenerNotFoundException,
+				IOException {
+			conn.removeNotificationListener(name, listener);
+		}
+
+		public void removeNotificationListener(ObjectName name,
+				NotificationListener listener, NotificationFilter filter,
+				Object handback) throws InstanceNotFoundException,
+				ListenerNotFoundException, IOException {
+			conn.removeNotificationListener(name, listener, filter, handback);
+		}
+
+		public MBeanInfo getMBeanInfo(ObjectName name)
+				throws InstanceNotFoundException, IntrospectionException,
+				ReflectionException, IOException {
+			return conn.getMBeanInfo(name);
+		}
+
+		public boolean isInstanceOf(ObjectName name, String className)
+				throws InstanceNotFoundException, IOException {
+			return conn.isInstanceOf(name, className);
+		}
+	}	
 }

@@ -72,7 +72,7 @@ import org.gridkit.zerormi.RmiGateway;
  */
 public class Isolate implements AdvancedExecutor {
 	
-	static boolean VERBOSE_CLASSES = true;
+	static boolean VERBOSE_CLASSES = false;
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
 	
