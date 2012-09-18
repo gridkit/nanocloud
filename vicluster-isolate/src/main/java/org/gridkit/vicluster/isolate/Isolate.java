@@ -153,6 +153,8 @@ public class Isolate implements AdvancedExecutor {
 	private WrapperPrintStream wrpErr;
 	private Properties sysProps;
 	private int shutdownRetry = 0;
+	
+	private IsolateClassTransformer transformer;
 
 	private List<ThreadKiller> threadKillers = new ArrayList<ThreadKiller>();
 	
@@ -242,6 +244,10 @@ public class Isolate implements AdvancedExecutor {
 
 	public PrintStream getStdErr() {
 		return stdErr;
+	}
+	
+	public void setClassTransformer(IsolateClassTransformer transformer) {
+		this.transformer = transformer;
 	}
 	
 	public void addThreadKiller(ThreadKiller killer) {
@@ -862,10 +868,10 @@ public class Isolate implements AdvancedExecutor {
 						}
 						if (VERBOSE_CLASSES) {
 							if (cl.getClassLoader() == this) {
-								System.out.println("[" + Isolate.this.name + "] " + name + " loaded from isolate");
+								stdOut.println("[" + Isolate.this.name + "] " + name + " loaded from isolate");
 							}
 							else {
-								System.out.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
+								stdOut.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
 							}
 						}
 						return cl;
@@ -876,7 +882,7 @@ public class Isolate implements AdvancedExecutor {
 				new Exception("loading AppContext").printStackTrace();
 			}
 			if (VERBOSE_CLASSES) {
-				System.out.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
+				stdOut.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
 			}
 			Class<?> cc = baseClassloader.loadClass(name);
 			return cc;
@@ -963,11 +969,18 @@ public class Isolate implements AdvancedExecutor {
 			}
 		}
 
-		private Class<?> defineIsolatedClass(String classname, URL url,
-				byte[] cd) throws ClassFormatError {
-			Class<?> cl = defineClass(url, classname, cd);
+		private Class<?> defineIsolatedClass(String classname, URL url, byte[] cd) throws ClassFormatError {
+			if (transformer != null) {
+				@SuppressWarnings("unused") // just for debuging
+				byte[] ocd = cd; 
+				cd = transformer.transform(this, classname, cd); 
+				if (VERBOSE_CLASSES) {
+					stdOut.println(classname + " transformed");
+				}
+			}
+			Class<?> cl = defineClass(url, classname, cd);			
 			if (VERBOSE_CLASSES) {
-				System.out.println("[" + Isolate.this.name + "] " + classname + " loaded in isolate");
+				stdOut.println(classname + " loaded in isolate");
 			}
 			return cl;
 		}
