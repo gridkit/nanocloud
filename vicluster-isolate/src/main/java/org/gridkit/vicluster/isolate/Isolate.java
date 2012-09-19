@@ -246,11 +246,15 @@ public class Isolate implements AdvancedExecutor {
 		return stdErr;
 	}
 	
-	public void setClassTransformer(IsolateClassTransformer transformer) {
+	public synchronized void setClassTransformer(IsolateClassTransformer transformer) {
+		if (this.transformer != null) {
+			throw new IllegalStateException("Transformer is already defined");
+		}
 		this.transformer = transformer;
+		this.transformer.init(this, new TransformerSupport());
 	}
 	
-	public void addThreadKiller(ThreadKiller killer) {
+	public synchronized void addThreadKiller(ThreadKiller killer) {
 		threadKillers.add(killer);
 	}
 	
@@ -854,27 +858,51 @@ public class Isolate implements AdvancedExecutor {
 			baseClassloader.setPackageAssertionStatus(packageName, enabled);
 		}
 
+		Class<?> loadIsolated(String name) throws ClassNotFoundException {
+			if (isExcluded(name)) {
+				throw new ClassNotFoundException("Cannot isolated class " + name);
+			}
+			else {
+				Class<?> cl = findLoadedClass(name);
+				if (cl == null) {
+					if (cl == null) {
+						cl = findClass(name);
+					}
+					if (cl == null) {
+						throw new ClassNotFoundException(name);
+					}
+				}
+				return cl;					
+			}
+		}
+
+		Class<?> loadClassFromBytes(String name, byte[] data) throws ClassNotFoundException {
+			if (isExcluded(name)) {
+				throw new ClassNotFoundException("Cannot isolated class " + name);
+			}
+			else {
+				Class<?> cl = findLoadedClass(name);
+				if (cl == null) {
+					if (cl == null) {
+						cl = defineClass(name, data, 0, data.length);			
+						if (VERBOSE_CLASSES) {
+							stdOut.println(name + " loaded in isolate (from bytes)");
+						}
+					}
+					if (cl == null) {
+						throw new ClassNotFoundException(name);
+					}
+				}
+				return cl;					
+			}
+		}
+		
 		@Override
 		public Class<?> loadClass(String name) throws ClassNotFoundException {
 			if (!isExcluded(name)) {
 				for(String prefix: packages) {
 					if (name.startsWith(prefix + ".")) {
-						Class<?> cl = findLoadedClass(name);
-						if (cl == null) {
-							cl = findClass(name);
-						}
-						if (cl == null) {
-							throw new ClassNotFoundException(name);
-						}
-						if (VERBOSE_CLASSES) {
-							if (cl.getClassLoader() == this) {
-								stdOut.println("[" + Isolate.this.name + "] " + name + " loaded from isolate");
-							}
-							else {
-								stdOut.println("[" + Isolate.this.name + "] " + name + " loaded from parent");
-							}
-						}
-						return cl;
+						return loadIsolated(name);
 					}
 				}
 			}
@@ -915,7 +943,6 @@ public class Isolate implements AdvancedExecutor {
 			}
 		}
 
-		@SuppressWarnings("unused")
 		private byte[] asBytes(InputStream is) {
 			try {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -940,19 +967,7 @@ public class Isolate implements AdvancedExecutor {
 				String path = classname.replace('.', '/').concat(".class");
 				URL url = getResource(path);
 				InputStream res = url.openStream();
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				byte[] buf = new byte[4096];
-				while(true) {
-					int x = res.read(buf);
-					if (x <= 0) {
-						res.close();
-						break;
-					}
-					else {
-						bos.write(buf, 0, x);
-					}
-				}
-				byte[] cd = bos.toByteArray();
+				byte[] cd = asBytes(res);
 				try {					
 					return defineIsolatedClass(classname, url, cd);
 				}
@@ -1019,6 +1034,26 @@ public class Isolate implements AdvancedExecutor {
 		}
 	}
 
+	private class TransformerSupport implements IsolateClassTransformerSupport {
+
+		@Override
+		public Class<?> loadIsolated(String className) throws ClassNotFoundException {
+			return cl.loadIsolated(className);
+		}
+
+		@Override
+		public Class<?> defineIsolated(String className, byte[] classData) throws ClassNotFoundException {			
+			return cl.loadClassFromBytes(className, classData);
+		}
+
+		@Override
+		public boolean isAssignable(String targetClass, String questionClass) {
+			// TODO not implement
+			return targetClass.equals(questionClass);
+		}
+		
+	}
+	
 	private static class AnyThrow {
 
 	    public static void throwUncheked(Throwable e) {
