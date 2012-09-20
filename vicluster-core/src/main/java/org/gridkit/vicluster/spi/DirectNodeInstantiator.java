@@ -1,5 +1,7 @@
 package org.gridkit.vicluster.spi;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
+
 public class DirectNodeInstantiator implements NodeProvider, CloudContextAware, SpiConfigurable {
 
 	private ViCloudContext context;
@@ -22,7 +24,8 @@ public class DirectNodeInstantiator implements NodeProvider, CloudContextAware, 
 		if (node == null) {
 			String epId = config.getLast(ViSpiConsts.EXECUTOR_PROVIDER);
 			ExecutorProvider ep = context.getNamedInstance(epId, ExecutorProvider.class);
-			
+			String execId = ep.configureExecutor(config);
+			AdvancedExecutor exec = 
 			
 		}
 		return node;

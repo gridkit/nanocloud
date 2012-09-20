@@ -6,7 +6,7 @@ public interface CoreNode {
 
 	public AdvancedExecutor getExecutor();
 	
-	
+	public 
 	
 	public void shutdown();
 	
