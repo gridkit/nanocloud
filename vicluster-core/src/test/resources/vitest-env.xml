@@ -1,0 +1,72 @@
+<environment>
+
+    <bean>
+        <activator>
+            <type>ServerPool</type>
+            <name>cluster1</name>
+        </activator>
+        <configuration>
+            <implementation-class>org.gridkit.vicluster.spi.TestServerPool</implementation-class>
+            <host>host1.c1</host>
+            <host>host2.c1</host>
+            <host>host3.c1</host>
+            <host>host4.c1</host>
+        </configuration>
+    </bean>
+
+    <bean>
+        <activator>
+            <type>ServerPool</type>
+            <name>cluster2</name>
+        </activator>
+        <configuration>
+            <implementation-class>org.gridkit.vicluster.spi.TestServerPool</implementation-class>
+        </configuration>
+    </bean>
+    
+    <rule>
+        <condition>
+            <type>SshConnection</type>
+            <label>client</label>
+        </condition>
+        <configuration>
+            <ssh-account>client-user</ssh-account>
+        </configuration>
+    </rule>
+
+    <rule>
+        <condition>
+            <type>SshConnection</type>
+            <or>
+                <label>storage</label>
+                <label>proxy</label>
+            </or>
+        </condition>
+        <configuration>
+            <ssh-account>server-user</ssh-account>
+        </configuration>
+    </rule>
+
+    <rule>
+        <condition>
+            <type>SshConnection</type>
+            <ssh-account>client-user</ssh-account>
+        </condition>
+        <configuration>
+            <ssh-user>ubuntu</ssh-user>
+            <ssh-password>xxx</ssh-password>
+        </configuration>
+    </rule>
+
+    <rule>
+        <condition>
+            <type>SshConnection</type>
+            <ssh-account>server-user</ssh-account>
+        </condition>
+        <configuration>
+            <ssh-user>ubuntu</ssh-user>
+            <ssh-password>yyy</ssh-password>
+        </configuration>
+    </rule>
+
+</environment>
