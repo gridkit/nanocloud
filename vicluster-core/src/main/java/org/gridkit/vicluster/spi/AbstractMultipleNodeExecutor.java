@@ -139,7 +139,6 @@ public abstract class AbstractMultipleNodeExecutor implements ViExecutor {
 	public <T> FutureEx<List<T>> vectorSubmit(Callable<? extends T> task) {
 		return MassExec.vectorFuture(massSubmit(task));
 	}
-
 	
 	private final class VoidCallableWrapper implements Callable<Void> {
 		private final VoidCallable task;

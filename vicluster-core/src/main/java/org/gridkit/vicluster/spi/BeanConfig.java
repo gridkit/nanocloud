@@ -48,50 +48,54 @@ class BeanConfig implements AttrBag {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <V> V getLast(String name) {
-		cloudContext.enter();
-		try {
-			if (scalarProps.containsKey(name)) {
-				Object v = scalarProps.get(name);
-				v = ensureInstantiated(name, v);
-				return (V)v;
+		synchronized (cloudContext) {
+			cloudContext.enter();
+			try {
+				if (scalarProps.containsKey(name)) {
+					Object v = scalarProps.get(name);
+					v = ensureInstantiated(name, v);
+					return (V)v;
+				}
+				else if (listProps.containsKey(name)){
+					Object v = listProps.get(name).get(listProps.size() - 1);
+					v = ensureInstantiated(name, v);
+					return (V)v;
+				}
+				else {
+					return null;
+				}
 			}
-			else if (listProps.containsKey(name)){
-				Object v = listProps.get(name).get(listProps.size() - 1);
-				v = ensureInstantiated(name, v);
-				return (V)v;
+			finally {
+				cloudContext.leave();
 			}
-			else {
-				return null;
-			}
-		}
-		finally {
-			cloudContext.leave();
 		}
 	}
 
 	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public <V> List<V> getAll(String name) {
-		cloudContext.enter();
-		try {
-			if (scalarProps.containsKey(name)) {
-				V v = getLast(name);
-				return Collections.singletonList(v);
-			}
-			else if (listProps.containsKey(name)) {
-				List<Object> list = listProps.get(name);
-				Object[] result = new Object[list.size()];
-				for(int i = result.length - 1; i >= 0; --i) {
-					result[i] = ensureInstantiated(name, list.get(i));
+		synchronized (cloudContext) {
+			cloudContext.enter();
+			try {
+				if (scalarProps.containsKey(name)) {
+					V v = getLast(name);
+					return Collections.singletonList(v);
 				}
-				return (List)Arrays.asList(result);
+				else if (listProps.containsKey(name)) {
+					List<Object> list = listProps.get(name);
+					Object[] result = new Object[list.size()];
+					for(int i = result.length - 1; i >= 0; --i) {
+						result[i] = ensureInstantiated(name, list.get(i));
+					}
+					return (List)Arrays.asList(result);
+				}
+				else {
+					return Collections.emptyList();
+				}
 			}
-			else {
-				return Collections.emptyList();
+			finally {
+				cloudContext.leave();
 			}
-		}
-		finally {
-			cloudContext.leave();
 		}
 	}
 

@@ -50,6 +50,7 @@
         <module>zerormi</module>
         <module>telecontrol</module>
         <module>telecontrol-ssh</module>
+        <module>nanocloud</module>
     </modules>
 
     <dependencyManagement>

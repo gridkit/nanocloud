@@ -15,8 +15,6 @@
  */
 package org.gridkit.vicluster;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 
 
@@ -25,11 +23,11 @@ import java.util.Set;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
-public interface ViNode extends ViExecutor {
+public interface ViNode extends ViExecutor, ViUserPropEnabled {
 
-	public Set<String> labels();
+	public void label(String label);
 	
-	public Map<String, Object> userProps();
+	public Set<String> labels();
 	
 	public void shutdown();
 	

@@ -35,6 +35,28 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SensibleTaskService implements TaskService.Component {
 
 	static boolean TRACE = false;
+
+	private static class Shared {
+		static TaskService INSTANCE = new SensibleTaskService(new DefaultConfig("SharedTaskService") {
+
+			@Override
+			public ThreadFactory getThreadFactory() {
+				return new ThreadFactory() {
+					
+					@Override
+					public Thread newThread(Runnable r) {
+						Thread thread = new Thread(r);
+						thread.setDaemon(true);
+						return thread;
+					}
+				};
+			}
+		});
+	}
+	
+	public static TaskService getShareInstance() {
+		return Shared.INSTANCE;
+	}
 	
 	private static long TIME_ANCHOR = System.nanoTime();
 	private static long EON = TimeUnit.DAYS.toNanos(1);

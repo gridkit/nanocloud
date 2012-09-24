@@ -3,6 +3,8 @@ package org.gridkit.vicluster.spi;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.gridkit.vicluster.spi.RuleBuilder.GenericRuleS2;
+
 public class RuleBuilder {
 	
 	public static StartRules startRules() {
@@ -68,6 +70,8 @@ public class RuleBuilder {
 	}
 
 	public interface GenericRuleS2 {		
+		GenericRuleS2 matchName(String name);
+		GenericRuleS2 name(String name);
 		GenericRuleS2 label(String label);
 		GenericRuleS2 type(String type);		
 		GenericRuleS2 type(Class<?> type);		
@@ -89,8 +93,12 @@ public class RuleBuilder {
 		
 		private List<Selector> conditions = new ArrayList<Selector>();
 		private List<ConfigRuleAction> actions = new ArrayList<ConfigRuleAction>();
+		private boolean completed;
 		
 		public void doApply(CloudContext context) {
+			if (!completed) {
+				throw new IllegalStateException("Rule is not complete");
+			}
 			ConfigRule rule = new ConfigRule(Selectors.allOf(conditions), actions);
 			context.addRule(rule);			
 		}
@@ -148,6 +156,7 @@ public class RuleBuilder {
 		}
 
 		public BeanRule beanRuleS3() {
+			completed = true;
 			return new BeanRule() {
 
 				@Override
@@ -183,6 +192,18 @@ public class RuleBuilder {
 			return new GenericRuleS2() {
 
 				@Override
+				public GenericRuleS2 matchName(String name) {
+					conditions.add(Selectors.match(AttrBag.NAME, GlobHelper.translate(name, ".").pattern()));
+					return this;
+				}
+
+				@Override
+				public GenericRuleS2 name(String name) {
+					conditions.add(Selectors.is(AttrBag.NAME, name));
+					return this;
+				}
+
+				@Override
 				public GenericRuleS2 label(String label) {
 					conditions.add(Selectors.has(AttrBag.LABEL, label));
 					return this;
@@ -213,6 +234,7 @@ public class RuleBuilder {
 		}
 
 		public GenericRule genericRuleS3() {
+			completed = true;
 			return new GenericRule() {
 
 				@Override
@@ -239,7 +261,7 @@ public class RuleBuilder {
 				}
 
 				@Override
-				public Rule instantiator(SpiFactory instantiator) {
+				public Rule instantiator(SpiFactory instantiator) {					
 					return a(AttrBag.INSTANCE, instantiator);
 				}
 			};

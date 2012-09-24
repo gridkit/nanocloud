@@ -11,15 +11,25 @@ class ViExecutorExtetion implements ViCloudExtention<ViExecutor> {
 	public Class<ViExecutor> getFacadeInterface() {
 		return ViExecutor.class;
 	}
+	
+	@Override
+	public Class<?>[] getHidenInterfaces() {
+		return new Class[0];
+	}
 
 	@Override
-	public LazyMode modeForMethod(Method m) {
+	public DeferingMode deferingModeForMethod(Method m) {
 		if (m.getName().equals("exec") || m.getName().equals("massExec")) {
-			return LazyMode.SPI_REQUIRED;
+			return DeferingMode.SPI_REQUIRED;
 		}
 		else {
-			return LazyMode.SMART_DEFERABLE;
+			return DeferingMode.SMART_DEFERABLE;
 		}
+	}
+
+	@Override
+	public GroupCallMode groupModeForMethod(Method m) {
+		return GroupCallMode.BY_IMPLEMENTATION;
 	}
 
 	@Override
@@ -33,7 +43,7 @@ class ViExecutorExtetion implements ViCloudExtention<ViExecutor> {
 	}
 
 	@Override
-	public ViExecutor wrapMultiple(DynNode[] nodes) {
+	public ViExecutor wrapMultiple(NodeCallProxy group, DynNode[] nodes) {
 		ViNodeSpi[] coreNodes = new ViNodeSpi[nodes.length];
 		for(int i = 0; i != nodes.length; ++i) {
 			coreNodes[i] = nodes[i].getCoreNode();

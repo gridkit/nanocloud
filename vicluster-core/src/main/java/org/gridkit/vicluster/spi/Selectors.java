@@ -60,8 +60,8 @@ public class Selectors {
 		return new Or(s);
 	}
 
-	public static Selector match(String name, String glob) {
-		return new RegexLast(name, GlobHelper.translate(glob, "."));
+	public static Selector match(String name, String regex) {
+		return new RegexLast(name, Pattern.compile(regex));
 	}
 	
 	private static class Not implements Selector {

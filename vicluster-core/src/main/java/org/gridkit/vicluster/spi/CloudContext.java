@@ -31,11 +31,11 @@ class CloudContext implements ViCloudContext {
 		
 	}
 	
-	public void enter() {
+	void enter() {
 		++entryCount;
 	}
 
-	public void leave() {
+	void leave() {
 		--entryCount;		
 		while (entryCount == 0 && !deferedQueue.isEmpty()) {
 			++entryCount;
@@ -62,11 +62,11 @@ class CloudContext implements ViCloudContext {
 		deferedQueue.add(new DeferedInit(config, obj));		
 	}
 
-	public void addRule(ConfigRule rule) {
+	public synchronized void addRule(ConfigRule rule) {
 		rules.add(0, rule);		
 	}
 	
-	public <V> V getNamedInstance(String name, Class<V> type) {
+	public synchronized <V> V getNamedInstance(String name, Class<V> type) {
 		if (name == null) {
 			throw new NullPointerException("name should not be null");
 		}
@@ -78,7 +78,7 @@ class CloudContext implements ViCloudContext {
 		return type.cast(obj);
 	}
 	
-	public <V> V ensureNamedInstance(String name, Class<V> type) {
+	public synchronized <V> V ensureNamedInstance(String name, Class<V> type) {
 		AttrList proto = new AttrList();
 		proto.add(AttrBag.NAME, name);
 		proto.add(AttrBag.TYPE, type.getName());
@@ -89,7 +89,7 @@ class CloudContext implements ViCloudContext {
 	}
 	
 	@Override
-	public AttrBag getResource(String id) {
+	public synchronized AttrBag getResource(String id) {
 		List<AttrBag> beans = selectResources(Selectors.id(id));
 		if (beans.isEmpty()) {
 			return null;
@@ -103,7 +103,7 @@ class CloudContext implements ViCloudContext {
 	}
 
 	@Override
-	public AttrBag getResource(String name, String type) {
+	public synchronized AttrBag getResource(String name, String type) {
 		List<AttrBag> beans = selectResources(Selectors.name(name, type));	
 		if (beans.isEmpty()) {
 			return null;
@@ -118,17 +118,17 @@ class CloudContext implements ViCloudContext {
 
 	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public List<AttrBag> selectResources(Selector s) {
+	public synchronized List<AttrBag> selectResources(Selector s) {
 		return (List)select(finalConfig, s);
 	}
 
 	@Override
-	public AttrBag ensureResource(Iterable<Entry<String, Object>> prototype) {
+	public synchronized AttrBag ensureResource(Iterable<Entry<String, Object>> prototype) {
 		return ensureResource(Selectors.matchAll(prototype), prototype);
 	}
 	
 	@Override
-	public AttrBag ensureResource(Selector s, Iterable<Entry<String, Object>> prototype) {
+	public synchronized AttrBag ensureResource(Selector s, Iterable<Entry<String, Object>> prototype) {
 		enter();
 		try {
 			List<AttrBag> beans = selectResources(s);
@@ -157,7 +157,7 @@ class CloudContext implements ViCloudContext {
 	}
 
 	@Override
-	public void destroyResources(Selector selector) {
+	public synchronized void destroyResources(Selector selector) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException();
 	}
