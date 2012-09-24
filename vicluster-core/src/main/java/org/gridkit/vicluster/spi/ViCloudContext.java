@@ -6,6 +6,8 @@ import java.util.Map;
 public interface ViCloudContext {
 
 	public <V> V getNamedInstance(String name, Class<V> type);
+
+	public <V> V ensureNamedInstance(String name, Class<V> type);
 	
 	public AttrBag getResource(String id);
 
@@ -16,5 +18,7 @@ public interface ViCloudContext {
 	public AttrBag ensureResource(Iterable<Map.Entry<String, Object>> defaultValue);
 
 	public AttrBag ensureResource(Selector s, Iterable<Map.Entry<String, Object>> defaultValue);
+	
+	public void destroyResources(Selector selector);
 
 }

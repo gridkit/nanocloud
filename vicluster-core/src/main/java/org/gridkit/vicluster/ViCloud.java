@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.gridkit.util.concurrent.BlockingBarrier;
 import org.gridkit.util.concurrent.LatchBarrier;
+import org.gridkit.vicluster.spi.ViCloudContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class ViManager implements ViNodeSet {
+public class ViCloud<V extends ViNode> implements ViNodeSet<V> {
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(ViNodeSet.class);
 	
@@ -47,14 +48,14 @@ public class ViManager implements ViNodeSet {
 	private Map<String, ManagedNode> deadNodes = new TreeMap<String, ManagedNode>();
 	private Map<String, NodeSelector> dynamicSelectors = new LinkedHashMap<String, NodeSelector>();
 	
-	private ViNodeProvider provider;
+	private ViCloudContext context;
 	private ExecutorService asyncInitThreads;
 	
-	public ViManager(ViNodeProvider provider) {
+	public ViCloud(ViNodeProvider provider) {
 		this(provider, 16);
 	}
 
-	public ViManager(ViNodeProvider provider, int deferedTaskLimit) {
+	public ViCloud(ViNodeProvider provider, int deferedTaskLimit) {
 		this.provider = provider;
 		if (deferedTaskLimit == 0) {
 			asyncInitThreads = Executors.newSingleThreadExecutor();
@@ -303,7 +304,7 @@ public class ViManager implements ViNodeSet {
 				}
 				
 				terminated = true;
-				ViManager.this.markAsDead(this);
+				ViCloud.this.markAsDead(this);
 			}
 		}
 
@@ -483,7 +484,7 @@ public class ViManager implements ViNodeSet {
 		
 		@Override
 		public void setProp(String propName, String value) {
-			synchronized(ViManager.this) { 
+			synchronized(ViCloud.this) { 
 				config.setProp(propName, value);
 				select().setProp(propName, value);
 			}
@@ -491,7 +492,7 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void setProps(Map<String, String> props) {
-			synchronized(ViManager.this) { 
+			synchronized(ViCloud.this) { 
 				config.setProps(props);
 				select().setProps(props);
 			}
@@ -499,7 +500,7 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
-			synchronized(ViManager.this) { 
+			synchronized(ViCloud.this) { 
 				config.addStartupHook(name, hook, override);
 				select().addStartupHook(name, hook, override);
 			}
@@ -507,7 +508,7 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			synchronized(ViManager.this) { 
+			synchronized(ViCloud.this) { 
 				config.addShutdownHook(name, hook, override);
 				select().addShutdownHook(name, hook, override);
 			}

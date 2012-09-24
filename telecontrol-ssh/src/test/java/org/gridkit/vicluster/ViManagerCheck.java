@@ -20,9 +20,9 @@ import org.junit.Test;
 public class ViManagerCheck {
 
 	
-	private ViManager manager = createViManager();
+	private ViCloud manager = createViManager();
 	
-	public ViManager createViManager() {
+	public ViCloud createViManager() {
 		CompositeViNodeProvider provider = new CompositeViNodeProvider();
 		
 		ViNodeProvider isolateProvider = new IsolateViNodeProvider();
@@ -55,7 +55,7 @@ public class ViManagerCheck {
 		localSelector.put(ViProps.NODE_TYPE, "ssh-clone-jvm");
 		provider.addProvider(sshSelector, sshProvider);
 		
-		return new ViManager(provider);
+		return new ViCloud(provider);
 	}
 	
 	@After

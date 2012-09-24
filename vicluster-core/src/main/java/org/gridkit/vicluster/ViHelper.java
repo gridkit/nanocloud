@@ -7,7 +7,7 @@ import java.util.Properties;
 
 public class ViHelper {
 	
-	public static void configure(ViManager manager, String filename) throws IOException {
+	public static void configure(ViCloud manager, String filename) throws IOException {
 		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
 		if (is == null) {
 			is = new FileInputStream(filename);
@@ -16,7 +16,7 @@ public class ViHelper {
 	}
 
 	@SuppressWarnings("serial")
-	public static void configure(final ViManager manager, InputStream reader) throws IOException {
+	public static void configure(final ViCloud manager, InputStream reader) throws IOException {
 		new Properties() {
 			@Override
 			public  Object put(Object key, Object value) {

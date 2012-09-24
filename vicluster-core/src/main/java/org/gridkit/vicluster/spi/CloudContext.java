@@ -11,6 +11,8 @@ import java.util.Set;
 
 class CloudContext implements ViCloudContext {
 
+	static boolean TRACE = true;
+	
 	private Collection<BeanConfig> finalConfig = new HashSet<BeanConfig>();
 	
 	private Map<String, Index> indexes = new HashMap<String, Index>();
@@ -23,7 +25,7 @@ class CloudContext implements ViCloudContext {
 	
 	// TODO Not thread safe !!!
 	private int entryCount;
-	private List<Defered> deferedQueue = new ArrayList<Defered>();
+	private List<DeferedInit> deferedQueue = new ArrayList<DeferedInit>();
 	
 	CloudContext() {
 		
@@ -38,7 +40,7 @@ class CloudContext implements ViCloudContext {
 		while (entryCount == 0 && !deferedQueue.isEmpty()) {
 			++entryCount;
 			try {
-				Defered d = deferedQueue.remove(deferedQueue.size() - 1);
+				DeferedInit d = deferedQueue.remove(deferedQueue.size() - 1);
 				init(d.config, d.obj);
 			}
 			finally {
@@ -57,16 +59,33 @@ class CloudContext implements ViCloudContext {
 	}
 
 	void addToInitQueue(BeanConfig config, Object obj) {
-		deferedQueue.add(new Defered(config, obj));		
+		deferedQueue.add(new DeferedInit(config, obj));		
 	}
 
 	public void addRule(ConfigRule rule) {
-		rules.add(rule);		
+		rules.add(0, rule);		
 	}
 	
 	public <V> V getNamedInstance(String name, Class<V> type) {
-		Object obj = getResource(name, type.getName());
+		if (name == null) {
+			throw new NullPointerException("name should not be null");
+		}
+		AttrBag bean = getResource(name, type.getName());
+		Object obj = bean.getLast(AttrBag.INSTANCE);
+		if (obj instanceof Defered) {
+			obj = ((Defered)obj).getInstance();
+		}
 		return type.cast(obj);
+	}
+	
+	public <V> V ensureNamedInstance(String name, Class<V> type) {
+		AttrList proto = new AttrList();
+		proto.add(AttrBag.NAME, name);
+		proto.add(AttrBag.TYPE, type.getName());
+		
+		ensureResource(Selectors.matchAll(proto), proto);
+		
+		return getNamedInstance(name, type);
 	}
 	
 	@Override
@@ -137,6 +156,12 @@ class CloudContext implements ViCloudContext {
 		}
 	}
 
+	@Override
+	public void destroyResources(Selector selector) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException();
+	}
+
 	private List<BeanConfig> select(Iterable<BeanConfig> beans, Selector s) {
 		List<BeanConfig> result = new ArrayList<BeanConfig>();
 		for(BeanConfig bean : beans) {
@@ -150,6 +175,10 @@ class CloudContext implements ViCloudContext {
 	private void fireRules(BeanConfig config, List<ConfigRule> rules) {
 		Set<ConfigRule> doneList = new HashSet<ConfigRule>();
 	
+		if (TRACE) {
+			System.out.println("Apply rules: " + config);
+		}
+		
 		applyAllRules:
 		while(true) {
 			for(ConfigRule rule: rules) {
@@ -159,6 +188,7 @@ class CloudContext implements ViCloudContext {
 				if (rule.match(config)) {
 					doneList.add(rule);
 					rule.fire(config);
+					System.out.println("  matched - " + config);
 					continue applyAllRules;
 				}
 			}
@@ -172,12 +202,12 @@ class CloudContext implements ViCloudContext {
 		
 	}
 	
-	private static class Defered {
+	private static class DeferedInit {
 		
 		BeanConfig config;
 		Object obj;
 
-		public Defered(BeanConfig config, Object obj) {
+		public DeferedInit(BeanConfig config, Object obj) {
 			this.config = config;
 			this.obj = obj;
 		}

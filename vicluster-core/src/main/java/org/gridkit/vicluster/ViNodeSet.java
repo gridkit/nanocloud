@@ -21,7 +21,7 @@ import java.util.Collection;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ViNodeSet {
+public interface ViNodeSet<V extends ViNode> {
 
 	/**
 	 * Return node by name (or group of nodes for pattern).

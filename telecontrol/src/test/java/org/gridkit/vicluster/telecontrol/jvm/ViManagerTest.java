@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 import junit.framework.Assert;
 
 import org.gridkit.vicluster.CompositeViNodeProvider;
-import org.gridkit.vicluster.ViManager;
+import org.gridkit.vicluster.ViCloud;
 import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
@@ -22,9 +22,9 @@ import org.junit.Test;
 
 public class ViManagerTest {
 	
-	private ViManager manager = createViManager();
+	private ViCloud manager = createViManager();
 	
-	public ViManager createViManager() {
+	public ViCloud createViManager() {
 		CompositeViNodeProvider provider = new CompositeViNodeProvider();
 		
 		ViNodeProvider isolateProvider = new IsolateViNodeProvider();
@@ -37,7 +37,7 @@ public class ViManagerTest {
 		localSelector.put(ViProps.NODE_TYPE, "clone-jvm");
 		provider.addProvider(localSelector, localProvider);
 		
-		return new ViManager(provider);
+		return new ViCloud(provider);
 	}
 	
 	@After

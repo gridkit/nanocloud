@@ -15,19 +15,21 @@
  */
 package org.gridkit.vicluster;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
-public interface ViNode extends ViExecutor, ViConfigurable {
+public interface ViNode extends ViExecutor {
 
-	public String getProp(String propName);
+	public Set<String> labels();
 	
-	public void suspend();
-	
-	public void resume();
+	public Map<String, Object> userProps();
 	
 	public void shutdown();
 	

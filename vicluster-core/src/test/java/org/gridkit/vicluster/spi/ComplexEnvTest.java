@@ -17,43 +17,81 @@ public class ComplexEnvTest implements ViSpiConsts {
 	@Before
 	public void initContext() {
 		cloud = new CloudContext();
-		{
-			// default provider rule
-			Selector s1 = Selectors.isNotSet(NODE_PROVIDER);
-			Selector s2 = Selectors.is(TYPE, NODE_TYPE);
-			Selector s3 = Selectors.allOf(s1, s2);
+		RuleBuilder.startRules()
+		.rule()
+			.condition()
+			.defaultValue()
+				.instantiator(new ReflectionInstantiator())
+			.apply(cloud)
+		
+		.rule()
+			.condition()
+				.type(ViNodeSpi.class)
+			.defaultValue()
+				.instantiator(new DefaultNodeInstantiator())
+			.apply(cloud)
+		
+		.rule()
+			.condition()
+				.type(ViNodeSpi.class)
+			.defaultValue()
+				.a(EXECUTOR_PROVIDER, "default")
+			.apply(cloud)
 			
-			Set action = new ConfigRuleAction.Set(NODE_PROVIDER, "default");
-			
-			cloud.addRule(new ConfigRule(s3, action));
-		}
-		{
-			Selector s1 = Selectors.isNotSet(PROVIDER);
-
-			Set action = new ConfigRuleAction.Set(PROVIDER, new ReflectionInstantiator());
-
-			cloud.addRule(new ConfigRule(s1, action));
-		}
-		{
-			Selector s1 = Selectors.isNotSet(IMPL_CLASS);
-			
-			Set action = new ConfigRuleAction.Set(IMPL_CLASS, TestNodeProvider.class.getName());
-			
-			cloud.addRule(new ConfigRule(s1, action));
-		}
+		.prototype()
+			.activation()
+				.name("default")
+				.type(ExecutorProvider.class)
+			.configuration()
+				.implementationClass(ThreadPoolExecutorProvider.class)
+			.apply(cloud);				
 	}
 	
-	
+
+	private void setDefaultInstantiator() {
+		Selector s1 = Selectors.isNotSet(INSTANCE);
+		Set action = new ConfigRuleAction.Set(INSTANCE, new ReflectionInstantiator());
+		cloud.addRule(new ConfigRule(s1, action));
+	}
+
+	private void setDefaultViNodeInstantiator() {
+		// default provider rule
+		Selector s1 = Selectors.isNotSet(INSTANCE);
+		Selector s2 = Selectors.is(TYPE, NODE_TYPE);
+		Selector s3 = Selectors.allOf(s1, s2);
+		Set action = new ConfigRuleAction.Set(INSTANCE, new DefaultNodeInstantiator());
+		cloud.addRule(new ConfigRule(s3, action));
+	}
+
+	private void setDefaultExecutorForNodes() {
+		// default provider rule
+		Selector s1 = Selectors.isNotSet(EXECUTOR_PROVIDER);
+		Selector s2 = Selectors.is(TYPE, NODE_TYPE);
+		Selector s3 = Selectors.allOf(s1, s2);
+		Set action = new ConfigRuleAction.Set(EXECUTOR_PROVIDER, "default");
+		cloud.addRule(new ConfigRule(s3, action));
+	}
+
+	private void setDefaultExecutorProvider() {
+		Selector s1 = Selectors.isNotSet(INSTANCE);
+		Selector s2 = Selectors.is(TYPE, EXECUTOR_PROVIDER_TYPE);
+		Selector s3 = Selectors.allOf(s1, s2);
+		Set action = new Set(IMPL_CLASS, ThreadPoolExecutorProvider.class.getName());		
+		cloud.addRule(new ConfigRule(s3, action));
+	}
+
 	@Test
 	public void verify_configuration() {
 		
 		AttrList proto = new AttrList();
 		proto.add(TYPE, NODE_TYPE);
-		proto.add(ID, "node.x");
+		proto.add(NAME, "node.x");
 		
 		AttrBag bean = cloud.ensureResource(proto);
+
+		ViNodeSpi x = cloud.getNamedInstance("node.x", ViNodeSpi.class);
 		
-		Assert.assertEquals("default", bean.getLast(PROVIDER));
+		
 		
 	}
 	

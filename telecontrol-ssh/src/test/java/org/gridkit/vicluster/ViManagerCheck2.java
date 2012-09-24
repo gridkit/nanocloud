@@ -16,14 +16,14 @@ import org.junit.Test;
 public class ViManagerCheck2 {
 
 	
-	private ViManager manager;
+	private ViCloud manager;
 	
 	@Before
 	public void createViManager() throws IOException {
 		
 		ConfigurableCloud cloud = new ConfigurableCloud();
 		
-		manager = new ViManager(cloud);		
+		manager = new ViCloud(cloud);		
 		ViHelper.configure(manager, "cloud-check.prop");
 	}
 	

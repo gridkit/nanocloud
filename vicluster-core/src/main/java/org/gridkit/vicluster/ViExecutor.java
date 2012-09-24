@@ -19,11 +19,14 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.util.concurrent.FutureEx;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ViExecutor {
+public interface ViExecutor extends AdvancedExecutor {
 
 	public void exec(Runnable task);
 	
@@ -31,11 +34,11 @@ public interface ViExecutor {
 
 	public <T> T exec(Callable<T> task);
 	
-	public Future<Void> submit(Runnable task);
+	public FutureEx<Void> submit(Runnable task);
 	
-	public Future<Void> submit(VoidCallable task);
+	public FutureEx<Void> submit(VoidCallable task);
 	
-	public <T> Future<T> submit(Callable<T> task);	
+	public <T> FutureEx<T> submit(Callable<T> task);	
 
 	// Mass operations
 
@@ -46,9 +49,11 @@ public interface ViExecutor {
 	 */
 	public <T> List<T> massExec(Callable<? extends T> task);
 	
-	public List<Future<Void>> massSubmit(Runnable task);
+	public List<FutureEx<Void>> massSubmit(Runnable task);
 	
-	public List<Future<Void>> massSubmit(VoidCallable task);
+	public List<FutureEx<Void>> massSubmit(VoidCallable task);
 	
-	public <T> List<Future<T>> massSubmit(Callable<? extends T> task);
+	public <T> List<FutureEx<T>> massSubmit(Callable<? extends T> task);
+	
+	public <T> FutureEx<List<T>> vectorSubmit(Callable<? extends T> task);
 }

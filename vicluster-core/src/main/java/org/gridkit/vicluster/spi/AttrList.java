@@ -1,6 +1,8 @@
 package org.gridkit.vicluster.spi;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,26 @@ public class AttrList implements Iterable<Map.Entry<String, Object>> {
 	public void addAll(Iterable<Entry<String, Object>> source) {
 		for(Entry<String, Object> e: source) {
 			add(e.getKey(), e.getValue());
+		}
+	}
+
+	public void addAll(AttrBag bag, String... props) {
+		for(String prop: props) {
+			List<Object> values = new ArrayList<Object>(bag.getAll(prop));
+			Collections.reverse(values);
+			for(Object value: values) {
+				add(prop, value);
+			}
+		}
+	}
+
+	public void addAll(AttrBag bag, Collection<String> props) {
+		for(String prop: props) {
+			List<Object> values = new ArrayList<Object>(bag.getAll(prop));
+			Collections.reverse(values);
+			for(Object value: values) {
+				add(prop, value);
+			}
 		}
 	}
 	

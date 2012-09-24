@@ -9,6 +9,7 @@ public interface AttrBag {
 	public final static String TYPE = "type";
 	public final static String LABEL = "label";
 	public final static String INSTANCE = "instance";
+	public final static String CLEANER = "cleaner";
 		
 	public <V> V getInstance(Class<V> type);
 	

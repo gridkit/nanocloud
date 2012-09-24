@@ -12,4 +12,9 @@ public interface AdvancedExecutor extends Executor {
 
 	public <V> FutureEx<V> submit(Callable<V> task);
 	
+	public interface Component extends AdvancedExecutor {
+		
+		public void shutdown();
+		
+	}	
 }

@@ -27,13 +27,13 @@ class BeanConfig implements AttrBag {
 	void addEntry(String name, Object v) {
 		history.add(Named.make(name, v));
 		if (listProps.containsKey(name)) {
-			listProps.get(name).add(0, v);
+			listProps.get(name).add(v);
 		}
 		else if (scalarProps.containsKey(name)) {
 			Object v0 = scalarProps.remove(name);
 			List<Object> list = new ArrayList<Object>();
-			list.add(v);
 			list.add(v0);
+			list.add(v);
 			listProps.put(name, list);
 		}
 		else {
@@ -56,7 +56,7 @@ class BeanConfig implements AttrBag {
 				return (V)v;
 			}
 			else if (listProps.containsKey(name)){
-				Object v = listProps.get(name).get(0);
+				Object v = listProps.get(name).get(listProps.size() - 1);
 				v = ensureInstantiated(name, v);
 				return (V)v;
 			}
@@ -81,7 +81,7 @@ class BeanConfig implements AttrBag {
 			else if (listProps.containsKey(name)) {
 				List<Object> list = listProps.get(name);
 				Object[] result = new Object[list.size()];
-				for(int i = 0; i != result.length; ++i) {
+				for(int i = result.length - 1; i >= 0; --i) {
 					result[i] = ensureInstantiated(name, list.get(i));
 				}
 				return (List)Arrays.asList(result);
@@ -130,7 +130,7 @@ class BeanConfig implements AttrBag {
 		}
 		else {
 			List<Object> list = listProps.get(name);
-			for(int i = 0; i != list.size(); ++i) {
+			for(int i = list.size() - 1; i >= 0; --i) {
 				if (list.get(i) == oldV) {
 					list.set(i, newV);
 					break;
@@ -146,7 +146,7 @@ class BeanConfig implements AttrBag {
 				sb.append('|');
 			}
 			if (n.getValue() instanceof SpiFactory) {
-				sb.append(n.getKey()).append("=<lazy>");
+				sb.append(n.getKey()).append("=<lazy|" + n.getValue().getClass().getSimpleName() + ">");
 			}
 			else {
 				sb.append(n.getKey()).append("=").append(n.getValue());
