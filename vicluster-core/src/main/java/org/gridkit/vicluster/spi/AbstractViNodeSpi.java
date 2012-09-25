@@ -14,8 +14,22 @@ public abstract class AbstractViNodeSpi implements ViNodeSpi {
 	protected boolean terminated;
 	
 	@Override
+	public <V> V adapt(Class<V> type) {
+		if (type.isInstance(this)) {
+			return type.cast(this);
+		}
+		else {
+			return null;
+		}
+	}
+
+	@Override
 	public boolean isActive() {
 		return terminating;
+	}
+	
+	protected void postInit(AttrBag config) {
+		// TODO
 	}
 	
 	@Override
@@ -53,13 +67,13 @@ public abstract class AbstractViNodeSpi implements ViNodeSpi {
 		}
 		if (preShutdownListeners != null) {
 			for(ViNodeAction action: preShutdownListeners) {
-				action.onEvent(this);
+				action.apply(this);
 			}
 		}
 		destroy();
 		if (postShutdownListeners != null) {
 			for(ViNodeAction action: postShutdownListeners) {
-				action.onEvent(this);
+				action.apply(this);
 			}
 		}
 	}

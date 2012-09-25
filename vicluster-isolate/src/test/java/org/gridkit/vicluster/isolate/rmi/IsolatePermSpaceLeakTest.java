@@ -6,28 +6,44 @@ import java.lang.management.MemoryPoolMXBean;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViCloud;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateViNode;
+import org.gridkit.vicluster.spi.IsolateFactory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class IsolatePermSpaceLeakTest {
 
+	ViCloud<IsolateViNode>  cloud;
+	
+	@Before 
+	public void initCloud() {
+		cloud = IsolateFactory.createIsolateCloud();
+		cloud.byName("**").isolation().includePackage("org.gridkit");
+	}
+	
+	@After
+	public void dropCloud() {
+		cloud.shutdown();
+	}
+	
 	@Test
 	public void test_permanent_leak() {
 
 		// 100 is a bit too short, but test should not take forever
 		int interations = 500;
 		for(int i = 0; i != interations; ++i) {
-			ViNode node = new IsolateViNode("node-" + i);
-			IsolateViNode.includePackage(node, "org.gridkit");
+			IsolateViNode node = cloud.node("node-" + i);
+			node.isolation().includePackage("org.gridkit");
 			// loading XML library to an isolate to put some stress on perm gen
-			IsolateViNode.includePackage(node, "org.w3c");
-			IsolateViNode.includePackage(node, "javax.xml");
-			IsolateViNode.includePackage(node, "com.sun.org.apache.xerces");
-			IsolateViNode.includePackage(node, "com.sun.xml");
+			node.isolation().includePackage("org.w3c");
+			node.isolation().includePackage("javax.xml");
+			node.isolation().includePackage("com.sun.org.apache.xerces");
+			node.isolation().includePackage("com.sun.xml");
 			
 			node.exec(new VoidCallable() {
 				@Override
@@ -56,6 +72,5 @@ public class IsolatePermSpaceLeakTest {
 				}
 			}
 		}
-	}
-	
+	}	
 }

@@ -10,33 +10,40 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import org.gridkit.vicluster.ViGroup;
-import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViCloud;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateViNode;
+import org.gridkit.vicluster.spi.IsolateFactory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class RmiIsolationTest {
 
-	ViGroup hosts = new ViGroup();
+	ViCloud<IsolateViNode>  cloud;
 	
-	private IsolateViNode createIsolateViHost(String name) {
-		IsolateViNode viHost = new IsolateViNode(name);
-		hosts.addNode(viHost);
-		return viHost;
+	@Before 
+	public void initCloud() {
+		cloud = IsolateFactory.createIsolateCloud();
+		cloud.byName("**").isolation().includePackage("org.gridkit");
 	}
-
+	
+	@After
+	public void dropCloud() {
+		cloud.shutdown();
+	}
+	
 	/**
 	 * Verifies that RMI will use correct context class loader for deserializing requests.
 	 */
 	@Test
 	public void verify_isolate_connectivity() {
 		
-		ViNode node1 = createIsolateViHost("node1");
-		ViNode node2 = createIsolateViHost("node2");
+		IsolateViNode node1 = cloud.node("node1");
+		IsolateViNode node2 = cloud.node("node2");
 		
-		ViGroup nodes = ViGroup.group(node1, node2);
-		IsolateViNode.includePackage(nodes, "org.gridkit");
+		IsolateViNode nodes = cloud.node("**");
+		nodes.isolation().includePackage("org.gridkit");
 		
 		node1.exec(new VoidCallable() {
 			@Override

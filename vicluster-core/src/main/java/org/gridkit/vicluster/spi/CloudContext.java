@@ -49,7 +49,7 @@ class CloudContext implements ViCloudContext {
 		}		
 	}
 
-	private void init(BeanConfig config, Object obj) {
+	void init(BeanConfig config, Object obj) {
 		if (obj instanceof CloudContextAware) {
 			((CloudContextAware)obj).setContext(this);
 		}
@@ -72,9 +72,6 @@ class CloudContext implements ViCloudContext {
 		}
 		AttrBag bean = getResource(name, type.getName());
 		Object obj = bean.getLast(AttrBag.INSTANCE);
-		if (obj instanceof Defered) {
-			obj = ((Defered)obj).getInstance();
-		}
 		return type.cast(obj);
 	}
 	

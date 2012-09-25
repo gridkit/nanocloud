@@ -1,15 +1,37 @@
 package org.gridkit.vicluster.spi;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.vicluster.SysProps;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
 
 class ViNodeStub implements ViNode {
+
+	@Override
+	public SysProps sysProps() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Collection<ViNode> unfold() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void touch() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void ensure() {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public void execute(Runnable task) {

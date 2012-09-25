@@ -1,41 +1,20 @@
 package org.gridkit.vicluster.spi;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.AdvancedExecutor.Component;
 
 public class DefaultNodeInstantiator implements SpiFactory {
 
-	private static final String POST_INIT_ACTIONS = "post-init-actions";
-	
 	@Override
 	public Object instantiate(final ViCloudContext context, final String attrName, final AttrBag config) {
-		return new Defered() {
-			
-			private ViNodeSpi node;
-			
-			@Override
-			public synchronized Object getInstance() {
-				if (node == null) {
-					node = createNode(context, config);
-				}
-				return node;
-			}
-		};
+		return createNode(context, config);
 	}
 
 	protected ViNodeSpi createNode(ViCloudContext context, AttrBag config) {
 		ExecutorProvider ep = resolveExecutorProvider(context, config);
 		AdvancedExecutor.Component ae = resolveExecutor(context, config, ep);
 		SimpleViNodeSpi vinode = new SimpleViNodeSpi(ae);
-		List<Object> actions = new ArrayList<Object>(config.getAll(POST_INIT_ACTIONS));
-		Collections.reverse(actions);
-		for(Object action: actions) {
-			((ViNodeAction)action).onEvent(vinode);			
-		}
+		NodeSpiHelper.initViNodeSPI(vinode, context, config);
 		return vinode;
 	}
 

@@ -15,6 +15,7 @@
  */
 package org.gridkit.vicluster;
 
+import java.util.Collection;
 import java.util.Set;
 
 
@@ -23,11 +24,26 @@ import java.util.Set;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
-public interface ViNode extends ViExecutor, ViUserPropEnabled {
+public interface ViNode extends ViExecutor, ViUserPropEnabled, ViSysPropEnabled {
 
 	public void label(String label);
 	
 	public Set<String> labels();
+	
+	/**
+	 * If object is an aggregate will return list of actual node.
+	 */
+	public Collection<ViNode> unfold();
+	
+	/**
+	 * Trigger cloud manager to start node initialization in background (if not initialized yet).
+	 */
+	public void touch();
+
+	/**
+	 * Wait until asynchronous node initialization is complete.
+	 */	
+	public void ensure();
 	
 	public void shutdown();
 	

@@ -509,7 +509,7 @@ public class Isolate implements AdvancedExecutor {
 		}
 		cl = null;
 		threadGroup = null;
-		sysProps = null;
+		sysProps = new Properties(); // make props empty
 		
 		stdErr.println("Stopped");
 		

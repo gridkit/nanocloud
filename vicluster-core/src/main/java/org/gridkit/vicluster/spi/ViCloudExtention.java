@@ -53,6 +53,12 @@ public interface ViCloudExtention<V> {
 		
 		<V> V adapt(Class<V> facade);
 
+		/**
+		 * If {@link ViNodeSpi} is available action will be applied now.
+		 * Otherwise it will be applied once {@link ViNodeSpi} is initialized.
+		 */
+		void applyAction(ViNodeAction action);
+		
 		ViNodeSpi getCoreNode();
 
 		FutureEx<ViNodeSpi> getCoreFuture();

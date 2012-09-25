@@ -1,5 +1,6 @@
 package org.gridkit.vicluster.spi;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -140,7 +141,10 @@ public abstract class AbstractMultipleNodeExecutor implements ViExecutor {
 		return MassExec.vectorFuture(massSubmit(task));
 	}
 	
-	private final class VoidCallableWrapper implements Callable<Void> {
+	private final static class VoidCallableWrapper implements Callable<Void>, Serializable {
+
+		private static final long serialVersionUID = 20120926L;
+
 		private final VoidCallable task;
 
 		private VoidCallableWrapper(VoidCallable task) {

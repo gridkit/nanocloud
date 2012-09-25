@@ -4,12 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-// TODO concurrency
 class BeanConfig implements AttrBag {
 	
 	private final CloudContext cloudContext;
@@ -18,26 +15,36 @@ class BeanConfig implements AttrBag {
 	private final Map<String, List<Object>> listProps = new HashMap<String, List<Object>>();
 	
 	boolean frozen = false;	
-	private Set<String> underConstruction = new HashSet<String>();
 	
 	public BeanConfig(CloudContext cloudContext) {
 		this.cloudContext = cloudContext;
 	}
 
 	void addEntry(String name, Object v) {
-		history.add(Named.make(name, v));
-		if (listProps.containsKey(name)) {
-			listProps.get(name).add(v);
+		if (frozen) {
+			throw new UnsupportedOperationException();
 		}
-		else if (scalarProps.containsKey(name)) {
-			Object v0 = scalarProps.remove(name);
-			List<Object> list = new ArrayList<Object>();
-			list.add(v0);
-			list.add(v);
-			listProps.put(name, list);
-		}
-		else {
-			scalarProps.put(name, v);
+		synchronized(cloudContext) {
+			if (v instanceof SpiFactory) {
+				Box b = new Box();
+				b.factory = (SpiFactory) v;
+				b.attrName = name;
+				v = b;
+			}
+			history.add(Named.make(name, v));
+			if (listProps.containsKey(name)) {
+				listProps.get(name).add(v);
+			}
+			else if (scalarProps.containsKey(name)) {
+				Object v0 = scalarProps.remove(name);
+				List<Object> list = new ArrayList<Object>();
+				list.add(v0);
+				list.add(v);
+				listProps.put(name, list);
+			}
+			else {
+				scalarProps.put(name, v);
+			}
 		}
 	}
 	
@@ -45,21 +52,29 @@ class BeanConfig implements AttrBag {
 		return type.cast(getLast(INSTANCE));
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public <V> V getLast(String name) {
+		return convertOut(getLastInternal(name));
+	}
+	
+	@Override
+	public <V> List<V> getAll(String name) {
+		return convertOut(this.<V>getAllInternal(name));
+	}
+
+	private <V> V getLastInternal(String name) {
 		synchronized (cloudContext) {
 			cloudContext.enter();
 			try {
 				if (scalarProps.containsKey(name)) {
 					Object v = scalarProps.get(name);
 					v = ensureInstantiated(name, v);
-					return (V)v;
+					return Any.cast(v);
 				}
 				else if (listProps.containsKey(name)){
 					Object v = listProps.get(name).get(listProps.size() - 1);
 					v = ensureInstantiated(name, v);
-					return (V)v;
+					return Any.cast(v);
 				}
 				else {
 					return null;
@@ -68,12 +83,10 @@ class BeanConfig implements AttrBag {
 			finally {
 				cloudContext.leave();
 			}
-		}
+		}		
 	}
 
-	@Override
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public <V> List<V> getAll(String name) {
+	private <V> List<V> getAllInternal(String name) {
 		synchronized (cloudContext) {
 			cloudContext.enter();
 			try {
@@ -87,7 +100,7 @@ class BeanConfig implements AttrBag {
 					for(int i = result.length - 1; i >= 0; --i) {
 						result[i] = ensureInstantiated(name, list.get(i));
 					}
-					return (List)Arrays.asList(result);
+					return Any.cast(Arrays.asList(result));
 				}
 				else {
 					return Collections.emptyList();
@@ -96,31 +109,54 @@ class BeanConfig implements AttrBag {
 			finally {
 				cloudContext.leave();
 			}
+		}		
+	}
+	
+	private Object ensureInstantiated(String name, Object v) {
+		if (v instanceof Box) {
+			Box b = (Box) v;
+			if (b.object != null) {
+				replace(name, b, b.object);
+				return b.object;
+			}
 		}
+		return v;
 	}
 
-	private Object ensureInstantiated(String name, Object v) {
-		if (v instanceof SpiFactory) {
-			if (underConstruction.contains(name)) {
-				throw new RuntimeException("Recursive dependency detected, while intsntiating " + name + ", config " + this);
+	private <V> V convertOut(Object v) {
+		if (v instanceof Box) {
+			Box b = (Box)v;
+			if (b.object == null) {
+				synchronized(b) {
+					if (b.object == null) {
+						if (b.constructing) {
+							throw new IllegalArgumentException("Cyclic dependency initializing " + b.attrName + " at " + this);
+						}
+						else {
+							b.constructing = true;
+						}
+						Object val = b.factory.instantiate(cloudContext, b.attrName, this);
+						cloudContext.init(this, val);
+						b.object = val;
+					}
+				}
 			}
-			underConstruction.add(name);
-			try {
-				SpiFactory f = (SpiFactory) v;
-				Object v1 = f.instantiate(cloudContext, name, this);
-				cloudContext.addToInitQueue(this, v1);
-				replace(name, v, v1);
-				return v1;
-			}
-			finally {
-				underConstruction.remove(name);
-			}
+			return Any.cast(b.object);
 		}
 		else {
-			return v;
+			return Any.cast(v);
 		}
 	}
-
+	
+	private <V> List<V> convertOut(List<V> list) {
+		for(int i = 0; i != list.size(); ++i) {
+			if (list.get(i) instanceof Box) {
+				list.set(i, this.<V>convertOut(list.get(i)));
+			}
+		}
+		return list;
+	}
+	
 	private void replace(String name, Object oldV, Object newV) {
 		for(int i = 0; i != history.size(); ++i) {
 			Named<Object> entry = history.get(i);
@@ -143,14 +179,31 @@ class BeanConfig implements AttrBag {
 		}
 	}
 	
+	private static class Box {
+		
+		private String attrName;
+		private SpiFactory factory;
+
+		private volatile boolean constructing;
+		private volatile Object object;
+		
+	}
+	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for(Named<Object> n: history) {
 			if (sb.length() > 0) {
 				sb.append('|');
 			}
-			if (n.getValue() instanceof SpiFactory) {
-				sb.append(n.getKey()).append("=<lazy|" + n.getValue().getClass().getSimpleName() + ">");
+			Object v = n.getValue(); 
+			if (v instanceof Box) {
+				Box b = (Box) v;
+				if (b.object != null) {
+					sb.append(n.getKey()).append("=").append(n.getValue());
+				}
+				else {
+					sb.append(n.getKey()).append("=<lazy|" + b.factory.getClass().getSimpleName() + ">");
+				}
 			}
 			else {
 				sb.append(n.getKey()).append("=").append(n.getValue());

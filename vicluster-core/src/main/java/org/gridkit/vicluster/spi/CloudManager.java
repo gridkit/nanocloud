@@ -4,9 +4,11 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -21,23 +23,25 @@ import java.util.regex.Pattern;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.util.concurrent.SensibleTaskService;
 import org.gridkit.util.concurrent.TaskService;
 import org.gridkit.util.concurrent.TaskService.Task;
 import org.gridkit.vicluster.MassExec;
-import org.gridkit.vicluster.ViCloud2;
+import org.gridkit.vicluster.ViCloud;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.spi.NodeSpiHelper.MethodMode;
 import org.gridkit.vicluster.spi.ViCloudExtention.DeferingMode;
 import org.gridkit.vicluster.spi.ViCloudExtention.DynNode;
 import org.gridkit.vicluster.spi.ViCloudExtention.GroupCallMode;
 import org.gridkit.vicluster.spi.ViCloudExtention.NodeCallProxy;
 
-class NanoCloud<V extends ViNode> implements ViCloud2<V> {
+class CloudManager<V extends ViNode> implements ViCloud<V> {
 
 	private final Class<V> facade;
 	
 	private final CloudContext configContext = new CloudContext();
 	
-	private final Map<String, ManagedNode> nodes = new TreeMap<String, NanoCloud<V>.ManagedNode>();
+	private final Map<String, ManagedNode> nodes = new TreeMap<String, CloudManager<V>.ManagedNode>();
 	
 	private final List<StickyGroupAction> stickyActions  = new ArrayList<StickyGroupAction>();
 
@@ -50,11 +54,16 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 	
 	private Method methodLabel;
 	
-	public NanoCloud(Class<V> facade, Collection<ViCloudExtention<?>> extentions, TaskService taskService) {
+	public static <V extends ViNode> CloudManager<V> newIstance(Class<V> facade, ViCloudExtention<?>... extentions) {
+		return new CloudManager<V>(facade, Arrays.asList(extentions), SensibleTaskService.getShareInstance());
+	}
+	
+	public CloudManager(Class<V> facade, Collection<ViCloudExtention<?>> extentions, TaskService taskService) {
 		this.facade = facade;
 		this.taskService = taskService;
 		addExtention(new ViExecutorExtetion());
 		addExtention(new ViUserPropExtention());
+		addExtention(new ViSysPropExtention());
 		if (extentions != null) {
 			for(ViCloudExtention<?> ext: extentions) {
 				addExtention(ext);
@@ -74,9 +83,11 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 
 	private void addExtention(ViCloudExtention<?> ext) {
 		intf2ext.put(ext.getFacadeInterface(), ext);
-		for(Class<?> c: ext.getHidenInterfaces()) {
-			intf2ext.put(c, ext);
-			compileMethodMap(c, ext.getFacadeInterface());
+		if (ext.getHidenInterfaces() != null) {
+			for(Class<?> c: ext.getHidenInterfaces()) {
+				intf2ext.put(c, ext);
+				compileMethodMap(c, ext.getFacadeInterface());
+			}
 		}
 	}
 
@@ -99,6 +110,21 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 	}
 
 	private void resolveMethod(Method m) {
+		// ViNode methods are handled internaly
+		try {
+			if (ViNode.class.getDeclaredMethod(m.getName(), m.getParameterTypes()) != null) {
+				MethodMode mmm = NodeSpiHelper.getMethodModeAnnotation(ManagedNode.class, m);
+				method2ext.put(m, null);
+
+				method2mode.put(m, mmm.deferNode());
+				method2group.put(m, mmm.groupCallNode());
+				return;
+			}
+		} catch (SecurityException e) {
+			Any.throwUncheked(e);
+		} catch (NoSuchMethodException e) {
+			// ok
+		}
 		for(Class<?> extif: intf2ext.keySet()) {
 			try {
 				if (extif.getMethod(m.getName(), m.getParameterTypes()) != null) {
@@ -112,29 +138,6 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 			} catch (NoSuchMethodException e) {
 				continue;
 			}
-		}
-		try {
-			if (ViNode.class.getMethod(m.getName(), m.getParameterTypes()) != null) {
-				method2ext.put(m, null);
-				method2mode.put(m, DeferingMode.NO_SPI_NEEDED);
-				if (m.getName().equals("shutdown")) {
-					method2group.put(m, GroupCallMode.INSTANT_BROADCAST);
-				}
-				else if (m.getName().equals("labels")) {
-					method2group.put(m, GroupCallMode.BY_IMPLEMENTATION);
-				}
-				else if (m.getName().equals("label")) {
-					method2group.put(m, GroupCallMode.STICKY_BROADCAST);
-				}
-				else {
-					throw new IllegalArgumentException("Unknown method " + m);
-				}
-				return;
-			}
-		} catch (SecurityException e) {
-			Any.throwUncheked(e);
-		} catch (NoSuchMethodException e) {
-			// ok
 		}
 		throw new IllegalArgumentException("Cannot find extension for " + m);
 	}
@@ -150,6 +153,11 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		((RuleSet)configSet).apply(configContext);
 	}
 	
+	@Override
+	public V node(String pattern) {
+		return byName(pattern);
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public synchronized V byName(String pattern) {
@@ -211,7 +219,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 	}
 	
 	private List<ManagedNode> selectNodes(NodeMatcher matcher) {
-		List<ManagedNode> result = new ArrayList<NanoCloud<V>.ManagedNode>();
+		List<ManagedNode> result = new ArrayList<CloudManager<V>.ManagedNode>();
 		for(ManagedNode node: nodes.values()) {
 			if (!node.isTerminated() && matcher.match(node)) {
 				result.add(node);
@@ -221,7 +229,11 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 	}
 	
 	@Override
-	public void shutdown() {
+	public synchronized void shutdown() {
+		for(ManagedNode node: nodes.values()) {
+			node.shutdown();
+		}
+		nodes.clear();
 	}
 	
 	private void createStickyAction(NodeMatcher matcher, Method method, Object[] args) {
@@ -255,6 +267,20 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 	}
 	
+	static Object invokeMethod(Object target, Method method, Object[] arguments) {
+		try {
+			return method.invoke(target, arguments);
+		}
+		catch (IllegalAccessException e) {
+			Any.throwUncheked(e);
+			throw new Error("Unreachable");
+		}
+		catch(InvocationTargetException e) {
+			Any.throwUncheked(e.getCause());
+			throw new Error("Unreachable");
+		}
+	}
+	
 	private class InitSpiTask implements Task {
 	
 		ManagedNode node;
@@ -272,20 +298,25 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 				Selector s = Selectors.name(node.name, ViNodeSpi.class.getName());
 				configContext.ensureResource(s, config);
 				coreNode = configContext.getNamedInstance(node.name, ViNodeSpi.class);
+				if (coreNode == null) {
+					throw new RuntimeException("Failed to create node");
+				}
 			}
 			catch(Exception e) {
-				synchronized(NanoCloud.this) {
+				synchronized(CloudManager.this) {
 					System.out.println("Node initialization failed: " + node.name);
 					node.futureNode.setError(e);
-					NanoCloud.this.notifyAll();
+					CloudManager.this.notifyAll();
 				}
 				return;
 			}
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				System.out.println("Node initialized: " + node.name + " -> " + coreNode);
 				node.node = coreNode;
+				node.postInit();
 				node.futureNode.setData(coreNode);
-				NanoCloud.this.notifyAll();
+				// TODO post init or future, what ever first?
+				CloudManager.this.notifyAll();
 			}
 		}
 	
@@ -314,6 +345,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		
 		private List<String> labels = new ArrayList<String>();
 		private Set<StickyGroupAction> appliedActions = new HashSet<StickyGroupAction>();
+		private List<ViNodeAction> postInitActions = new ArrayList<ViNodeAction>();
 		
 		private boolean terminated = false;
 		
@@ -322,22 +354,35 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 		
 		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.UNSUPPORTED)
 		public String getName() {
 			return name;
 		}
 
 		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.UNSUPPORTED)
 		public String[] getLabels() {
 			return labels.toArray(new String[labels.size()]);
 		}
 
 		@Override
+		public void applyAction(ViNodeAction action) {
+			if (node != null) {
+				action.apply(node);
+			}
+			else {
+				postInitActions.add(action);
+			}			
+		}
+
+		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.BY_IMPLEMENTATION)
 		public Set<String> labels() {
 			return new WriteThroughSet<String>(labels) {
 
 				@Override
 				protected boolean onInsert(String label) {
-					synchronized(NanoCloud.this) {
+					synchronized(CloudManager.this) {
 						if (pending) {
 							throw new IllegalStateException("Label can only be added before node is initialized");
 						}
@@ -356,6 +401,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 
 		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.STICKY_BROADCAST)
 		public void label(String label) {
 			if (pending) {
 				throw new IllegalStateException("Label can only be added before node is initialized");
@@ -367,10 +413,42 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 		
 		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.BY_IMPLEMENTATION)
+		public Collection<ViNode> unfold() {
+			return Collections.singleton(proxy);
+		}
+
+		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.INSTANT_BROADCAST)
+		public void touch() {
+			if (!pending) {
+				requestSpi();
+			}
+		}
+
+		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.INSTANT_BROADCAST)
+		public void ensure() {
+			ensureSpi();			
+		}
+
+		@Override
+		@MethodMode(deferNode=DeferingMode.NO_SPI_NEEDED, groupCallNode=GroupCallMode.INSTANT_BROADCAST)
 		public void shutdown() {
 			if (!terminated) {
 				terminated = true;
-				node.shutdown();
+				if (pending) {
+					futureNode.addListener(new Box<ViNodeSpi>() {
+						@Override
+						public void setData(ViNodeSpi data) {
+							data.shutdown();
+						}
+						@Override
+						public void setError(Throwable e) {
+							// ignore
+						}
+					});
+				}
 			}
 		}
 
@@ -392,14 +470,14 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			if (method.getDeclaringClass().equals(Object.class)) {
-				return method.invoke(this, args);
+				return invokeMethod(this, method, args);
 			}
 			return dispatch(method, args);
 		}
 
 		@Override
 		public Object dispatch(Method method, Object... args) throws Throwable {
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				if (node == null) {
 					DeferingMode lmode = method2mode.get(method);
 					if (lmode == DeferingMode.SMART_DEFERABLE) {
@@ -412,16 +490,17 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 				Class<?> extc =  method2ext.get(method);
 				if (extc == null) {
 					// special case, handle internally
-					return method.invoke(this, args);
+					return invokeMethod(this, method, args);
 				}
 				else {
-					return method.invoke(adapt(extc), args);
+					return invokeMethod(adapt(extc), method, args);
+						
 				}
 			}
 		}
 		
 		private Object createDeferedCall(final Method method, final Object[] args) {
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				if (method.getReturnType() == void.class) {
 					// one way call
 					requestSpi();
@@ -475,7 +554,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 			
 		private void ensureSpi() {
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				requestSpi();
 				while(true) {
 					if (futureNode.isDone()) {
@@ -496,7 +575,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 						try {
 							// we need to wait on NanoCloud object to temporarely
 							// release semaphore and thus let init task do its work
-							NanoCloud.this.wait();
+							CloudManager.this.wait();
 						} catch (InterruptedException e) {
 							Any.throwUncheked(e);
 						}
@@ -506,7 +585,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 			
 		private void requestSpi() {
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				if (!pending) {
 					pending = true;
 					taskService.schedule(new InitSpiTask(this, buildConfig()));
@@ -529,17 +608,23 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 			
 			return config;
 		}
+		
+		private void postInit() {
+			for(ViNodeAction action: postInitActions) {
+				action.apply(node);
+			}
+		}
 
 		@Override
 		public ViNodeSpi getCoreNode() {
-			synchronized (NanoCloud.this) {
+			synchronized (CloudManager.this) {
 				return node;
 			}
 		}
 		
 		@Override
 		public FutureEx<ViNodeSpi> getCoreFuture() {
-			synchronized (NanoCloud.this) {
+			synchronized (CloudManager.this) {
 				return futureNode;
 			}
 		}
@@ -547,7 +632,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		@Override
 		@SuppressWarnings({ "unchecked", "hiding" })
 		public <V> V adapt(Class<V> facade) {
-			synchronized (NanoCloud.this) {
+			synchronized (CloudManager.this) {
 				Object ext = extentions.get(facade);
 				if (ext == null) {
 					ViCloudExtention<?> provider = intf2ext.get(facade);
@@ -583,7 +668,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 			if (method.getDeclaringClass().equals(Object.class)) {
 				return method.invoke(this, args);
 			}
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				List<ManagedNode> nodes = selectNodes(matcher);
 
 				// parallel invoke
@@ -634,7 +719,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 
 		private void ensureSpi(List<ManagedNode> nodes) {
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				FutureEx<List<ViNodeSpi>> initFuture = MassExec.vectorFuture(requestSpi(nodes));
 				while(true) {
 					if (initFuture.isDone()) {
@@ -655,7 +740,7 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 						try {
 							// we need to wait on NanoCloud object to temporarely
 							// release semaphore and thus let init task do its work
-							NanoCloud.this.wait();
+							CloudManager.this.wait();
 						} catch (InterruptedException e) {
 							Any.throwUncheked(e);
 						}
@@ -692,15 +777,11 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 			else {
 				wrapper = this;
 			}
-			try {
-				return method.invoke(wrapper, args);
-			} catch (InvocationTargetException e) {
-				throw e.getCause();
-			}
+			return invokeMethod(wrapper, method, args);
 		}
 
 		private Object createDeferedCall(final List<ManagedNode> nodes, final Method method, final Object[] args) {
-			synchronized(NanoCloud.this) {
+			synchronized(CloudManager.this) {
 				if (method.getReturnType() == void.class) {
 					// one way call
 					FutureEx<List<ViNodeSpi>> spiFuture = MassExec.vectorFuture(requestSpi(nodes)); 
@@ -779,13 +860,13 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		}
 
 		@Override
-		public void label(String label) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void shutdown() {
-			throw new UnsupportedOperationException();
+		public Collection<ViNode> unfold() {
+			List<ManagedNode> nodes = selectNodes(matcher);
+			ViNode[] vinodes = new ViNode[nodes.size()];
+			for(int i = 0; i != vinodes.length; ++i) {
+				vinodes[i] = nodes.get(i).proxy;
+			}
+			return Arrays.asList(vinodes);
 		}
 
 		public String toString() {
@@ -1000,5 +1081,5 @@ class NanoCloud<V extends ViNode> implements ViCloud2<V> {
 		public String toString() {
 			return matcher + " -> " + method.getName() + " " + Arrays.toString(arguments);
 		}
-	}	
+	}		
 }

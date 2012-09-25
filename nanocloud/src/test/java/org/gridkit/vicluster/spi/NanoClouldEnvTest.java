@@ -15,11 +15,11 @@ import org.junit.Test;
 
 public class NanoClouldEnvTest implements ViSpiConsts {
 
-	NanoCloud<ViNode> ncloud;
+	CloudManager<ViNode> ncloud;
 	
 	@Before
 	public void init() {
-		ncloud = new NanoCloud<ViNode>(ViNode.class, null, new SensibleTaskService("test"));
+		ncloud = new CloudManager<ViNode>(ViNode.class, null, new SensibleTaskService("test"));
 		RuleSet rules = new RuleSet();
 
 		rules.addRule(RuleBuilder.newRule()

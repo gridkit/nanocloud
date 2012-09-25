@@ -1,5 +1,6 @@
 package org.gridkit.vicluster.spi;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -27,10 +28,10 @@ public abstract class AbstractSingleNodeExecutor implements ViExecutor {
 		}
 		catch(Exception e) {
 			if (e instanceof ExecutionException) {
-				AnyThrow.throwUncheked(((ExecutionException)e).getCause());
+				Any.throwUncheked(((ExecutionException)e).getCause());
 			}
 			else {
-				AnyThrow.throwUncheked(e);
+				Any.throwUncheked(e);
 			}
 		}		
 	}
@@ -42,10 +43,10 @@ public abstract class AbstractSingleNodeExecutor implements ViExecutor {
 		}
 		catch(Exception e) {
 			if (e instanceof ExecutionException) {
-				AnyThrow.throwUncheked(((ExecutionException)e).getCause());
+				Any.throwUncheked(((ExecutionException)e).getCause());
 			}
 			else {
-				AnyThrow.throwUncheked(e);
+				Any.throwUncheked(e);
 			}
 		}		
 	}
@@ -57,11 +58,11 @@ public abstract class AbstractSingleNodeExecutor implements ViExecutor {
 		}
 		catch(Exception e) {
 			if (e instanceof ExecutionException) {
-				AnyThrow.throwUncheked(((ExecutionException)e).getCause());
+				Any.throwUncheked(((ExecutionException)e).getCause());
 				throw new Error("Unreacable");
 			}
 			else {
-				AnyThrow.throwUncheked(e);
+				Any.throwUncheked(e);
 				throw new Error("Unreacable");
 			}
 		}		
@@ -108,7 +109,10 @@ public abstract class AbstractSingleNodeExecutor implements ViExecutor {
 		return MassExec.vectorFuture((List)Collections.singletonList(getExecutor().submit(task)));
 	}
 	
-	private final class VoidCallableWrapper implements Callable<Void> {
+	private final static class VoidCallableWrapper implements Callable<Void>, Serializable {
+
+		private static final long serialVersionUID = 20120926L;
+
 		private final VoidCallable task;
 
 		private VoidCallableWrapper(VoidCallable task) {
@@ -121,16 +125,4 @@ public abstract class AbstractSingleNodeExecutor implements ViExecutor {
 			return null;
 		}
 	}
-
-	private static class AnyThrow {
-
-	    public static void throwUncheked(Throwable e) {
-	        AnyThrow.<RuntimeException>throwAny(e);
-	    }
-	   
-	    @SuppressWarnings("unchecked")
-	    private static <E extends Throwable> void throwAny(Throwable e) throws E {
-	        throw (E)e;
-	    }
-	}	
 }
