@@ -238,13 +238,21 @@ public class Isolate implements AdvancedExecutor {
 		return name;
 	}
 	
-	public PrintStream getStdOur() {
+	public PrintStream getStdOut() {
 		return stdOut;
+	}
+
+	public void setStdOur(PrintStream stdOut) {
+		this.stdOut = stdOut;
 	}
 
 	public PrintStream getStdErr() {
 		return stdErr;
 	}
+
+	public void setStdErr(PrintStream stdErr) {
+		this.stdErr = stdErr;
+	}	
 	
 	public synchronized void setClassTransformer(IsolateClassTransformer transformer) {
 		if (this.transformer != null) {

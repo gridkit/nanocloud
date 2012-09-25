@@ -17,7 +17,6 @@ package org.gridkit.vicluster;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureEx;

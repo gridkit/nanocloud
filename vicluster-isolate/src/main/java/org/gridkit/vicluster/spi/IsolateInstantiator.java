@@ -2,8 +2,6 @@ package org.gridkit.vicluster.spi;
 
 import java.util.List;
 
-import org.gridkit.util.concurrent.AdvancedExecutor;
-import org.gridkit.util.concurrent.AdvancedExecutor.Component;
 import org.gridkit.vicluster.isolate.Isolate;
 
 public class IsolateInstantiator implements SpiFactory {

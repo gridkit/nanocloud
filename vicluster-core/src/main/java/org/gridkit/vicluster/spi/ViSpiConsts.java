@@ -1,7 +1,6 @@
 package org.gridkit.vicluster.spi;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
-import org.gridkit.vicluster.ViNodeProvider;
 
 public interface ViSpiConsts {
 

@@ -1,5 +1,7 @@
 package org.gridkit.vicluster;
 
-public interface NanoNode {
+import org.gridkit.vicluster.isolate.IsolateViNode;
+
+public interface NanoNode extends ViNode, IsolateViNode, JvmViNode, RemoteViNode {
 
 }
