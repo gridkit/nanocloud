@@ -1,10 +1,11 @@
 package org.gridkit.vicluster.spi;
 
+import java.io.IOException;
+
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.TaskService;
-import org.gridkit.vicluster.isolate.Isolate;
-import org.gridkit.vicluster.spi.IsolateNodeInstantiator.SimpleIsolateViNodeSpi;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
+import org.gridkit.vicluster.telecontrol.JvmConfig;
 
 public class NanoNodeInstantiator implements SpiFactory {
 
@@ -13,18 +14,49 @@ public class NanoNodeInstantiator implements SpiFactory {
 	
 	@Override
 	public Object instantiate(ViCloudContext context, String attrName, AttrBag config) {
-		Host host = (Host)config.getLast(HOST);
-		TaskService taskService = (TaskService)config.getLast(TASK_SERVICE);
+		try {
+			String name = config.getLast(AttrBag.NAME);
+			Host host = (Host)config.getLast(HOST);
+			TaskService taskService = (TaskService)config.getLast(TASK_SERVICE);
 
-		ControlledProcess
+			AttrBag jvmConf = NanoSpiHelper.configureJvm(context, config);
+			JvmConfig jconfig = (JvmConfig)jvmConf.getLast(AttrBag.INSTANCE);
+			
+			ControlledProcess proc = host.getProcessFactory().createProcess(name, jconfig);
+			
+			SimpleNanoNodeSpi nodeSpi = new SimpleNanoNodeSpi(host, proc);
+			
+			NodeSpiHelper.initViNodeSPI(nodeSpi, context, config);
+			
+			return nodeSpi;
+		} catch (IOException e) {
+			Any.throwUncheked(e);
+		}
+	}
+	
+	private static class SimpleNanoNodeSpi extends AbstractViNodeSpi implements RemoteNodeSpi {
 		
-		ViNodeSpi nodeSpi = new SimpleIsolateViNodeSpi(isolate);
-		NodeSpiHelper.initViNodeSPI(nodeSpi, context, config);
+		private final Host host;
+		private final ControlledProcess proc;
 		
-		return nodeSpi;
+		public SimpleNanoNodeSpi(Host host, ControlledProcess proc) {
+			this.host = host;
+			this.proc = proc;
+		}
+
+		@Override
+		public Host getHost() {
+			return host;
+		}
 		
+		@Override
+		public AdvancedExecutor getExecutor() {
+			return proc.getExecutionService();
+		}
 		
-		
-		return null;
+		@Override
+		protected void destroy() {
+			proc.destroy();
+		}
 	}
 }

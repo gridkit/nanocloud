@@ -10,14 +10,34 @@ import java.util.Collections;
 import java.util.List;
 
 import org.gridkit.vicluster.spi.ViCloudExtention.DeferingMode;
-import org.gridkit.vicluster.spi.ViCloudExtention.DynNode;
 import org.gridkit.vicluster.spi.ViCloudExtention.GroupCallMode;
 import org.gridkit.vicluster.spi.ViCloudExtention.NodeCallProxy;
 
 class NodeSpiHelper {
 
 	public static final String POST_INIT_ACTIONS = "vinode.post-init-actions";
+	public static final String PROPAGATE_LIST = "vinode.propogate-list";
 	
+	public static void propagateAttribs(AttrBag source, AttrList attribs) {
+		copyAttribute(AttrBag.LABEL, source, attribs);
+		List<String> extra = source.getAll(PROPAGATE_LIST);
+		for(String attrName: extra) {
+			copyAttribute(attrName, source, attribs);
+		}
+	}
+	
+	public static void copyAttribute(String attrName, AttrBag source, AttrList attribs) {
+		for(Object label: reverse(source.getAll(attrName))) {
+			attribs.add(attrName, label);
+		}
+	}
+	
+	private static List<Object> reverse(List<Object> list) {
+		// TODO my need a copy
+		Collections.reverse(list);
+		return list;
+	}
+
 	public static void initViNodeSPI(ViNodeSpi vinode, ViCloudContext context, AttrBag config) {
 		List<Object> actions = new ArrayList<Object>(config.getAll(POST_INIT_ACTIONS));
 		Collections.reverse(actions);
