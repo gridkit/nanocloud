@@ -48,6 +48,13 @@ class BeanConfig implements AttrBag {
 		}
 	}
 	
+	@Override
+	public boolean containsKey(String name) {
+		synchronized(cloudContext) {
+			return scalarProps.containsKey(name) || listProps.containsKey(name);
+		}
+	}
+
 	public <V> V getInstance(Class<V> type) {
 		return type.cast(getLast(INSTANCE));
 	}
@@ -60,6 +67,13 @@ class BeanConfig implements AttrBag {
 	@Override
 	public <V> List<V> getAll(String name) {
 		return convertOut(this.<V>getAllInternal(name));
+	}
+
+	@Override
+	public <V> List<V> getAllInOrder(String name) {
+		List<V> result = convertOut(this.<V>getAllInternal(name));
+		Collections.reverse(result);
+		return result;
 	}
 
 	private <V> V getLastInternal(String name) {

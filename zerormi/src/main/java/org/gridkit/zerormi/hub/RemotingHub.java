@@ -59,7 +59,7 @@ public class RemotingHub {
 	private ConcurrentMap<String, SessionContext> connections = new ConcurrentHashMap<String, SessionContext>();
 	
 	public RemotingHub() {
-		this(new SensibleTaskService("remoting-hub"));
+		this(SensibleTaskService.getShareInstance());
 	}
 	
 	public RemotingHub(TaskService taskService) {

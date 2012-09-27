@@ -1,11 +1,15 @@
 package org.gridkit.vicluster.spi;
 
-import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
+import java.io.IOException;
+
+import org.gridkit.vicluster.telecontrol.ControlledProcess;
 
 public interface Host {
 	
 	public String getHostname();
 	
-	public JvmProcessFactory getProcessFactory();
+	public boolean verify();
+	
+	public ControlledProcess startProcess(JvmProcessConfiguration configuration) throws IOException;
 	
 }

@@ -5,7 +5,7 @@ public class NanoSpiHelper {
 
 	public static AttrBag configureJvm(ViCloudContext context, AttrBag nodeInfo) {		
 		String name = nodeInfo.getLast(AttrBag.NAME);
-		String type = JvmConfiguration.class.getName();
+		String type = JvmProcessConfiguration.class.getName();
 
 		AttrList proto = new AttrList();
 		proto.add(AttrBag.NAME, name);

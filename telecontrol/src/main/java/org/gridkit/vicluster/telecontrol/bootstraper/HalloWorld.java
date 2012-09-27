@@ -23,37 +23,25 @@ import java.net.InetAddress;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class HalloWorld {
+	
+	public static int EXIT_CODE = 10;
+	
+	private static void displayProp(String prefix, String name) {
+		System.out.println(prefix + " " + name + " = " + System.getProperty(name));
+	}
+	
 	public static void main(String[] args) throws IOException {
-		System.out.println("\"Hallo world\" from " + InetAddress.getLocalHost().getHostName());
+		String user = System.getProperty("user.name");
+		String localhost = InetAddress.getLocalHost().getHostName(); 
 		
-//		for(URL url: ((URLClassLoader)Thread.currentThread().getContextClassLoader()).getURLs()) {
-//			System.out.println(url);
-//		}
-//		
-//		Enumeration en = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF");
-//		while(en.hasMoreElements()) {
-//			URL x = (URL) en.nextElement();
-//			System.out.println(x.toString());
-//			InputStream is = x.openStream();
-//			while(true) {
-//				int c = is.read();
-//				if (c >= 0) {
-//					System.out.print((char)c);
-//				}
-//				else {
-//					break;
-//				}
-//			}
-//			is.close();
-//			System.out.println();
-//		}
-//
-//		System.out.println();
-//
-//		en = Thread.currentThread().getContextClassLoader().getResources(Bootstraper.class.getName().replace('.', '/') + ".class");
-//		while(en.hasMoreElements()) {
-//			URL x = (URL) en.nextElement();
-//			System.out.println(x.toString());
-//		}
+		displayProp(user + "@" + localhost, "user.name");
+		displayProp(user + "@" + localhost, "user.home");
+		displayProp(user + "@" + localhost, "user.dir");
+		displayProp(user + "@" + localhost, "java.home");
+		displayProp(user + "@" + localhost, "java.runtime.name");
+		displayProp(user + "@" + localhost, "java.runtime.version");
+		displayProp(user + "@" + localhost, "java.vm.name");
+		
+		System.exit(EXIT_CODE);
 	}	
 }

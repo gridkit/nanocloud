@@ -66,7 +66,7 @@ class CloudContext implements ViCloudContext {
 		rules.add(0, rule);		
 	}
 	
-	public synchronized <V> V getNamedInstance(String name, Class<V> type) {
+	public <V> V getNamedInstance(String name, Class<V> type) {
 		if (name == null) {
 			throw new NullPointerException("name should not be null");
 		}
@@ -75,7 +75,7 @@ class CloudContext implements ViCloudContext {
 		return type.cast(obj);
 	}
 	
-	public synchronized <V> V ensureNamedInstance(String name, Class<V> type) {
+	public <V> V ensureNamedInstance(String name, Class<V> type) {
 		AttrList proto = new AttrList();
 		proto.add(AttrBag.NAME, name);
 		proto.add(AttrBag.TYPE, type.getName());

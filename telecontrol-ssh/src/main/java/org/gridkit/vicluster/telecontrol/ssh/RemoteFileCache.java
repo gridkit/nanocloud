@@ -61,12 +61,7 @@ public class RemoteFileCache {
 		sftp = (ChannelSftp) session.openChannel("sftp");
 		sftp.connect();
 		
-		try {
-			sftp.mkdir(agentHome);
-		}
-		catch(SftpException e) {
-			// ignore;
-		}
+		sftpMkdir(sftp, agentHome);
 		
 		sftp.cd(agentHome);
 		agentHomePath = sftp.pwd();
@@ -133,7 +128,7 @@ public class RemoteFileCache {
 			}
 			catch(SftpException e) {
 				if (tries > 0) {
-					LOGGER.warn("mkdir has failed: " + e.toString());
+					LOGGER.warn("mkdir \"" + path + "\" has failed: " + e.toString());
 				}
 				else {
 					throw e;

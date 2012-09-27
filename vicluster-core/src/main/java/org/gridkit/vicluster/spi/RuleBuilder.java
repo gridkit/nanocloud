@@ -3,8 +3,6 @@ package org.gridkit.vicluster.spi;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gridkit.vicluster.spi.RuleBuilder.GenericRuleS2;
-
 public class RuleBuilder {
 	
 	public static StartRules startRules() {
@@ -37,9 +35,7 @@ public class RuleBuilder {
 	public interface StartRules {
 		
 		public BeanRuleS1 prototype();
-		
 		public GenericRuleS1 rule();
-		
 	}
 	
 	public interface BeanRuleS1 {		
@@ -55,14 +51,13 @@ public class RuleBuilder {
 		BeanRuleS2 type(String type);
 		BeanRuleS2 type(Class<?> type);
 		BeanRule configuration();
-		
 	}
 	
 	public interface BeanRule extends Rule {
 
 		BeanRule a(String attr, Object value);
-
-		BeanRule implementationClass(Class<?> type);		
+		BeanRule implementationClass(Class<?> type);
+		BeanRule instantiator(SpiFactory factory);		
 	}
 	
 	public interface GenericRuleS1 {		
@@ -83,10 +78,13 @@ public class RuleBuilder {
 		
 		Rule a(String name, Object value);
 		Rule instantiator(SpiFactory factory);				
+		Rule instantiator(String name, SpiFactory factory);				
 	}
 
 	public interface GenericRule extends Rule {		
-		GenericRule a(String name, Object value);		
+		GenericRule a(String name, Object value);
+
+		GenericRule label(String label);		
 	}
 
 	private static class RuleBuilderImpl {
@@ -166,6 +164,12 @@ public class RuleBuilder {
 				}
 
 				@Override
+				public BeanRule instantiator(SpiFactory factory) {
+					a(AttrBag.INSTANCE, factory);
+					return this;
+				}
+
+				@Override
 				public BeanRule implementationClass(Class<?> type) {
 					a(ViSpiConsts.IMPL_CLASS, type.getName());
 					return this;
@@ -240,7 +244,13 @@ public class RuleBuilder {
 				@Override
 				public GenericRule a(String name, Object value) {
 					addToConf(name, value);
-					return null;
+					return this;
+				}
+
+				@Override
+				public GenericRule label(String label) {
+					a(AttrBag.LABEL, label);
+					return this;
 				}
 
 				@Override
@@ -263,6 +273,11 @@ public class RuleBuilder {
 				@Override
 				public Rule instantiator(SpiFactory instantiator) {					
 					return a(AttrBag.INSTANCE, instantiator);
+				}
+
+				@Override
+				public Rule instantiator(String name, SpiFactory factory) {
+					return a(name, factory);
 				}
 			};
 		}

@@ -329,6 +329,11 @@ class CloudManager<V extends ViNode> implements ViCloud<V> {
 		public void cancled() {
 			node.futureNode.setError(new CancellationException());
 		}
+		
+		@Override
+		public String toString() {
+			return "Init node: " + node.name;
+		}
 	}
 
 	private class ManagedNode extends ViNodeStub implements ViNode, DynNode, InvocationHandler {

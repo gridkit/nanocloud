@@ -167,15 +167,17 @@ public class Selectors {
 		}
 	}
 
-	private static class NotSet extends MatchLast {
+	private static class NotSet implements Selector {
+		
+		protected String attrName;
 		
 		public NotSet(String attrName) {
-			super(attrName);
+			this.attrName = attrName;
 		}
-		
+
 		@Override
-		protected boolean match(Object v) {
-			return v == null;
+		public boolean match(AttrBag bag) {
+			return !bag.containsKey(attrName);
 		}
 	}
 	

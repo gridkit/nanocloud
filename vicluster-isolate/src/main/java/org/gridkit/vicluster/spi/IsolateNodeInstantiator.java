@@ -11,6 +11,10 @@ public class IsolateNodeInstantiator implements SpiFactory {
 	@Override
 	public Object instantiate(ViCloudContext context, String attrName, AttrBag config) {
 		Isolate isolate = (Isolate)config.getLast(IsolateInstantiator.ISOLATE);
+		// TODO is it fine?
+		if (isolate == null) {
+			isolate = new Isolate((String)config.getLast(AttrBag.NAME));
+		}
 		
 		ViNodeSpi nodeSpi = new SimpleIsolateViNodeSpi(isolate);
 		NodeSpiHelper.initViNodeSPI(nodeSpi, context, config);

@@ -692,13 +692,17 @@ public class SensibleTaskService implements TaskService.Component {
 			}
 			else {
 				try {
-					tname = tname + " - " + unit.task.toString();
+					tname = tname + " - " + clip(unit.task.toString(), 32);
 				}
 				catch(Throwable e) {					
 					tname = tname + " - ???"; 
 				}
 			}
 			thread.setName(tname);
+		}
+
+		private String clip(String string, int limit) {
+			return string.length() > limit ? string.substring(0, limit) : string;
 		}
 	}
 

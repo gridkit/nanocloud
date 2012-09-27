@@ -56,9 +56,9 @@ import com.jcraft.jsch.SftpException;
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class SimpleSshJvmReplicator implements JvmProcessFactory {
+public class RelaySshJvmReplicator implements JvmProcessFactory {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSshJvmReplicator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RelaySshJvmReplicator.class);
 	
 	private SshSessionFactory factory;
 	private String host;
@@ -75,13 +75,13 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	private RemotingHub hub = new RemotingHub();
 	private int controlPort;
 
-	public SimpleSshJvmReplicator(String host, String account, SshSessionFactory sshFactory) {
+	public RelaySshJvmReplicator(String host, String account, SshSessionFactory sshFactory) {
 		this.host = host;
 		this.account = account;
 		this.factory = sshFactory;
 	}
 
-	public SimpleSshJvmReplicator(Session session) {
+	public RelaySshJvmReplicator(Session session) {
 		initPortForwarding(session);
 		sessionCache.add(new SessionInfo(session));
 	}
@@ -116,7 +116,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	}
 	
 	@Override
-	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
+	private ControlledProcess createDirectProcess(String caption, JvmConfig jvmArgs) throws IOException {
 		ExecCommand jvmCmd = new ExecCommand(javaExecPath);
 		jvmCmd.setWorkDir(agentHome);
 		jvmArgs.apply(jvmCmd);
@@ -139,6 +139,11 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		return session;
 	}
 	
+	@Override
+	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
+		return null;
+	}
+
 	private synchronized Session getSession() throws JSchException {
 		if (factory == null) {
 			return sessionCache.get(0).session;
@@ -181,7 +186,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 			int port;
 			try {
 				port = 50000 + random.nextInt(1000);
-				ssh.setPortForwardingR(port, SimpleSshJvmReplicator.class.getName() + "$" + RemotingTunnelAcceptor.class.getSimpleName(), new Object[]{SimpleSshJvmReplicator.this});
+				ssh.setPortForwardingR(port, RelaySshJvmReplicator.class.getName() + "$" + RemotingTunnelAcceptor.class.getSimpleName(), new Object[]{RelaySshJvmReplicator.this});
 			}
 			catch(JSchException e) {
 				LOGGER.warn("Failed to forward port " + e.toString());
@@ -364,14 +369,14 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		private ChannelForwardedTCPIP channel;
 		private InputStream in;
 		private OutputStream out;
-		private SimpleSshJvmReplicator host;
+		private RelaySshJvmReplicator host;
 		
 		public RemotingTunnelAcceptor() {
 		}
 		
 		@Override
 		public void setArg(Object[] arg) {
-			host = (SimpleSshJvmReplicator) arg[0];
+			host = (RelaySshJvmReplicator) arg[0];
 		}
 
 		@Override

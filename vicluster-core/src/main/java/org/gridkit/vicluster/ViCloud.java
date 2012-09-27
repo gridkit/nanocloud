@@ -2,6 +2,8 @@ package org.gridkit.vicluster;
 
 import java.util.List;
 
+import org.gridkit.vicluster.spi.CloudConfigSet;
+
 public interface ViCloud<V extends ViNode> {
 
 	public V node(String pattern);
@@ -14,6 +16,8 @@ public interface ViCloud<V extends ViNode> {
 
 	public List<V> listByLabel(String pattern);
 	
+	public void applyConfig(CloudConfigSet rules);
+
 	public void shutdown();
 	
 }

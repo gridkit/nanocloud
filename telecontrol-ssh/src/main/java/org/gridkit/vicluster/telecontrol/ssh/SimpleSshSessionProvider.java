@@ -46,6 +46,10 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		this.jsch = jsch;
 	}
 	
+	public String getUser() {
+		return user;
+	}
+	
 	public void setUser(String user) {
 		this.user = user;
 	}
