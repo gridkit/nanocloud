@@ -42,7 +42,7 @@ public class ProcessRemoteAdapter extends Process implements Serializable {
 	public synchronized InputStream getErrorStream() {
 		if (stdErr == null) {
 			StreamPipe pipe = new StreamPipe(16 << 10);
-			proxy.setStdOutReceiver(new OutputStreamRemoteAdapter(pipe.getOutputStream()));
+			proxy.setStdErrReceiver(new OutputStreamRemoteAdapter(pipe.getOutputStream()));
 			stdErr = pipe.getInputStream();
 		}
 		return stdErr;
