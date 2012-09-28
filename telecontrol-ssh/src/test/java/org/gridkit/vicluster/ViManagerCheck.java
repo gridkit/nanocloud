@@ -12,8 +12,8 @@ import junit.framework.Assert;
 import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
-import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshJvmReplicator;
+import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.junit.After;
 import org.junit.Test;
 
@@ -36,14 +36,16 @@ public class ViManagerCheck {
 		provider.addProvider(localSelector, localProvider);
 
 		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
-//		sshFactory.setUser("grimisuat");
-//		sshFactory.setPassword("@Mon_day5");
+		sshFactory.setUser("grimisuat");
+		sshFactory.setPassword("@Mon_day5");
 //		SshJvmReplicator replicator = new SshJvmReplicator("longmdcfu531.uk.db.com", sshFactory);
-//		replicator.setJavaExecPath("/apps/grimis/java/linux/jdk1.6.0_22/jre/bin/java");
-		sshFactory.setUser("coreserv");
-		sshFactory.setKeyFile("C:/WarZone/keys/dfdev.dsa");
 		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmrdfappd1.uk.db.com", null, sshFactory);
-		replicator.setJavaExecPath("/usr/lib64/jvm/java-1.6.0-sun/bin/java");
+		replicator.setJavaExecPath("/apps/grimis/java/linux/jdk1.6.0_22/jre/bin/java");
+
+//		sshFactory.setUser("coreserv");
+//		sshFactory.setKeyFile("C:/WarZone/keys/dfdev.dsa");
+//		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmrdfappd1.uk.db.com", null, sshFactory);
+//		replicator.setJavaExecPath("/usr/lib64/jvm/java-1.6.0-sun/bin/java");
 		replicator.setAgentHome(".gridagent");
 		try {
 			replicator.init();
@@ -80,6 +82,30 @@ public class ViManagerCheck {
 		
 		String name = ManagementFactory.getRuntimeMXBean().getName();
 		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);		
+	}
+
+	@Test
+	public void test_bulk_ssh_nodes() {
+		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "ssh-clone-jvm");
+
+		for(int i = 0; i != 50; ++i) {
+			manager.node("jvm.remote.node" + i);
+		}
+		
+		List<String> ids = manager.node("**.node*").massExec(new Callable<String>(){
+			@Override
+			public String call() throws Exception {
+				return ManagementFactory.getRuntimeMXBean().getName();
+			}
+		});
+		ids = new ArrayList<String>(ids);
+		
+		String name = ManagementFactory.getRuntimeMXBean().getName();
+		System.out.println("Local JVM: " + name);
+		System.out.println("Remote VMs:");
+		for(String vmname: ids) {
+			System.out.println("  " + vmname);
+		}
 	}
 	
 	@Test

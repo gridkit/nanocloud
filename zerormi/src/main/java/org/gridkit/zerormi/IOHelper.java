@@ -10,6 +10,11 @@ class IOHelper {
 		if (e instanceof EOFException) {
 			return true;
 		}
+		else if (e instanceof java.io.IOException) {
+			if ("pipe closed".equals(e.getMessage().toLowerCase())) {
+				return true;
+			}
+		}
 		else if (e instanceof SocketException) {
 			if ("connection reset".equals(e.getMessage().toLowerCase())) {
 				return true;

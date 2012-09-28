@@ -18,9 +18,12 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,8 +31,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -59,6 +65,8 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSshJvmReplicator.class);
 	
+	private static boolean USE_EXEC_RELAY = Boolean.valueOf(System.getProperty("org.gridkit.tecontrol.ssh.use-exec-realy", "true"));
+	
 	private SshSessionFactory factory;
 	private String host;
 	private String account;
@@ -73,6 +81,8 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 	
 	private RemotingHub hub = new RemotingHub();
 	private int controlPort;
+	
+	private RemoteControlSession controlSession;
 
 	public SimpleSshJvmReplicator(String host, String account, SshSessionFactory sshFactory) {
 		this.host = host;
@@ -99,13 +109,44 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		ExecCommand halloWorldCmd = new ExecCommand(javaExecPath);
 		halloWorldCmd.setWorkDir(agentHome);
 		halloWorldCmd.addArg("-cp").addArg(bootJarPath).addArg(HalloWorld.class.getName());
-		RemoteSshProcess rp = new RemoteSshProcess(getSession(), halloWorldCmd);
+		Process rp = createDirectProcess(halloWorldCmd);
 		rp.getOutputStream().close();
 		BackgroundStreamDumper.link(rp.getInputStream(), System.out);
 		BackgroundStreamDumper.link(rp.getErrorStream(), System.err);
 		rp.waitFor();
+		
+		if (USE_EXEC_RELAY) {
+			initControlSession();
+		}
 	}
 	
+	private void initControlSession() throws IOException, JSchException {
+		ExecCommand jvmCmd = new ExecCommand(javaExecPath);
+		jvmCmd.setWorkDir(agentHome);
+		jvmCmd.addArg("-Xms32m").addArg("-Xmx32m");
+		jvmCmd.addArg("-jar").addArg(bootJarPath);
+		
+		RemoteControlSession session = new RemoteControlSession();
+		String sessionId = hub.newSession("exec-relay", session);
+		jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(controlPort));
+		jvmCmd.addArg(agentHome);
+		session.setSessionId(sessionId);
+		
+		Process rp;
+		rp = createDirectProcess(jvmCmd);		
+		session.setProcess(rp);
+
+		OutputStream stdOut = new WrapperPrintStream("[exec|" + host + "] ", System.out);
+		OutputStream stdErr = new WrapperPrintStream("[exec|" + host + "] ", System.err);
+		
+		rp.getOutputStream().close();
+		BackgroundStreamDumper.link(rp.getInputStream(), stdOut);
+		BackgroundStreamDumper.link(rp.getErrorStream(), stdErr);
+		
+		session.getRemoteExecutor();
+		controlSession = session;
+	}
+
 	@Override
 	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 		ExecCommand jvmCmd = new ExecCommand(javaExecPath);
@@ -119,15 +160,43 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		jvmCmd.addArg(agentHome);
 		session.setSessionId(sessionId);
 		
-		RemoteSshProcess rp;
+		Process rp;
 		try {
-			rp = new RemoteSshProcess(getSession(), jvmCmd);
+			rp = createSlaveProcess(jvmCmd);
 		} catch (JSchException e) {
 			throw new IOException(e);
 		}
 		session.setProcess(rp);
 		
 		return session;
+	}
+
+	private Process createDirectProcess(ExecCommand jvmCmd) throws JSchException, IOException {
+		return new RemoteSshProcess(getSession(), jvmCmd);
+	}
+
+	private Process createSlaveProcess(ExecCommand jvmCmd) throws JSchException, IOException {
+		if (USE_EXEC_RELAY) {
+			Future<Process> pf = controlSession.remoteExecutorService.submit(new CreateProcessTask(jvmCmd));
+			try {
+				Process p = pf.get();
+				return p;
+			}
+			catch(InterruptedException e) {
+				throw new IOException("Interrupted");
+			}
+			catch(ExecutionException e) {
+				if (e.getCause() instanceof IOException) {
+					throw (IOException)e.getCause();
+				}
+				else {
+					throw new IOException(e);
+				}
+			}			
+		}
+		else {
+			return new RemoteSshProcess(getSession(), jvmCmd);
+		}
 	}
 	
 	private synchronized Session getSession() throws JSchException {
@@ -243,7 +312,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		
 		String sessionId;
 		ExecutorService remoteExecutorService;
-		RemoteSshProcess process;
+		Process process;
 		CountDownLatch connected = new CountDownLatch(1);
 		
 		@Override
@@ -260,7 +329,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 			this.sessionId = sessionId;
 		}
 
-		public void setProcess(RemoteSshProcess process) {
+		public void setProcess(Process process) {
 			this.process = process;
 		}
 
@@ -381,4 +450,82 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 			this.session = session;
 		}
 	}
+	
+	@SuppressWarnings("serial")
+	private static class CreateProcessTask implements Callable<Process>, Serializable {
+
+		private final ExecCommand command;
+		
+		public CreateProcessTask(ExecCommand command) {
+			this.command = command;
+		}
+
+		@Override
+		public Process call() throws Exception {
+			String home = command.getWorkDir();
+			String absolute = new File(home).getCanonicalPath();
+			new File(absolute).mkdirs();
+			command.setWorkDir(absolute);
+			ProcessBuilder pb = command.getProcessBuilder();
+			Process proc = pb.start();
+			return new ProcessRemoteAdapter(proc);
+		}
+	}
+	
+	// TODO make wrapper print stream shared utility class
+	private static class WrapperPrintStream extends FilterOutputStream {
+
+		private String prefix;
+		private PrintStream printStream;
+		private ByteArrayOutputStream buffer;
+		
+		public WrapperPrintStream(String prefix, PrintStream printStream) {
+			super(printStream);
+			this.prefix = prefix;
+			this.printStream = printStream;
+			this.buffer = new ByteArrayOutputStream();
+		}
+		
+		private void dumpBuffer() throws IOException {
+			printStream.append(prefix);
+			printStream.write(buffer.toByteArray());
+			printStream.flush();
+			buffer.reset();
+		}
+		
+		@Override
+		public synchronized void write(int c) throws IOException {
+			synchronized(printStream) {
+				buffer.write(c);
+				if (c == '\n') {
+					dumpBuffer();
+				}
+			}
+		}
+
+		@Override
+		public synchronized void write(byte[] b, int off, int len) throws IOException {
+			synchronized(printStream) {
+				for (int i = 0; i != len; ++i) {
+					if (b[off + i] == '\n') {
+						writeByChars(b, off, len);
+						return;
+					}
+				}
+				buffer.write(b, off, len);
+			}
+		}
+
+		private void writeByChars(byte[] cbuf, int off, int len) throws IOException {
+			for (int i = 0; i != len; ++i) {
+				write(cbuf[off + i]);
+			}
+		}
+
+		@Override
+		public void close() throws IOException {
+			super.flush();
+			dumpBuffer();			
+		}
+	}	
 }
