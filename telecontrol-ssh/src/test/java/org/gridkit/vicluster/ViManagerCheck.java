@@ -1,10 +1,15 @@
 package org.gridkit.vicluster;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 import junit.framework.Assert;
@@ -12,17 +17,24 @@ import junit.framework.Assert;
 import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
+import org.gridkit.vicluster.telecontrol.ssh.ConfigurableSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshJvmReplicator;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ViManagerCheck {
 
 	
-	private ViManager manager = createViManager();
+	private ViManager manager; 
 	
-	public ViManager createViManager() {
+	@Before
+	public void initCloud() throws IOException {
+		manager = createViManager();
+	}
+	
+	public ViManager createViManager() throws IOException {
 		CompositeViNodeProvider provider = new CompositeViNodeProvider();
 		
 		ViNodeProvider isolateProvider = new IsolateViNodeProvider();
@@ -35,18 +47,18 @@ public class ViManagerCheck {
 		localSelector.put(ViProps.NODE_TYPE, "clone-jvm");
 		provider.addProvider(localSelector, localProvider);
 
-		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
-		sshFactory.setUser("grimisuat");
-		sshFactory.setPassword("@Mon_day5");
-//		SshJvmReplicator replicator = new SshJvmReplicator("longmdcfu531.uk.db.com", sshFactory);
+		Properties props = new Properties();
+		File conf = new File(new File(System.getProperty("user.home")), "ssh-credentials.prop"); 
+		FileReader fr = new FileReader(conf);
+		props.load(fr);
+		fr.close();
+		
+		ConfigurableSshSessionProvider sshFactory = new ConfigurableSshSessionProvider(props);
 		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmrdfappd1.uk.db.com", null, sshFactory);
-		replicator.setJavaExecPath("/apps/grimis/java/linux/jdk1.6.0_22/jre/bin/java");
+//		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmdcfu531.uk.db.com", null, sshFactory);
+		replicator.setJavaExecPath("/apps/grimis/java/linux/jdk1.6.0_22/bin/java");
 
-//		sshFactory.setUser("coreserv");
-//		sshFactory.setKeyFile("C:/WarZone/keys/dfdev.dsa");
-//		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmrdfappd1.uk.db.com", null, sshFactory);
-//		replicator.setJavaExecPath("/usr/lib64/jvm/java-1.6.0-sun/bin/java");
-		replicator.setAgentHome(".gridagent");
+		replicator.setAgentHome("/tmp/.gridagent2");
 		try {
 			replicator.init();
 		} catch (Exception e) {
@@ -67,7 +79,6 @@ public class ViManagerCheck {
 	
 	@Test
 	public void test_ssh_node() {
-		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
 		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "ssh-clone-jvm");
 		
 		manager.node("jvm.remote.node1");
@@ -75,6 +86,8 @@ public class ViManagerCheck {
 		List<String> ids = manager.node("**.node1").massExec(new Callable<String>(){
 			@Override
 			public String call() throws Exception {
+				System.out.println("This is std out");
+				System.err.println("This is std err");
 				return ManagementFactory.getRuntimeMXBean().getName();
 			}
 		});
