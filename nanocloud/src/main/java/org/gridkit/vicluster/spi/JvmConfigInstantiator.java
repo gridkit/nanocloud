@@ -13,7 +13,7 @@ public class JvmConfigInstantiator implements SpiFactory {
 		String name = config.getLast(AttrBag.NAME);
 		String jvmPath = config.getLast(JVM_PATH);
 		String jvmWorkPath = config.getLast(JVM_WORK_PATH);
-		List<String> jvmOptions = config.getAllInOrder(JVM_OPTION);
+		List<String> jvmOptions = config.getAll(JVM_OPTION);
 		
 		JvmProcessConfiguration jvmConfig = new JvmProcessConfiguration();
 		jvmConfig.setName(name);

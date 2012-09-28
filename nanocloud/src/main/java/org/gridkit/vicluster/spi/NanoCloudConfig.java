@@ -1,5 +1,6 @@
 package org.gridkit.vicluster.spi;
 
+import org.gridkit.vicluster.spi.RuleBuilder.GenericRule;
 import org.gridkit.vicluster.spi.RuleBuilder.GenericRuleS2;
 
 public class NanoCloudConfig extends RuleSet {
@@ -29,11 +30,19 @@ public class NanoCloudConfig extends RuleSet {
 	}
 	
 	public HostGroupRule forHostGroup(String pattern) {
+		addRule(
+			RuleBuilder.newPrototype()
+				.activation()
+					.name(pattern)
+					.type(HostGroup.class)
+				.configuration()
+					.instantiator(new HostGroupInstantiator())
+		);
 		GenericRuleS2 gr = RuleBuilder.newRule().condition();
 		gr.matchName(pattern);		
-		return new HostRuleWrapper(gr);		
+		return new HostGroupRuleWrapper(gr);		
 	}
-	
+
 	public interface NodeRule {
 		
 		public void useSshRemoting();
@@ -43,6 +52,12 @@ public class NanoCloudConfig extends RuleSet {
 		public void useLocalJvmHost();
 		
 		public void useHost(String host);
+
+		public void useHostgroup(String group);
+
+		public void useHostgroup(String group, String colocId);
+
+		public void useColocation(String colocId);
 		
 		public void useAccount(String account);
 		
@@ -117,6 +132,37 @@ public class NanoCloudConfig extends RuleSet {
 					.type(HostConfiguration.class)
 				.configuration()
 					.a(RemoteAttrs.HOST_HOSTNAME, host)
+			);			
+		}
+
+		@Override
+		public void useHostgroup(String group) {
+			addRule(
+				gr
+					.type(ViNodeSpi.class)
+				.configuration()
+					.a(RemoteAttrs.NODE_HOSTGROUP, group)
+			);			
+		}
+
+		@Override
+		public void useHostgroup(String group, String colocId) {
+			addRule(
+				gr
+					.type(ViNodeSpi.class)
+				.configuration()
+					.a(RemoteAttrs.NODE_HOSTGROUP, group)
+					.a(RemoteAttrs.NODE_COLOCATION_ID, colocId)
+			);			
+		}
+
+		@Override
+		public void useColocation(String colocId) {
+			addRule(
+				gr
+					.type(ViNodeSpi.class)
+				.configuration()
+					.a(RemoteAttrs.NODE_COLOCATION_ID, colocId)
 			);			
 		}
 
@@ -208,5 +254,27 @@ public class NanoCloudConfig extends RuleSet {
 					.a(RemoteAttrs.HOST_DEFAULT_JAVA, javaCmd)					
 			);		
 		}
-	}		
+	}
+	
+	private class HostGroupRuleWrapper implements HostGroupRule {
+		
+		private final GenericRuleS2 gr;
+
+		public HostGroupRuleWrapper(GenericRuleS2 gr) {
+			this.gr = gr;
+		}
+
+		@Override
+		public void useHosts(String... hosts) {
+			GenericRule r = gr
+				.type(HostGroup.class)
+			.configuration();
+			
+			for(String host: hosts) {
+				r.a(RemoteAttrs.HOSTGROUP_HOST, host);
+			}
+			
+			addRule(r);			
+		}
+	}			
 }

@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class HostGroupInstantiator implements SpiFactory {
 
 	@Override
 	public Object instantiate(ViCloudContext context, String attrName, AttrBag config) {
-		List<String> hosts = config.getAllInOrder(RemoteAttrs.HOSTGROUP_HOST);
+		List<String> hosts = config.getAll(RemoteAttrs.HOSTGROUP_HOST);
 		if (hosts.isEmpty()) {
 			throw new IllegalArgumentException("Host list is empty. Bean: " + config);
 		}
@@ -33,8 +34,8 @@ public class HostGroupInstantiator implements SpiFactory {
 		}
 
 		@Override
-		public synchronized Host resolveHost(AttrBag nodeConfig) {
-			String coloc = nodeConfig.getLast(RemoteHostResolver.COLOCATION_ID);
+		public Host resolveHost(AttrBag nodeConfig) {
+			String coloc = nodeConfig.getLast(RemoteAttrs.NODE_COLOCATION_ID);
 			if (hosts.isEmpty()) {
 				throw new IllegalArgumentException("All hosts are down");
 			}
@@ -47,7 +48,7 @@ public class HostGroupInstantiator implements SpiFactory {
 			}
 		}
 
-		private Host nextUncolocatedHost() {
+		private synchronized Host nextUncolocatedHost() {
 			while(true) {
 				if (nextUncolocated >= hosts.size()) {
 					nextUncolocated = 0;
@@ -59,6 +60,7 @@ public class HostGroupInstantiator implements SpiFactory {
 				Host host = getHost(hostId);
 				if (host.verify()) {
 					++nextUncolocated;
+					System.out.println("Host allocated: " + hostId);
 					return host;
 				}
 				else {
@@ -69,7 +71,7 @@ public class HostGroupInstantiator implements SpiFactory {
 			}
 		}
 
-		public Host getColocatedHost(String coloc) {
+		public synchronized Host getColocatedHost(String coloc) {
 			if (colocation.containsKey(coloc)) {
 				String hostId = colocation.get(coloc);
 				return getHost(hostId);
@@ -86,6 +88,7 @@ public class HostGroupInstantiator implements SpiFactory {
 				if (host.verify()) {
 					colocation.put(coloc, hostId);
 					++nextCollocated;
+					System.out.println("Host allocated (" + coloc + ") : " + hostId);
 					return host;
 				}
 				else {
@@ -97,12 +100,19 @@ public class HostGroupInstantiator implements SpiFactory {
 		}
 		
 		private Host getHost(String hostId) {
-			Host host = context.getNamedInstance(hostId, Host.class);
+			Host host = context.ensureNamedInstance(hostId, Host.class);
 			if (host == null) {
 				throw new IllegalArgumentException("Unknown host: " + hostId);
 			}
 			return host;
 		}
 	}
-
+	
+	private static class HostInfo {
+		
+		String hostName;
+		Host host;
+		boolean alive;
+		
+	}
 }

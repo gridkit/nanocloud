@@ -2,6 +2,7 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
 import java.nio.ByteBuffer;
 
 import org.gridkit.util.concurrent.Box;
@@ -101,6 +102,7 @@ public interface ByteStream {
 				}
 			}
 			catch(IOException e) {
+				System.err.println("Error at stream: " + output.toString());
 				lastError = e;
 				superviser.onFatalError(SuperviserEvent.newStreamError(this, e));
 			}
@@ -115,6 +117,7 @@ public interface ByteStream {
 		@Override
 		public void endOfStream() {
 			try {
+				System.err.println("Closing stream: " + output.toString());
 				terminated = true;
 				output.close();
 			} catch (IOException e) {

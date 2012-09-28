@@ -341,7 +341,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 
 		@Override
 		public boolean isClosed() {
-			return channel.isConnected();
+			return !channel.isConnected();
 		}
 
 		@Override
@@ -354,7 +354,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 			try {
 				return "[SSH Tunnel: " + channel.getSession().getHost() + ":" + channel.getRemotePort() + "]";
 			} catch (JSchException e) {
-				return "[SSH Tunnel: ?:" + channel.getRemotePort() + "]";
+				return "[SSH Tunnel: ?:" + e.toString() + "]";
 			}
 		}
 	}

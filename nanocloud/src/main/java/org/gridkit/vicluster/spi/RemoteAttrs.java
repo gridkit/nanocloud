@@ -2,6 +2,10 @@ package org.gridkit.vicluster.spi;
 
 public interface RemoteAttrs {
 
+	public static final String NODE_HOST = "node.host";
+	public static final String NODE_HOSTGROUP = "node.hostgroup";
+	public static final String NODE_COLOCATION_ID = "node.colocation-id";
+	
 	public static final String HOST_HOSTNAME = "host.hostname";
 	public static final String HOST_LOGIN = "host.login";
 	public static final String HOST_PASSWORD = "host.password";

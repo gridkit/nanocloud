@@ -1,5 +1,9 @@
 package org.gridkit.vicluster.spi;
 
+import java.net.InetAddress;
+import java.util.List;
+import java.util.concurrent.Callable;
+
 import org.gridkit.vicluster.NanoNode;
 import org.gridkit.vicluster.ViCloud;
 import org.junit.After;
@@ -41,6 +45,9 @@ public class NewNanoCloudCheck {
 
 		config.forHost("longmrdfappd*.uk.db.com")
 			.useAgentHomeAt("/tmp/.gridagent2");
+		
+		config.forHostGroup("group1")
+			.useHosts("longmrdfappd1.uk.db.com", "longmrdfappd2.uk.db.com", "longmrdfappd2.uk.db.com");
 		
 		cloud.applyConfig(config);
 	}
@@ -116,5 +123,28 @@ public class NewNanoCloudCheck {
 				System.out.println("Hallo nanocloud");
 			}
 		});
+	}
+
+	@Test
+	public void test_host_group() {
+		
+		cloud.node("node-*").label("remote");
+		cloud.node("node-*").remote().hostGroup("group1");
+		
+		cloud.node("node-a").touch();
+		cloud.node("node-b").touch();
+		cloud.node("node-c").touch();
+		cloud.node("node-d").touch();
+		
+		List<String> hosts = cloud.node("node-*").massExec(new Callable<String>() {
+			@Override
+			public String call() throws Exception {
+				String host = InetAddress.getLocalHost().getHostName();
+				System.err.println("Hallo: " + host);
+				return host;
+			}
+		});
+		
+		System.out.println("Hosts: " + hosts);
 	}
 }

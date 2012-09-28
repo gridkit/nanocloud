@@ -83,7 +83,7 @@ public class NanoCloudFactory {
 	}
 	
 	public static ViCloud<NanoNode> createCloud() {
-		CloudManager<NanoNode> cloud = CloudManager.newIstance(NanoNode.class, new IsolateViNodeExtention());
+		CloudManager<NanoNode> cloud = CloudManager.newIstance(NanoNode.class, new IsolateViNodeExtention(), new RemoteNodeExtentions());
 		cloud.applyConfig(defaultNanoCloudConfig());		
 		return cloud;				
 	}	

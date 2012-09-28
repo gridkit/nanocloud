@@ -71,8 +71,13 @@ class CloudContext implements ViCloudContext {
 			throw new NullPointerException("name should not be null");
 		}
 		AttrBag bean = getResource(name, type.getName());
-		Object obj = bean.getLast(AttrBag.INSTANCE);
-		return type.cast(obj);
+		if (bean == null) {
+			return null;
+		}
+		else {
+			Object obj = bean.getLast(AttrBag.INSTANCE);
+			return type.cast(obj);
+		}
 	}
 	
 	public <V> V ensureNamedInstance(String name, Class<V> type) {

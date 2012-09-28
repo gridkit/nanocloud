@@ -1,5 +1,7 @@
 package org.gridkit.vicluster;
 
-public interface RemoteViNode {
+public interface RemoteViNode extends ViNode {
 
+	public RemoteDetails remote();
+	
 }

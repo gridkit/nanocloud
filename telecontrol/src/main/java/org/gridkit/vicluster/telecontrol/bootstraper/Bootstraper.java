@@ -49,6 +49,7 @@ public class Bootstraper {
 		String id = args[0];
 		String host = args[1];
 		int port = Integer.valueOf(args[2]);
+		System.out.println("Channel ID: " + id + " @" + host + ":" + port);
 		
 		new Bootstraper(id, host, port).start();
 		System.exit(0);

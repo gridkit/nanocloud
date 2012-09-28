@@ -72,7 +72,6 @@ class BeanConfig implements AttrBag {
 	@Override
 	public <V> List<V> getAllInOrder(String name) {
 		List<V> result = convertOut(this.<V>getAllInternal(name));
-		Collections.reverse(result);
 		return result;
 	}
 
@@ -86,7 +85,8 @@ class BeanConfig implements AttrBag {
 					return Any.cast(v);
 				}
 				else if (listProps.containsKey(name)){
-					Object v = listProps.get(name).get(listProps.size() - 1);
+					List<Object> list = listProps.get(name);
+					Object v = list.get(list.size() - 1);
 					v = ensureInstantiated(name, v);
 					return Any.cast(v);
 				}
@@ -143,15 +143,21 @@ class BeanConfig implements AttrBag {
 			if (b.object == null) {
 				synchronized(b) {
 					if (b.object == null) {
-						if (b.constructing) {
-							throw new IllegalArgumentException("Cyclic dependency initializing " + b.attrName + " at " + this);
+						try {
+							if (b.constructing) {
+								throw new IllegalArgumentException("Cyclic dependency initializing " + b.attrName + " at " + this);
+							}
+							else {
+								b.constructing = true;
+							}
+							Object val = b.factory.instantiate(cloudContext, b.attrName, this);
+							cloudContext.init(this, val);
+							b.object = val;
 						}
-						else {
-							b.constructing = true;
+						catch(Throwable e) {
+							b.constructing = false;
+							Any.throwUncheked(e);
 						}
-						Object val = b.factory.instantiate(cloudContext, b.attrName, this);
-						cloudContext.init(this, val);
-						b.object = val;
 					}
 				}
 			}

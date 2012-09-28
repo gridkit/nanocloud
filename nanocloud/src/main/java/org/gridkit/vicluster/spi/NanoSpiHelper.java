@@ -17,7 +17,10 @@ public class NanoSpiHelper {
 	};
 
 	public static AttrBag configureHost(ViCloudContext context, AttrBag nodeInfo) {
-		String name = nodeInfo.getLast(AttrBag.NAME);
+		String name = nodeInfo.getLast(RemoteAttrs.NODE_HOST);
+		if (name == null) {
+			name = nodeInfo.getLast(AttrBag.NAME);
+		}
 		String type = HostConfiguration.class.getName();
 
 		AttrList proto = new AttrList();

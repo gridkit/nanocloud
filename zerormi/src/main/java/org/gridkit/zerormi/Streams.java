@@ -122,8 +122,8 @@ public class Streams {
 					stream.close();
 				} catch (IOException e) {
 					// ignore
-				}				
-			}
+				}
+			}			
 		};
 		
 		ByteStream.InputSocket sock = toSocket(stream.getInput(), taskService, false);
