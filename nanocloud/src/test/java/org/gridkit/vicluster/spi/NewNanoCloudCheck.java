@@ -145,6 +145,6 @@ public class NewNanoCloudCheck {
 			}
 		});
 		
-		System.out.println("Hosts: " + hosts);
+		System.err.println("Hosts: " + hosts);
 	}
 }

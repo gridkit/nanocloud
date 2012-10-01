@@ -64,12 +64,10 @@ public class ChannelForwardedTCPIP extends Channel{
         Class c=Class.forName(target);
         daemon=(ForwardedTCPIPDaemon)c.newInstance();
 
-        PipedOutputStream out=new PipedOutputStream();
-        io.setInputStream(new PassiveInputStream(out
-                                                 , 32*1024
-                                                 ), false);
+        StreamPipe pipe = new StreamPipe(32 << 10);
+        io.setInputStream(pipe.getInputStream(), false);
 
-        daemon.setChannel(this, getInputStream(), out);
+        daemon.setChannel(this, getInputStream(), pipe.getOutputStream());
         Object[] foo=getPort(getSession(), rport);
         daemon.setArg((Object[])foo[3]);
 
@@ -123,7 +121,7 @@ public class ChannelForwardedTCPIP extends Channel{
       }
     }
     catch(Exception e){
-      System.err.println(e);
+      //System.err.println(e);
     }
     //thread=null;
     //eof();

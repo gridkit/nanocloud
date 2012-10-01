@@ -53,6 +53,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
@@ -107,8 +108,8 @@ public class RelaySshJvmReplicator implements JvmProcessFactory {
 		halloWorldCmd.addArg("-cp").addArg(bootJarPath).addArg(HalloWorld.class.getName());
 		RemoteSshProcess rp = new RemoteSshProcess(getSession(), halloWorldCmd);
 		rp.getOutputStream().close();
-		BackgroundStreamDumper.link(rp.getInputStream(), System.out);
-		BackgroundStreamDumper.link(rp.getErrorStream(), System.err);
+		BackgroundStreamDumper.link(rp.getInputStream(), System.out, false);
+		BackgroundStreamDumper.link(rp.getErrorStream(), System.err, false);
 		int exitCode = rp.waitFor();
 		if (exitCode != HalloWorld.EXIT_CODE) {
 			throw new IOException("Failed to start remote JVM, exit code: " + exitCode);

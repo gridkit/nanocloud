@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
+
 /**
  * Configurable SSH session provider capable of choosing different credentials for hosts.
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)

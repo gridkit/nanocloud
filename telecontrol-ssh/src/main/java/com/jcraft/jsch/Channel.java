@@ -192,20 +192,14 @@ public abstract class Channel implements Runnable{
     io.setExtOutputStream(out, dontclose);
   }
   public InputStream getInputStream() throws IOException {
-    PipedInputStream in=
-      new MyPipedInputStream(
-                             32*1024  // this value should be customizable.
-                             );
-    io.setOutputStream(new PassiveOutputStream(in), false);
-    return in;
+	StreamPipe pipe = new StreamPipe(32 << 10); // this value should be customizable
+    io.setOutputStream(pipe.getOutputStream(), false);
+    return pipe.getInputStream();
   }
   public InputStream getExtInputStream() throws IOException {
-    PipedInputStream in=
-      new MyPipedInputStream(
-                             32*1024  // this value should be customizable.
-                             );
-    io.setExtOutputStream(new PassiveOutputStream(in), false);
-    return in;
+    StreamPipe pipe = new StreamPipe(32 << 10); // this value should be customizable
+    io.setExtOutputStream(pipe.getOutputStream(), false);
+    return pipe.getInputStream();
   }
   public OutputStream getOutputStream() throws IOException {
     /*
@@ -316,34 +310,6 @@ public abstract class Channel implements Runnable{
     return out;
   }
 
-  class MyPipedInputStream extends PipedInputStream{
-    MyPipedInputStream() throws IOException{ super(); }
-    MyPipedInputStream(int size) throws IOException{
-      super();
-      buffer=new byte[size];
-    }
-    MyPipedInputStream(PipedOutputStream out) throws IOException{ super(out); }
-    MyPipedInputStream(PipedOutputStream out, int size) throws IOException{
-      super(out);
-      buffer=new byte[size];
-    }
-
-    /*
-     * TODO: We should have our own Piped[I/O]Stream implementation.
-     * Before accepting data, JDK's PipedInputStream will check the existence of
-     * reader thread, and if it is not alive, the stream will be closed.
-     * That behavior may cause the problem if multiple threads make access to it.
-     */
-    public synchronized void updateReadSide() throws IOException {
-      if(available() != 0){ // not empty
-        return;
-      }
-      in = 0;
-      out = 0;
-      buffer[in++] = 0;
-      read();
-    }
-  }
   void setLocalWindowSizeMax(int foo){ this.lwsize_max=foo; }
   void setLocalWindowSize(int foo){ this.lwsize=foo; }
   void setLocalPacketSize(int foo){ this.lmpsize=foo; }
@@ -496,10 +462,6 @@ public abstract class Channel implements Runnable{
         connected=false;
       }
 
-      if (this instanceof ChannelForwardedTCPIP) {
-    	  System.err.println("Disconnected: " + this);
-      }
-      
       close();
 
       eof_remote=eof_local=true;
@@ -546,29 +508,6 @@ public abstract class Channel implements Runnable{
     public void run(){c.output_thread();}
   }
 */
-
-  class PassiveInputStream extends MyPipedInputStream{
-    PipedOutputStream out;
-    PassiveInputStream(PipedOutputStream out, int size) throws IOException{
-      super(out, size);
-      this.out=out;
-    }
-    PassiveInputStream(PipedOutputStream out) throws IOException{
-      super(out);
-      this.out=out;
-    }
-    public void close() throws IOException{
-      if(out!=null){
-        this.out.close();
-      }
-      out=null;
-    }
-  }
-  class PassiveOutputStream extends PipedOutputStream{
-    PassiveOutputStream(PipedInputStream in) throws IOException{
-      super(in);
-    }
-  }
 
   void setExitStatus(int status){ exitstatus=status; }
   public int getExitStatus(){ return exitstatus; }
@@ -678,4 +617,179 @@ public abstract class Channel implements Runnable{
     }
     connected=true;
   }
+  
+  static class StreamPipe {
+		
+		private final byte[] buffer;
+		private boolean closedByReader;
+		private boolean closedByWriter;
+		
+		private int in = 0;
+		private int out = 0;
+		private int inBuffer = 0;
+		
+		public StreamPipe(int bufferSize) {
+			buffer = new byte[bufferSize];
+		}
+		
+		public InputStream getInputStream() {
+			return new PipeIn();
+		}
+		
+		public OutputStream getOutputStream() {
+			return new PipeOut();
+		}
+		
+		private int bufferRead(byte[] target, int offs, int size) throws IOException {
+			int pending = waitForData();
+			if (pending == 0) {
+				// end of stream
+				return -1;
+			}
+			int run = Math.min(size, pending);
+			run = Math.min(run, buffer.length - in);
+			System.arraycopy(buffer, in, target, offs, run);
+			in = (in + run) % buffer.length;
+			readNotify(run);
+			return run;		
+		}
+		
+		private void bufferWrite(byte[] data, int offs, int len) throws IOException {
+			waitForBuffer(len);
+			int run = buffer.length - out;
+			if (run > len) {
+				System.arraycopy(data, offs, buffer, out, len);
+				out += len;
+			}
+			else {
+				// wrap over buffer edge
+				System.arraycopy(data, offs, buffer, out, run);
+				System.arraycopy(data, offs + run, buffer, 0, len - run);
+				out = len - run;			
+			}
+			writeNotify(len);
+		}
+
+		private synchronized void waitForBuffer(int size) throws IOException {
+			while(true) {
+				if (closedByReader) {
+					throw new IOException("Pipe closed by reader");
+				}
+				else if (inBuffer + size < buffer.length) {
+					return;
+				}
+				else {
+					try {
+						this.wait();
+					} catch (InterruptedException e) {
+						throw new IOException("Pipe write interrupted");
+					}
+				}
+			}
+		}
+		
+		private int waitForData() {
+			if (inBuffer > 0) {
+				return inBuffer;
+			}
+			synchronized(this) {
+				while(true) {
+					if (inBuffer > 0 || closedByWriter) {
+						return inBuffer; 
+					}
+					else {
+						try {
+							this.wait();
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+					}
+				}
+			}
+		}
+		
+		private synchronized void writeNotify(int len) {
+			inBuffer += len;
+			this.notifyAll();		
+		}
+
+		private synchronized void readNotify(int len) {
+			inBuffer -= len;
+			this.notifyAll();		
+		}
+
+		private class PipeOut extends OutputStream {
+
+			@Override
+			public void write(int b) throws IOException {
+				write(new byte[]{(byte)b});			
+			}
+
+			@Override
+			public void write(byte[] b) throws IOException {
+				write(b, 0, b.length);
+			}
+
+			@Override
+			public void write(byte[] b, int off, int len) throws IOException {
+				int s = off;
+				int r = len;
+				while(r > 0) {
+					int p = Math.min(r, buffer.length / 2);
+					bufferWrite(b, s, p);
+					r -= p;
+					s += p;
+				}
+			}
+
+			@Override
+			public void flush() throws IOException {
+			}
+
+			@Override
+			public void close() throws IOException {
+				synchronized(StreamPipe.this) {
+					closedByWriter = true;
+					StreamPipe.this.notifyAll();
+				}
+			}
+		}
+		
+		private class PipeIn extends InputStream {
+
+			@Override
+			public int read() throws IOException {
+				byte[] bb = new byte[1];
+				if (read(bb) < 0) {
+					return -1;
+				}
+				else {
+					return bb[0];
+				}
+			}
+
+			@Override
+			public int read(byte[] b) throws IOException {
+				return bufferRead(b, 0, b.length);
+			}
+
+			@Override
+			public int read(byte[] b, int off, int len) throws IOException {
+				return bufferRead(b, off, len);
+			}
+
+			@Override
+			public int available() throws IOException {
+				return inBuffer;
+			}
+
+			@Override
+			public void close() throws IOException {
+				synchronized(StreamPipe.this) {
+					closedByReader = true;
+					StreamPipe.this.notifyAll();
+				}
+			}
+		}
+	}  
 }
