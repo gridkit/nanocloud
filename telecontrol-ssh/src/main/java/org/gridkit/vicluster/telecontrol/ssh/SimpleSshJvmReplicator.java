@@ -111,9 +111,13 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		halloWorldCmd.addArg("-cp").addArg(bootJarPath).addArg(HalloWorld.class.getName());
 		Process rp = createDirectProcess(halloWorldCmd);
 		rp.getOutputStream().close();
-		BackgroundStreamDumper.link(rp.getInputStream(), System.out);
-		BackgroundStreamDumper.link(rp.getErrorStream(), System.err);
-		rp.waitFor();
+		BackgroundStreamDumper.link(rp.getInputStream(), System.out, false);
+		BackgroundStreamDumper.link(rp.getErrorStream(), System.err, false);
+		int rcode = rp.waitFor();
+		if (rcode != 0) {
+			throw new IOException("Failed to start java");
+		};
+                 
 		
 		if (USE_EXEC_RELAY) {
 			initControlSession();

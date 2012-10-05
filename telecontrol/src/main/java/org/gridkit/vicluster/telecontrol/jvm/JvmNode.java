@@ -64,8 +64,8 @@ class JvmNode implements ViNode {
 		stdErr = new WrapperPrintStream("[" + name + "] ", System.err);
 		
 		process.getOutputStream().close();
-		BackgroundStreamDumper.link(process.getInputStream(), stdOut);
-		BackgroundStreamDumper.link(process.getErrorStream(), stdErr);
+		BackgroundStreamDumper.link(process.getInputStream(), stdOut, false);
+		BackgroundStreamDumper.link(process.getErrorStream(), stdErr, false);
 		
 		initPropperteis();
 		runStartupHooks();

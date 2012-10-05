@@ -37,6 +37,41 @@ public class BackgroundStreamDumper implements Runnable {
 		worker.start();
 	}
 	
+	public static void link(InputStream is, final OutputStream os, boolean closeOnEof) {
+		if (!closeOnEof) {
+			OutputStream wos = new OutputStream() {
+				@Override
+				public void write(int b) throws IOException {
+					os.write(b);					
+				}
+
+				@Override
+				public void write(byte[] b) throws IOException {
+					os.write(b);
+				}
+
+				@Override
+				public void write(byte[] b, int off, int len) throws IOException {
+					os.write(b, off, len);
+				}
+
+				@Override
+				public void flush() throws IOException {
+					os.flush();
+				}
+
+				@Override
+				public void close() throws IOException {
+					// do nothing
+				}
+			};
+			link(is, wos);
+		}
+		else {
+			link(is, os);
+		}
+	}
+
 	public static void link(InputStream is, OutputStream os) {
 		synchronized (BACKLOG) {
 			BACKLOG.add(new StreamPair(is, os));

@@ -27,8 +27,8 @@ public class LocalJvmProcessFactoryTest {
 		
 		Process p = process.getProcess();
 		p.getOutputStream().close();
-		BackgroundStreamDumper.link(p.getInputStream(), System.out);
-		BackgroundStreamDumper.link(p.getErrorStream(), System.err);
+		BackgroundStreamDumper.link(p.getInputStream(), System.out, false);
+		BackgroundStreamDumper.link(p.getErrorStream(), System.err, false);
 
 		String name = ManagementFactory.getRuntimeMXBean().getName();
 		Future<String> f = process.getExecutionService().submit(new GetJvmName());
