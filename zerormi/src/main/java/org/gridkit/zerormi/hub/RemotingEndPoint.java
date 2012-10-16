@@ -35,6 +35,9 @@ import org.slf4j.LoggerFactory;
  */
 public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler {
 
+	public static final String HEARTBEAT_PERIOD = "org.gridkit.telecontrol.slave.heart-beat-period";
+	public static final String HEARTBEAT_TIMEOUT = "org.gridkit.telecontrol.slave.heart-beat-timeout";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(RemotingEndPoint.class);
 	
 	private String uid;
@@ -42,8 +45,8 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	
 	private RmiGateway gateway;
 	
-	private long pingInterval = Long.valueOf(System.getProperty("org.gridkit.telecontrol.slave.heart-beat-period", "1000"));
-	private long heartBeatTimeout = Long.valueOf(System.getProperty("org.gridkit.telecontrol.slave.heart-beat-timeout", "60000"));
+	private long pingInterval = Long.valueOf(System.getProperty(HEARTBEAT_PERIOD, "1000"));
+	private long heartBeatTimeout = Long.valueOf(System.getProperty(HEARTBEAT_TIMEOUT, "60000"));
 	private Object pingSingnal = new Object();
 
 	private long lastHeartBeat = System.nanoTime(); 

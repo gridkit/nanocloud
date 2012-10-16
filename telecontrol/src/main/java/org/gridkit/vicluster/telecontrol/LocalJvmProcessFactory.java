@@ -145,7 +145,6 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	@Override
 	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 
-		ProcessBuilder pb;
 		RemoteControlSession session;
 
 		String filesep = System.getProperty("file.separator");
@@ -161,12 +160,10 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 			jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(socket.getLocalPort()));
 			session.setSessionId(sessionId);
 			
-			pb = jvmCmd.getProcessBuilder();
 		}
 		
-		Process p;
-
-		p = pb.start();
+		Process p = startProcess(caption, jvmCmd);
+		
 		synchronized(this) {
 			enlist(p);
 			session.setProcess(p);
@@ -191,6 +188,14 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		}
 		
 		return session;
+	}
+
+	protected Process startProcess(String name, ExecCommand jvmCmd) throws IOException {
+		ProcessBuilder pb;
+		pb = jvmCmd.getProcessBuilder();
+		Process p;
+		p = pb.start();
+		return p;
 	}
 	
 	private synchronized void enlist(Process p) {

@@ -44,6 +44,7 @@ public class FutureBox<V> implements Future<V>, Box<V> {
 		else {
 			finalized = true;
 			value = data;
+			ft.run();
 		}		
 	}
 
@@ -55,6 +56,7 @@ public class FutureBox<V> implements Future<V>, Box<V> {
 		else {
 			finalized = true;
 			error = e;
+			ft.run();
 		}		
 	}
 

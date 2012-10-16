@@ -34,7 +34,9 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
 import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
+import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 
 /**
  * 
@@ -269,7 +271,9 @@ class JvmNode implements ViNode {
 			Future<Void> f = submit(new Runnable() {
 				@Override
 				public void run() {
-					System.exit(0);
+					if (Isolate.currentIsolate() == null) {
+						System.exit(0);
+					}
 				}
 			});
 			try {

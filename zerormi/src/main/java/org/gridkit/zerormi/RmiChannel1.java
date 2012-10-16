@@ -133,10 +133,9 @@ public class RmiChannel1 implements RmiChannel {
         }
         terminated = true;
 
-        synchronized (object2remote) {
-            object2remote.clear();
-            remote2object.clear();
-        }
+        object2remote.clear();
+        remote2object.clear();
+
         remoteInstanceProxys.clear();
         for (RemoteCallContext context : remoteReturnWaiters.values()) {
             if (context.result == null) {
@@ -159,9 +158,9 @@ public class RmiChannel1 implements RmiChannel {
         long callId = remoteCall.getCallId();
 
         Object implementator;
-        synchronized (object2remote) {
-            implementator = remote2object.get(remoteCall.getRemoteInstance());
-        }
+        synchronized (this) {
+        	implementator = remote2object.get(remoteCall.getRemoteInstance());
+		}
 
         if (implementator == null) {
             return new RemoteReturn(true, new RemoteException(String.format("Instance %s has not been exported ", instance)), callId);
@@ -173,7 +172,7 @@ public class RmiChannel1 implements RmiChannel {
         try {
             implementationMethod = lookupMethod(methodId);
         } catch (Exception e) {
-            return new RemoteReturn(true, new RemoteException(String.format("Method cannot be resolved ", methodId)), callId);
+            return new RemoteReturn(true, new RemoteException(String.format("Method %s cannot be resolved. %s", methodId, e.toString())), callId);
         }
 
         Object methodReturn = null;
@@ -290,6 +289,7 @@ public class RmiChannel1 implements RmiChannel {
                 e.printStackTrace();
             }
             remoteInstanceProxys.put(remoteInstance, proxy);
+            object2remote.put(proxy, remoteInstance);
         }
         return proxy;
     }
@@ -299,24 +299,22 @@ public class RmiChannel1 implements RmiChannel {
     }
 
     @SuppressWarnings({ "rawtypes" })
-    private RemoteInstance exportObject(Class[] interfaces, Object obj) {
-        synchronized (object2remote) {
-            RemoteInstance remote = object2remote.get(obj);
-            if (remote == null) {
-                String uuid = UUID.randomUUID().toString();
-                String[] ifNames = new String[interfaces.length];
-                for (int i = 0; i != ifNames.length; ++i) {
-                    ifNames[i] = interfaces[i].getName();
-                }
-                remote = new RemoteInstance(uuid, ifNames);
-                object2remote.put(obj, remote);
-                remote2object.put(remote, obj);
+    private synchronized RemoteInstance exportObject(Class[] interfaces, Object obj) {
+        RemoteInstance remote = object2remote.get(obj);
+        if (remote == null) {
+            String uuid = UUID.randomUUID().toString();
+            String[] ifNames = new String[interfaces.length];
+            for (int i = 0; i != ifNames.length; ++i) {
+                ifNames[i] = interfaces[i].getName();
             }
-            return remote;
+            remote = new RemoteInstance(uuid, ifNames);
+            object2remote.put(obj, remote);
+            remote2object.put(remote, obj);
         }
+        return remote;
     }
 
-    public Object streamResolveObject(Object obj) throws IOException {
+    public synchronized Object streamResolveObject(Object obj) throws IOException {
     	
     	if (obj == null) {
     		return null;
@@ -331,13 +329,19 @@ public class RmiChannel1 implements RmiChannel {
             return bean;
         }
         if (obj instanceof RemoteRef) {
-            return getProxyFromRemoteInstance(((RemoteRef) obj).getIdentity());
+        	RemoteRef ref = (RemoteRef) obj;
+        	if (remote2object.containsKey(ref.getIdentity())) {
+        		return remote2object.get(ref.getIdentity());
+        	}
+        	else {
+        		return getProxyFromRemoteInstance(((RemoteRef) obj).getIdentity());
+        	}
         } else {
             return marshaler.readResolve(obj);
         }
     }
 
-    public Object streamReplaceObject(Object obj) throws IOException {
+    public synchronized Object streamReplaceObject(Object obj) throws IOException {
     	
     	if (obj == null) {
     		return null;
@@ -348,11 +352,9 @@ public class RmiChannel1 implements RmiChannel {
         }
 
         // allow explicit export
-        synchronized (object2remote) {
-            RemoteInstance id = object2remote.get(obj);
-            if (id != null) {
-                return new RemoteRef(id);
-            }
+        RemoteInstance id = object2remote.get(obj);
+        if (id != null) {
+            return new RemoteRef(id);
         }
 
         Object mr = marshaler.writeReplace(obj);
