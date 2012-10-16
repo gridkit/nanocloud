@@ -11,9 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.gridkit.util.concurrent.Barriers;
 import org.gridkit.util.concurrent.BlockingBarrier;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
-
+@Ignore("duplicated")
 public class SpeedLimitTest {
 
 	@Test
