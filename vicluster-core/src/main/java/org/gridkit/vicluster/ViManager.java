@@ -355,6 +355,10 @@ public class ViManager implements ViNodeSet {
 				throw new IllegalStateException("ViNode[" + name + "] is terminated");
 			}
 		}
+		
+		public String toString() {
+			return name;
+		}
 	}
 	
 	private static class DeferedNodeExecutor implements ViExecutor {
@@ -581,6 +585,11 @@ public class ViManager implements ViNodeSet {
 		@Override
 		public void shutdown() {
 			select().shutdown();
+		}
+		
+		@Override
+		public String toString() {
+			return pattern;
 		}
 	}
 	
