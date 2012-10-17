@@ -10,7 +10,7 @@ class IOHelper {
 		if (e instanceof EOFException) {
 			return true;
 		}
-		else if (e instanceof java.io.IOException) {
+		else if (e.getClass() == java.io.IOException.class) {
 			if ("pipe closed".equals(e.getMessage().toLowerCase())) {
 				return true;
 			}
