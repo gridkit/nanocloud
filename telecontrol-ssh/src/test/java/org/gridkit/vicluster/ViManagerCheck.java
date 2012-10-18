@@ -52,7 +52,7 @@ public class ViManagerCheck {
 		FileReader fr = new FileReader(conf);
 		props.load(fr);
 		fr.close();
-		
+/*		
 		ConfigurableSshSessionProvider sshFactory = new ConfigurableSshSessionProvider(props);
 		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmrdfappd1.uk.db.com", null, sshFactory);
 //		SimpleSshJvmReplicator replicator = new SimpleSshJvmReplicator("longmdcfu531.uk.db.com", null, sshFactory);
@@ -68,7 +68,7 @@ public class ViManagerCheck {
 		Map<String, String> sshSelector = new HashMap<String, String>();
 		localSelector.put(ViProps.NODE_TYPE, "ssh-clone-jvm");
 		provider.addProvider(sshSelector, sshProvider);
-		
+	*/	
 		return new ViManager(provider);
 	}
 	

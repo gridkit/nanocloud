@@ -1,5 +1,11 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
@@ -8,11 +14,57 @@ import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 
-public class ConfigurableCloud implements ViNodeProvider {
+public class ConfigurableNodeProvider implements ViNodeProvider {
 
 	private IsolateViNodeProvider isolateProvider;
 	private ViNodeProvider localProvider;
 	private ViNodeProvider remoteProvider;
+	
+	private Properties sshCredetials = new Properties();
+	
+	public void loadSshCredentials(String file) {
+		Properties props = new Properties();
+		String home = System.getProperty("user.home");
+		File f = new File(new File(home), file);
+		if (f.exists()) {
+			try {
+				FileInputStream fis = new FileInputStream(f);
+				props.load(fis);
+				try {
+					fis.close();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
+			catch(IOException e) {
+				throw new RuntimeException(e);
+			}
+			setSshCredentials(props);
+		}
+		else {
+			InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(file);
+			if (is == null) {
+				throw new IllegalArgumentException("No such file '" + file + "'");
+			}
+			else {
+				try {
+					props.load(is);
+					try {
+						is.close();
+					} catch (IOException e) {
+						// ignore
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+				setSshCredentials(props);
+			}
+		}
+	}
+	
+	public void setSshCredentials(Properties props) {
+		this.sshCredetials = props;
+	}
 	
 	@Override
 	public boolean verifyNodeConfig(ViNodeConfig config) {
@@ -52,7 +104,7 @@ public class ConfigurableCloud implements ViNodeProvider {
 	
 	private ViNodeProvider getRemoteProvider() {
 		if (remoteProvider == null) {
-			remoteProvider = new ConfigurableSshReplicator(new ConfigurableSshSessionProvider());
+			remoteProvider = new ConfigurableSshReplicator(new ConfigurableSshSessionProvider(sshCredetials));
 		}
 		return remoteProvider;
 	}

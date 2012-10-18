@@ -44,5 +44,9 @@ public class ViProps {
 	 * Host of which node is meant to run.
 	 */	
 	public static final String HOST = "node:host";
-	
+
+	/**
+	 * Label
+	 */	
+	public static final String LABEL = "label:";	
 }
