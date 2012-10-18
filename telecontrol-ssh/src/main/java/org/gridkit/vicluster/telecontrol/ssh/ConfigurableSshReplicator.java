@@ -15,16 +15,25 @@
  */
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.gridkit.vicluster.HostSideHook;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
+import org.gridkit.vicluster.WildProps;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +45,11 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableSshReplicator.class);
 	
-	private SshSessionFactory sshFactory;
+	private Map<String, WildProps> sshConfCache = new HashMap<String, WildProps>();
 	private Map<String, SessionInfo> sessions = new HashMap<String, SessionInfo>();
 	private ViNodeConfig defaultConfig = new ViNodeConfig();
 	
-	public ConfigurableSshReplicator(SshSessionFactory sshFactory) {
-		this.sshFactory = sshFactory;
-		RemoteNodeProps.setRemoteAccount(defaultConfig, "");
+	public ConfigurableSshReplicator() {
 		RemoteNodeProps.setRemoteJarCachePath(defaultConfig, ".gridagent");
 	}
 
@@ -67,54 +74,42 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 
 		synchronized(this) {
 			
-			String host = effectiveConfig.getProp(RemoteNodeProps.HOST);
-			if (host == null) {
-				throw new IllegalArgumentException("Remote host is not specified");
+			SshSessionConfig sc = resolveSsh(name, effectiveConfig);
+			
+			if (sc.host == null) {
+				throw new IllegalArgumentException("Remote host is not specified for node '" + name + "'");
 			}
-			String account = effectiveConfig.getProp(RemoteNodeProps.ACCOUNT);
-			String password = effectiveConfig.getProp(RemoteNodeProps.PASSWORD);
-			String keyFile = effectiveConfig.getProp(RemoteNodeProps.SSH_KEY_FILE);
-			String javaExec = effectiveConfig.getProp(RemoteNodeProps.JAVA_EXEC);
-			String jarCache = effectiveConfig.getProp(RemoteNodeProps.JAR_CACHE_PATH);
-	
-			String key = host + "|" + account + "|" + password + "|" + keyFile + "|" + javaExec + "|" + jarCache;
+
+			String key = sc.toString();
 			
 			session = sessions.get(key);
 			
 			if (session == null) {
 				session = new SessionInfo();
-				session.host = host;
-				session.account = account.length() == 0 ? null : account;
-				session.password = password;
-				session.keyFile = keyFile;
-				session.javaExec = javaExec;
-				session.jarCachePath = jarCache;
+				session.config = sc;
 				sessions.put(key, session);
 			}
 		}
 		
 		synchronized (session) {
 			if (session.session == null) {
-				SshSessionFactory ssh = sshFactory;
-				if (session.password != null || session.keyFile != null) {
-					SimpleSshSessionProvider simpleSsh = new SimpleSshSessionProvider();
-					simpleSsh.setUser(session.account);
-					if (session.password != null) {
-						simpleSsh.setPassword(session.password);
-					}
-					if (session.keyFile != null) {
-						simpleSsh.setKeyFile(session.keyFile);
-					}
-					ssh = simpleSsh;
+				SimpleSshSessionProvider ssh = new SimpleSshSessionProvider();
+				ssh.setUser(session.config.account);
+				if (session.config.password != null) {
+					ssh.setPassword(session.config.password);
 				}
-				session.session = new SimpleSshJvmReplicator(session.host, session.account, ssh);
+				if (session.config.keyFile != null) {
+					ssh.setKeyFile(session.config.keyFile);
+				}
+				
+				session.session = new SimpleSshJvmReplicator(session.config.host, session.config.account, ssh);
 				try {
-					session.session.setJavaExecPath(session.javaExec);
-					session.session.setAgentHome(session.jarCachePath);
+					session.session.setJavaExecPath(session.config.javaExec);
+					session.session.setAgentHome(session.config.jarCachePath);
 					session.session.init();
 				} catch (Exception e) {
 					session.session = null;
-					throw new RuntimeException("SSH connection failed: " + session.host, e);
+					throw new RuntimeException("SSH connection failed: " + session.config.host, e);
 				}
 			}
 			
@@ -151,13 +146,146 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		}
 	}
 
-	private static class SessionInfo {
+	private synchronized SshSessionConfig resolveSsh(String name, ViNodeConfig nodeConfig) {
+		SshSessionConfig s = new SshSessionConfig();
+		s.host = nodeConfig.getProp(RemoteNodeProps.HOST);
+		if (s.host == null) {
+			throw new IllegalArgumentException("No host defined for '" + name + "'");
+		}
+		if (s.host.startsWith("~")) {
+			s.host = transform(s.host, name);
+		}
+		WildProps sshconf = getConf(nodeConfig.getProp(RemoteNodeProps.SSH_CREDENTIAL_FILE));
+		if (sshconf != null) {
+			s.account = sshconf.get(s.host);
+			s.account = override(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
+			s.password = sshconf.get(s.account + "@" + s.host + "!password");
+			s.keyFile = sshconf.get(s.account + "@" + s.host + "!private-key");
+		}
+		
+		s.account = override(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
+		s.password = override(s.password, nodeConfig.getProp(RemoteNodeProps.PASSWORD));
+		s.keyFile = override(s.keyFile, nodeConfig.getProp(RemoteNodeProps.SSH_KEY_FILE));
+		s.javaExec = override(s.javaExec, nodeConfig.getProp(RemoteNodeProps.JAVA_EXEC));
+		s.jarCachePath = override(s.jarCachePath, nodeConfig.getProp(RemoteNodeProps.JAR_CACHE_PATH));
+		
+		if (s.account == null) {
+			throw new IllegalArgumentException("No account found for node '" + name + "'");
+		}
+		
+		if (s.password == null && s.keyFile == null) {
+			throw new IllegalArgumentException("No creadetials found for node '" + name + "'");
+		}
+		
+		return s;
+	}
+	
+	private String override(String def, String override) {
+		if (override != null) {
+			return override;
+		}
+		else {
+			return def;
+		}
+	}
+
+	private synchronized WildProps getConf(String path) {
+		if (path == null) {
+			return null;
+		}
+		else {
+			if (sshConfCache.containsKey(path)) {
+				return sshConfCache.get(path);
+			}
+			else {
+				try {
+					InputStream is = null;
+					if (path.startsWith("~/")) {
+						String userHome = System.getProperty("user.home");
+						File cpath = new File(new File(userHome), path.substring(2));
+						is = new FileInputStream(cpath);
+					}
+					else if (path.startsWith("resource:")) {
+						String rpath = path.substring("resource:".length());
+						ClassLoader cl = Thread.currentThread().getContextClassLoader();
+						is = cl.getResourceAsStream(rpath);
+						if (is == null) {
+							throw new FileNotFoundException("Resource not found '" + path + "'");
+						}
+					}
+					else {
+						if (new File(path).exists()) {
+							is = new FileInputStream(new File(path));
+						}
+						else {
+							try {
+								is = new URL(path).openStream();
+							}
+							catch(IOException e) {
+								// ignore
+							}
+							if (is == null) {
+								throw new FileNotFoundException("Cannot resolve path '" + path + "'");
+							}
+						}
+					}
+					WildProps wp = new WildProps();
+					wp.load(is);
+					sshConfCache.put(path, wp);
+					return wp;
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	}
+
+	static String transform(String pattern, String name) {
+		int n = pattern.indexOf('!');
+		if (n < 0) {
+			throw new IllegalArgumentException("Invalid host extractor [" + pattern + "]");
+		}
+		String format = pattern.substring(1, n);
+		Matcher m = Pattern.compile(pattern.substring(n + 1)).matcher(name);
+		if (!m.matches()) {
+			throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
+		}
+		else {
+			Object[] groups = new Object[m.groupCount()];
+			for(int i = 0; i != groups.length; ++i) {
+				groups[i] = m.group(i + 1);
+				try {
+					groups[i] = new Long((String)groups[i]);
+				}
+				catch(NumberFormatException e) {
+					// ignore
+				}				
+			}
+			try {
+				return String.format(format, groups);
+			}
+			catch(IllegalArgumentException e) {
+				throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
+			}
+		}
+	}
+	
+	private static class SshSessionConfig {
+		
 		String host;
 		String account;
 		String password;
 		String keyFile;
 		String javaExec;
-		String jarCachePath;		
+		String jarCachePath;
+		
+		public String toString() {
+			return host + "|" + account + "|" + password + "|" + keyFile + "|" + javaExec + "|" + jarCachePath;
+		}		
+	}
+	
+	private static class SessionInfo {
+		SshSessionConfig config;		
 		SimpleSshJvmReplicator session;
 		List<ViNode> processes = new ArrayList<ViNode>();
 	}

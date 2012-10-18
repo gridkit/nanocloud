@@ -1,5 +1,6 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -60,7 +61,12 @@ public class ProcessRemoteAdapter extends Process implements Serializable {
 
 	@Override
 	public void destroy() {
-		proxy.destroy();
+		try {
+			proxy.destroy();
+		}
+		catch(IOException e) {
+			// TODO logging
+		}
 	}
 
 	public interface RemoteProcess extends Remote {
@@ -73,7 +79,7 @@ public class ProcessRemoteAdapter extends Process implements Serializable {
 
 		public int exitValue();
 
-		public void destroy();
+		public void destroy() throws IOException;
 	}
 	
 	private class ProcessProxy implements RemoteProcess {

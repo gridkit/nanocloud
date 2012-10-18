@@ -8,8 +8,8 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
-import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshJvmReplicator;
+import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.junit.Test;
 
 import com.jcraft.jsch.JSchException;

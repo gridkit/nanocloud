@@ -108,18 +108,18 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 					sock.getOutputStream().write(magic);
 					sock.getOutputStream().flush();
 
-					LOGGER.info("Master socket connected");
+					LOGGER.debug("Master socket connected");
 					DuplexStream ss = new SocketStream(sock);
 					
 					gateway.connect(ss);
-					LOGGER.info("Gateway connected");
+					LOGGER.debug("Gateway connected");
 				}
 				
 				synchronized(pingSingnal) {
 					pingSingnal.wait(pingInterval);
 				}
 				
-				LOGGER.debug("Ping");
+				LOGGER.trace("Ping");
 				try {
 					gateway.getRemoteExecutorService().submit(new Ping()).get();
 					lastHeartBeat = System.nanoTime();

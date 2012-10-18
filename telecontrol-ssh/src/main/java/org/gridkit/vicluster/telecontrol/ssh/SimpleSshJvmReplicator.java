@@ -65,7 +65,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSshJvmReplicator.class);
 	
-	private static boolean USE_EXEC_RELAY = Boolean.valueOf(System.getProperty("org.gridkit.tecontrol.ssh.use-exec-realy", "true"));
+	private static boolean USE_EXEC_RELAY = Boolean.valueOf(System.getProperty("org.gridkit.tecontrol.ssh.use-exec-realy", "false"));
 	
 	private SshSessionFactory factory;
 	private String host;

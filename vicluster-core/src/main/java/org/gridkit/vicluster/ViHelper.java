@@ -3,6 +3,7 @@ package org.gridkit.vicluster;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 
 public class ViHelper {
@@ -36,4 +37,18 @@ public class ViHelper {
 		reader.close();
 	}
 
+	public static void configure(final ViManager manager, Iterable<Map.Entry<String, String>> props) {
+		for(Map.Entry<String, String> prop : props) {
+			String skey = prop.getKey();
+			String svalue = prop.getValue();
+			int pi = svalue.indexOf("=");
+			pi = pi < 0 ? svalue.length() : pi;
+			String pname = svalue.substring(0, pi).trim();
+			String pvalue = svalue.substring(pi);
+			if (pvalue.length() > 0) {
+				pvalue = pvalue.substring(1);
+			}
+			manager.node(skey).setProp(pname, pvalue);
+		}
+	}
 }

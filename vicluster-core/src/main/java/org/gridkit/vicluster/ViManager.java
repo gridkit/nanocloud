@@ -17,6 +17,7 @@ package org.gridkit.vicluster;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +27,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.gridkit.util.concurrent.BlockingBarrier;
-import org.gridkit.util.concurrent.LatchBarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,10 +93,17 @@ public class ViManager implements ViNodeSet {
 		}
 	}
 
+	public ViNode nodes(String... patterns) {
+		List<ViNode> nodes = new ArrayList<ViNode>();
+		for(String pattern: patterns) {
+			nodes.add(node(pattern));
+		}
+		return ViGroup.group(nodes);
+	}
+	
 	private synchronized void inferConfiguration(ManagedNode node) {
-		String name = node.name;
 		for(NodeSelector selector: dynamicSelectors.values()) {
-			if (selector.match(name)) {
+			if (selector.match(node)) {
 				selector.config.apply(node);
 			}
 		}		
@@ -119,13 +126,25 @@ public class ViManager implements ViNodeSet {
 	}
 
 	protected Collection<ViNode> listNodes(Pattern regEx) {
-		List<ViNode> result = new ArrayList<ViNode>();
-		for(ManagedNode vinode: liveNodes.values()) {
-			if (regEx.matcher(vinode.name).matches()) {
-				result.add(vinode);
-			}
+		if (liveNodes.isEmpty()) {
+			return Collections.emptyList();
 		}
-		return result;
+		else {
+			List<ViNode> result = new ArrayList<ViNode>();
+			for(ManagedNode vinode: liveNodes.values()) {
+				if (match(regEx, vinode) ) {
+					result.add(vinode);
+				}
+			}
+			return result;
+		}
+	}
+
+	private static boolean match(Pattern regEx, ManagedNode vinode) {
+		return regEx.matcher(vinode.name).matches()
+				|| regEx.matcher("." + vinode.name).matches()
+				|| regEx.matcher(vinode.name + ".").matches()
+				|| regEx.matcher("." + vinode.name + ".").matches();
 	}
 
 	@Override
@@ -155,7 +174,7 @@ public class ViManager implements ViNodeSet {
 		private ViNodeConfig config = new ViNodeConfig();
 		private ViExecutor nodeExecutor;
 		private ViNode realNode;
-		private LatchBarrier initLatch = new LatchBarrier();
+		private FutureTask<Void> initBarrier = new FutureTask<Void>(new InitTask(), null);
 		private boolean terminated;
 		
 		public ManagedNode(String name) {
@@ -265,7 +284,7 @@ public class ViManager implements ViNodeSet {
 		public void suspend() {
 			ensureExecutor();
 			try {
-				initLatch.pass();
+				initBarrier.get();
 			} catch (Exception e) {
 				LOGGER.warn("Node ["  + name + "], async init failed: " + e.toString());
 				return;
@@ -280,7 +299,7 @@ public class ViManager implements ViNodeSet {
 		public void resume() {
 			ensureExecutor();
 			try {
-				initLatch.pass();
+				initBarrier.get();
 			} catch (Exception e) {
 				LOGGER.warn("Node ["  + name + "], async init failed: " + e.toString());
 				return;
@@ -312,34 +331,10 @@ public class ViManager implements ViNodeSet {
 				throw new IllegalStateException("ViNode[" + name + "] is terminated");
 			}
 			if (nodeExecutor == null) {
-				nodeExecutor = new DeferedNodeExecutor(name, initLatch, asyncInitThreads, this);
+				nodeExecutor = new DeferedNodeExecutor(name, initBarrier, asyncInitThreads, this);
 				LOGGER.debug("ViNode[" + name + "] instantiating");
 				
-				asyncInitThreads.execute(new Runnable() {
-					@Override
-					public void run() {
-						String tname = swapThreadName("ViNode[" + name + "] init");
-						try {
-							ViNode realNode = provider.createNode(name, config);
-							synchronized(ManagedNode.this) {
-								if (terminated) {
-									realNode.shutdown();
-									initLatch.open();
-								}
-								else {
-									ManagedNode.this.realNode = realNode;
-									nodeExecutor = realNode;
-									LOGGER.debug("ViNode[" + name + "] instantiated");
-									initLatch.open();
-								}
-							}
-							//TODO handle exception
-						}
-						finally {
-							swapThreadName(tname);
-						}
-					}
-				});
+				asyncInitThreads.execute(initBarrier);
 			}
 		}
 		
@@ -359,16 +354,46 @@ public class ViManager implements ViNodeSet {
 		public String toString() {
 			return name;
 		}
+
+		private final class InitTask implements Runnable {
+			@Override
+			public void run() {
+				String tname = swapThreadName("ViNode[" + name + "] init");
+				try {
+					try {
+						ViNode realNode = provider.createNode(name, config);
+						synchronized(ManagedNode.this) {
+							if (terminated) {
+								realNode.shutdown();
+							}
+							else {
+								ManagedNode.this.realNode = realNode;
+								nodeExecutor = realNode;
+								LOGGER.debug("ViNode[" + name + "] instantiated");
+							}
+						}
+					}
+					catch(RuntimeException e) {
+						LOGGER.error("ViNode[" + name + "] initialization has failed", e);
+						throw e;
+					}
+					//TODO handle exception
+				}
+				finally {
+					swapThreadName(tname);
+				}
+			}
+		}
 	}
 	
 	private static class DeferedNodeExecutor implements ViExecutor {
 
 		private String name;
-		private BlockingBarrier barrier;
+		private Future<Void> barrier;
 		private ExecutorService executor;
 		private ViExecutor target;
 
-		public DeferedNodeExecutor(String name, BlockingBarrier barrier, ExecutorService executor, ViExecutor target) {
+		public DeferedNodeExecutor(String name, Future<Void> barrier, ExecutorService executor, ViExecutor target) {
 			this.name = name;
 			this.barrier = barrier;
 			this.executor = executor;
@@ -397,7 +422,7 @@ public class ViManager implements ViNodeSet {
 				public Void call() throws Exception {
 					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
 					try {
-						barrier.pass();
+						barrier.get();
 						target.exec(task);
 						return null;
 					}
@@ -415,7 +440,7 @@ public class ViManager implements ViNodeSet {
 				public Void call() throws Exception {
 					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
 					try {
-						barrier.pass();
+						barrier.get();
 						target.exec(task);
 						return null;
 					}
@@ -433,7 +458,7 @@ public class ViManager implements ViNodeSet {
 				public T call() throws Exception {
 					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
 					try {
-						barrier.pass();
+						barrier.get();
 						return target.exec(task);
 					}
 					finally {
@@ -466,7 +491,6 @@ public class ViManager implements ViNodeSet {
 	
 	private class NodeSelector implements ViNode {
 		
-		@SuppressWarnings("unused")
 		private String pattern;
 		private Pattern regEx;
 		
@@ -477,8 +501,8 @@ public class ViManager implements ViNodeSet {
 			this.regEx = GlobHelper.translate(pattern, ".");
 		}
 		
-		public boolean match(String name) {
-			return regEx.matcher(name).matches();
+		public boolean match(ManagedNode node) {
+			return ViManager.match(regEx, node);
 		}
 
 		private ViGroup select() {

@@ -38,6 +38,8 @@ public class RemoteNodeProps {
 
 	public static String SSH_KEY_FILE = "remote:ssh-key-file";
 
+	public static String SSH_CREDENTIAL_FILE = "remote:ssh-credential-file";
+
 	/**
 	 * Hint, remote path to java executable 
 	 */	
@@ -48,7 +50,21 @@ public class RemoteNodeProps {
 	 */
 	public static String JAR_CACHE_PATH = "remote:jar-cache-path"; 
 
+	private ViConfigurable config;
+	
+	public static RemoteNodeProps at(ViConfigurable target) {
+		return new RemoteNodeProps(target);
+	}
+	
+	protected RemoteNodeProps(ViConfigurable target) {
+		this.config = target;
+	}
+
 	public static void setRemoteHost(ViConfigurable config, String host) {
+		config.setProp(HOST, host);
+	}
+
+	public void setRemoteHost(String host) {
 		config.setProp(HOST, host);
 	}
 
@@ -56,11 +72,31 @@ public class RemoteNodeProps {
 		config.setProp(ACCOUNT, account);
 	}
 
+	public void setRemoteAccount(String account) {
+		config.setProp(ACCOUNT, account);
+	}
+
+	public static void setSshConfig(ViConfigurable config, String path) {
+		config.setProp(SSH_CREDENTIAL_FILE, path);
+	}
+
+	public void setSshConfig(String path) {
+		config.setProp(SSH_CREDENTIAL_FILE, path);
+	}
+	
 	public static void setRemoteJavaExec(ViConfigurable config, String javaExec) {
 		config.setProp(JAVA_EXEC, javaExec);
 	}
 
+	public void setRemoteJavaExec(String javaExec) {
+		config.setProp(JAVA_EXEC, javaExec);
+	}
+	
 	public static void setRemoteJarCachePath(ViConfigurable config, String jarCachePath) {
+		config.setProp(JAR_CACHE_PATH, jarCachePath);
+	}	
+
+	public void setRemoteJarCachePath(String jarCachePath) {
 		config.setProp(JAR_CACHE_PATH, jarCachePath);
 	}	
 }
