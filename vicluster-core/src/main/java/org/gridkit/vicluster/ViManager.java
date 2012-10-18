@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -60,7 +61,18 @@ public class ViManager implements ViNodeSet {
 			asyncInitThreads = Executors.newSingleThreadExecutor();
 		}
 		else {
-			asyncInitThreads = new ThreadPoolExecutor(deferedTaskLimit >> 2, deferedTaskLimit, 1, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1024));
+			asyncInitThreads = new ThreadPoolExecutor(deferedTaskLimit, deferedTaskLimit, 100, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1024), new ThreadFactory() {
+				
+				int counter = 1;
+				
+				@Override
+				public synchronized Thread newThread(Runnable r) {
+					Thread t = new Thread(r);
+					t.setName("ViManager-worker-" + (counter++));
+					t.setDaemon(true);
+					return t;
+				}
+			});
 		}
 	}
 	

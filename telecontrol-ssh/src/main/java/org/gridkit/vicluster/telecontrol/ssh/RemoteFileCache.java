@@ -97,11 +97,11 @@ public class RemoteFileCache {
 			--tries;
 			try {
 				if (!exists(sftp, rname)) {
-					LOGGER.info("Uploading: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
+					LOGGER.info("Uploading: " + session.getHost() + ":" + agentHomePath + "/" + rname + " " + data.length + " bytes");
 					sftp.put(new ByteArrayInputStream(data), rname);
 				}
 				else {
-					LOGGER.debug("Already exists: " + session.getHost() + ":" + rname + " " + data.length + " bytes");
+					LOGGER.debug("Already exists: " + session.getHost() + ":" + agentHomePath + "/" + rname + " " + data.length + " bytes");
 				}
 				return;
 			}

@@ -37,7 +37,7 @@ public class ConfigurableNodeProvider implements ViNodeProvider {
 			return getRemoteProvider().createNode(name, config);
 		}
 		else {
-			throw new IllegalArgumentException("Unknown node type: " + type);
+			throw new IllegalArgumentException("Unknown node type '" + type + "' for node '" + name + "'");
 		}
 	}
 

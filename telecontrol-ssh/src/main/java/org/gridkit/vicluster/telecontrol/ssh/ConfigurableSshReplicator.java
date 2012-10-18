@@ -76,10 +76,6 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			
 			SshSessionConfig sc = resolveSsh(name, effectiveConfig);
 			
-			if (sc.host == null) {
-				throw new IllegalArgumentException("Remote host is not specified for node '" + name + "'");
-			}
-
 			String key = sc.toString();
 			
 			session = sessions.get(key);
@@ -169,6 +165,10 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		s.javaExec = override(s.javaExec, nodeConfig.getProp(RemoteNodeProps.JAVA_EXEC));
 		s.jarCachePath = override(s.jarCachePath, nodeConfig.getProp(RemoteNodeProps.JAR_CACHE_PATH));
 		
+		if (s.host == null) {
+			throw new IllegalArgumentException("Remote host is not specified for node '" + name + "'");
+		}
+		
 		if (s.account == null) {
 			throw new IllegalArgumentException("No account found for node '" + name + "'");
 		}
@@ -176,6 +176,14 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		if (s.password == null && s.keyFile == null) {
 			throw new IllegalArgumentException("No creadetials found for node '" + name + "'");
 		}
+
+		if (s.javaExec == null) {
+			throw new IllegalArgumentException("Java command is not specified for '" + name + "'");
+		}
+
+		if (s.jarCachePath == null) {
+			throw new IllegalArgumentException("Jar cache location is not specified for '" + name + "'");
+		}		
 		
 		return s;
 	}

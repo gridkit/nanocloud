@@ -27,8 +27,10 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -43,7 +45,7 @@ public class RmiGateway {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RmiGateway.class);
 	
 	private final RmiChannel channel;
-	private final ExecutorService executor = Executors.newCachedThreadPool();
+	private final ExecutorService executor;
 	
 	private boolean connected = false;
 	private boolean terminated = false; 
@@ -73,8 +75,25 @@ public class RmiGateway {
 		this(name, new SmartRmiMarshaler());
 	}
 
+	private ExecutorService createRmiExecutor() {
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                100, TimeUnit.MILLISECONDS,
+                new SynchronousQueue<Runnable>(), new ThreadFactory() {
+					int counter = 1;
+					
+					@Override
+					public synchronized Thread newThread(Runnable r) {
+						Thread t = new Thread(r);
+						t.setName("RMI[" + name + "]-worker-" + (counter++));
+						t.setDaemon(true);
+						return t;
+					}
+				});
+	}
+
 	public RmiGateway(String name, RmiMarshaler marshaler) {
 		// TODO should include counter agent
+		this.executor = createRmiExecutor();
 		this.channel = new RmiChannel1(new MessageOut(), executor, marshaler);
 		this.service = new RemoteExecutionService();
 		this.name = name;
@@ -343,7 +362,7 @@ public class RmiGateway {
 
 	private class RemoteExecutionService extends AbstractExecutorService {
 		
-		private final ExecutorService threadPool = Executors.newCachedThreadPool();
+		private final ExecutorService threadPool = executor;
 		
 		@Override
 		public <T> Future<T> submit(Runnable task, T result) {
