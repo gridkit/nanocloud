@@ -33,6 +33,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.xml.ws.handler.MessageContext.Scope;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +119,13 @@ public class RmiGateway {
 				readerThread = this.readerThread;
 				
 				try {
+					out.writeObject("close");
+				}
+				catch(Exception e) {
+					// ignore
+				}
+				
+				try {
 					in.close();
 				}
 				catch(Exception e) {
@@ -161,6 +170,14 @@ public class RmiGateway {
 		}
 		LOGGER.info("RMI gateway [" + name +"] terminated.");
 		terminated = true;
+		
+		try {
+			out.writeObject("close");
+		}
+		catch(Exception e) {
+			// ignore
+		}
+
 		try {
 			out.close();
 		}
@@ -169,6 +186,12 @@ public class RmiGateway {
 		}
 		try {
 			in.close();
+		}
+		catch(Exception e) {
+			// ignore
+		}
+		try {
+			socket.close();
 		}
 		catch(Exception e) {
 			// ignore

@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import org.gridkit.vicluster.MassExec;
 import org.gridkit.vicluster.ViNode;
@@ -274,12 +275,22 @@ class JvmNode implements ViNode {
 					}
 				}
 			});
+			boolean destroyDelay = false;
 			try {
 				f.get(100, TimeUnit.MILLISECONDS);
+				destroyDelay = true;
+				
 			} catch (Exception e) {
 				// it doesn't matter 
 			}
 			executor.shutdown();
+			if (destroyDelay) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// ignore
+				}
+			}
 			process.destroy();
 			
 			active = false;

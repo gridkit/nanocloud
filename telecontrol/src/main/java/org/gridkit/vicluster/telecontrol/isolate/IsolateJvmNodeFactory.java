@@ -137,8 +137,21 @@ public class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
 		@Override
 		public synchronized void destroy() {
 			if (down.getCount() > 0) {
-				isolate.stop();
-				down.countDown();
+				Thread stopper = new Thread(new Runnable() {
+					
+					@Override
+					public void run() {
+						synchronized(IsolateProcess.this) {
+							if (down.getCount() > 0) {
+								down.countDown();
+								isolate.stop();
+							}
+						}						
+					}
+				});
+				stopper.setDaemon(true);
+				stopper.setName("StopIsolate[" + isolate.getName() + "]");
+				stopper.start();
 			}
 		}
 	}

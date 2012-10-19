@@ -617,6 +617,9 @@ public class Isolate {
 				} catch (InterruptedException e) {
 				}
 				++shutdownRetry;
+				if (shutdownRetry >  1000) {
+					break;
+				}
 			}
 			try {
 				if (!threadGroup.isDestroyed()) {
@@ -629,6 +632,7 @@ public class Isolate {
 			}
 			if (shutdownRetry >  1000) {
 				stdErr.println("Isolate clean up failed");
+				break;
 			}
 		}
 		cl = null;
