@@ -28,6 +28,8 @@ public interface ViNodeSet {
 	 */
 	public ViNode node(String namePattern);
 
+	public ViNode nodes(String... namePatterns);
+
 	/**
 	 * List non-terminated nodes matching namePattern
 	 */	

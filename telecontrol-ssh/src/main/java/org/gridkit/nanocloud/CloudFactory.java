@@ -20,6 +20,12 @@ public class CloudFactory {
 		return IsolateCloudFactory.createCloud(packages);
 	}
 	
+	public static ViManager createLocalCloud() {
+		ConfigurableNodeProvider provider = new ConfigurableNodeProvider(true);
+		ViManager cloud = new ViManager(provider);
+		return cloud;
+	}
+
 	public static ViManager createLocalCloud(String configFile) {
 		try {
 			
@@ -64,6 +70,14 @@ public class CloudFactory {
 		return cloud;		
 	}
 	
+	public static void applyConfig(ViManager manager, String config) {
+		try {
+			applyConfig(manager, openStream(config));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static void applyConfig(ViManager manager, Reader reader) {
 		WildProps wp = new WildProps();
 		try {

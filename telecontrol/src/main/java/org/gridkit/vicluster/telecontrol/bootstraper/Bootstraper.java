@@ -18,9 +18,7 @@ package org.gridkit.vicluster.telecontrol.bootstraper;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
-import java.util.TimerTask;
 
-import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 
 /**
@@ -53,7 +51,7 @@ public class Bootstraper {
 		int port = Integer.valueOf(args[2]);
 		
 		new Bootstraper(id, host, port).start();
-		if (Isolate.currentIsolate() == null) {
+		if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
 			System.exit(0);
 		}
 	}	

@@ -13,7 +13,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
-import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 
@@ -55,6 +54,7 @@ public class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
 		private static void start(ExecCommand jvmCmd) throws Exception {
 			System.setProperty(RemotingEndPoint.HEARTBEAT_PERIOD, String.valueOf(Integer.MAX_VALUE));
 			System.setProperty(RemotingEndPoint.HEARTBEAT_TIMEOUT, String.valueOf(Integer.MAX_VALUE));
+			System.setProperty("org.gridkit.suppress-system-exit", "true");
 			
 			System.out.println("Starting: " + jvmCmd.getCommand());
 			try {
