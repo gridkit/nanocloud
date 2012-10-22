@@ -31,6 +31,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -178,6 +179,36 @@ public class ViManager implements ViNodeSet {
 	protected synchronized void markAsDead(ManagedNode node) {
 		liveNodes.remove(node.name);
 		deadNodes.put(node.name, node);
+	}
+	
+	static String transform(String pattern, String name) {
+		int n = pattern.indexOf('!');
+		if (n < 0) {
+			throw new IllegalArgumentException("Invalid host extractor [" + pattern + "]");
+		}
+		String format = pattern.substring(1, n);
+		Matcher m = Pattern.compile(pattern.substring(n + 1)).matcher(name);
+		if (!m.matches()) {
+			throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
+		}
+		else {
+			Object[] groups = new Object[m.groupCount()];
+			for(int i = 0; i != groups.length; ++i) {
+				groups[i] = m.group(i + 1);
+				try {
+					groups[i] = new Long((String)groups[i]);
+				}
+				catch(NumberFormatException e) {
+					// ignore
+				}				
+			}
+			try {
+				return String.format(format, groups);
+			}
+			catch(IllegalArgumentException e) {
+				throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
+			}
+		}
 	}
 	
 	private class ManagedNode implements ViNode {
@@ -367,13 +398,31 @@ public class ViManager implements ViNodeSet {
 			return name;
 		}
 
+		private ViNode createNode() {
+			if (ViProps.NODE_TYPE_ALIAS.equals(config.getProp(ViProps.NODE_TYPE))) {
+				String host = config.getProp(ViProps.HOST);
+				if (host == null) {
+					throw new IllegalArgumentException("No host specified for node '" + name + "'");
+				}
+				if (host.startsWith("~")) {
+					host = transform(host, name);
+				}
+				ViNode hostnode = node(host);
+				return new ProxyViNode(name, hostnode);				
+			}
+			else {
+				ViNode realNode = provider.createNode(name, config);
+				return realNode;
+			}
+		}
+		
 		private final class InitTask implements Runnable {
 			@Override
 			public void run() {
 				String tname = swapThreadName("ViNode[" + name + "] init");
 				try {
 					try {
-						ViNode realNode = provider.createNode(name, config);
+						ViNode realNode = createNode();
 						synchronized(ManagedNode.this) {
 							if (terminated) {
 								realNode.shutdown();
@@ -635,4 +684,110 @@ public class ViManager implements ViNodeSet {
 		currentThread.setName(newName);
 		return name;
 	}
+	
+	
+	private static class ProxyViNode implements ViNode {
+		
+		private final String name;
+		private final ViNode node;
+		
+		public ProxyViNode(String name, ViNode node) {
+			this.name = name;
+			this.node = node;
+		}
+		
+		@Override
+		public void exec(Runnable task) {
+			node.exec(task);			
+		}
+		
+		@Override
+		public void exec(VoidCallable task) {
+			node.exec(task);			
+		}
+		
+		@Override
+		public <T> T exec(Callable<T> task) {
+			return node.exec(task);
+		}
+		
+		@Override
+		public Future<Void> submit(Runnable task) {
+			return node.submit(task);
+		}
+		
+		@Override
+		public Future<Void> submit(VoidCallable task) {
+			return node.submit(task);
+		}
+		
+		@Override
+		public <T> Future<T> submit(Callable<T> task) {
+			return node.submit(task);
+		}
+		
+		@Override
+		public <T> List<T> massExec(Callable<? extends T> task) {
+			return node.massExec(task);
+		}
+		
+		@Override
+		public List<Future<Void>> massSubmit(Runnable task) {
+			return node.massSubmit(task);
+		}
+		
+		@Override
+		public List<Future<Void>> massSubmit(VoidCallable task) {
+			return node.massSubmit(task);
+		}
+		
+		@Override
+		public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
+			return node.massSubmit(task);
+		}
+		
+		@Override
+		public void setProp(String propName, String value) {
+			node.setProp(propName, value);			
+		}
+		
+		@Override
+		public void setProps(Map<String, String> props) {
+			node.setProps(props);			
+		}
+
+		@Override
+		public void addStartupHook(String name, Runnable hook, boolean override) {
+			throw new UnsupportedOperationException();			
+		}
+		
+		@Override
+		public void addShutdownHook(String name, Runnable hook, boolean override) {
+			throw new UnsupportedOperationException();			
+		}
+		
+		@Override
+		public String getProp(String propName) {
+			return node.getProp(propName);
+		}
+		
+		@Override
+		public void suspend() {
+			// ignore
+		}
+		
+		@Override
+		public void resume() {
+			// ignore
+		}
+		
+		@Override
+		public void shutdown() {
+			// do nothing
+		}
+		
+		public String toString() {
+			return name;
+		}
+	}	
 }
