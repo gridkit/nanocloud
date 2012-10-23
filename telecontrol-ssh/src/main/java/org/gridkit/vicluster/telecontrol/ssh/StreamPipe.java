@@ -28,7 +28,15 @@ public class StreamPipe {
 	}
 	
 	private int bufferRead(byte[] target, int offs, int size) throws IOException {
-		int pending = waitForData();
+		if (size == 0) {
+			if (closedByWriter) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}
+		int pending = waitForData();		
 		if (pending == 0) {
 			// end of stream
 			return -1;

@@ -22,9 +22,9 @@ import java.net.InetAddress;
  * Dummy main class to ensure that JVM starts normally.
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class HalloWorld {
+public class HalloWelt {
 	public static void main(String[] args) throws IOException {
-		System.out.println("\"Hallo world\" from " + InetAddress.getLocalHost().getHostName());
+		System.out.println("\"Hallo welt!\" from " + InetAddress.getLocalHost().getHostName());
 		
 //		for(URL url: ((URLClassLoader)Thread.currentThread().getContextClassLoader()).getURLs()) {
 //			System.out.println(url);

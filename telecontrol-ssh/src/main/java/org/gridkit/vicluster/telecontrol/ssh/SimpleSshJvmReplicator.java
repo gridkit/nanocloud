@@ -45,7 +45,7 @@ import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
-import org.gridkit.vicluster.telecontrol.bootstraper.HalloWorld;
+import org.gridkit.vicluster.telecontrol.bootstraper.HalloWelt;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
@@ -108,7 +108,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		
 		ExecCommand halloWorldCmd = new ExecCommand(javaExecPath);
 		halloWorldCmd.setWorkDir(agentHome);
-		halloWorldCmd.addArg("-cp").addArg(bootJarPath).addArg(HalloWorld.class.getName());
+		halloWorldCmd.addArg("-cp").addArg(bootJarPath).addArg(HalloWelt.class.getName());
 		Process rp = createDirectProcess(halloWorldCmd);
 		rp.getOutputStream().close();
 		BackgroundStreamDumper.link(rp.getInputStream(), System.out, false);

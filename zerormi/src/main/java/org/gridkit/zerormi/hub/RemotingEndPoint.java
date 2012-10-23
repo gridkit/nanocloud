@@ -139,6 +139,7 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 
 	@Override
 	public void streamError(DuplexStream socket, Object stream, Exception error) {
+		LOGGER.warn("Slave read error: " + error.toString());
 		synchronized(pingSingnal) {
 			pingSingnal.notifyAll();
 		}

@@ -67,7 +67,12 @@ public class RemoteFileCache {
 			// ignore;
 		}
 		
-		sftp.cd(agentHome);
+		try {
+			sftp.cd(agentHome);
+		}
+		catch(SftpException e) {
+			throw new SftpException(e.id, "Failed: cd " + agentHome + " (" + e.getMessage() + ")");
+		}
 		agentHomePath = sftp.pwd();
 		sftpMkdir(sftp, CACHE_PATH);
 	}

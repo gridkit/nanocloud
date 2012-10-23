@@ -23,7 +23,7 @@ public class BasicJvmNodeTest {
 	@Test
 	public void hallo_world_test() {
 		
-		ViNode node = nfactory.createNode("HalloWorld", new ViNodeConfig());
+		ViNode node = nfactory.createNode("HalloWelt", new ViNodeConfig());
 		
 		node.exec(new Runnable() {
 			@Override
@@ -42,7 +42,7 @@ public class BasicJvmNodeTest {
 		
 		JvmProps.setJvmArg(config, "-Dtest-property=Y-a-a-hoo");
 		
-		ViNode node = nfactory.createNode("HalloWorld", config);
+		ViNode node = nfactory.createNode("HalloWelt", config);
 		
 		node.exec(new Runnable() {
 			@Override
@@ -63,7 +63,7 @@ public class BasicJvmNodeTest {
 		
 		JvmProps.setJvmArg(config, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
 		
-		ViNode node = nfactory.createNode("HalloWorld", config);
+		ViNode node = nfactory.createNode("HalloWelt", config);
 		
 		node.exec(new Runnable() {
 			@Override
@@ -86,7 +86,7 @@ public class BasicJvmNodeTest {
 		
 		JvmProps.setJvmArg(config, "-XX:+InvalidOption");
 		
-		ViNode node = nfactory.createNode("HalloWorld", config);
+		ViNode node = nfactory.createNode("HalloWelt", config);
 		
 		node.exec(new Runnable() {
 			@Override
