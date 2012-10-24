@@ -20,11 +20,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
+import org.gridkit.internal.com.jcraft.jsch.ChannelExec;
+import org.gridkit.internal.com.jcraft.jsch.JSchException;
+import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
 
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 
 /**
  * An implementation of {@link Process} representing process executed via SSH facility.

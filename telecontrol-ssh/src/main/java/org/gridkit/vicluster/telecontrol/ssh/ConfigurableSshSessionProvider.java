@@ -23,8 +23,9 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+import org.gridkit.internal.com.jcraft.jsch.JSchException;
+import org.gridkit.internal.com.jcraft.jsch.Session;
+
 
 /**
  * Configurable SSH session provider capable of choosing different credentials for hosts.

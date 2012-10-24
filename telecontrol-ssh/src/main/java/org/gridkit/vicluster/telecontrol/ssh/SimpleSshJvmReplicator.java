@@ -39,6 +39,11 @@ import java.util.concurrent.Future;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import org.gridkit.internal.com.jcraft.jsch.ChannelForwardedTCPIP;
+import org.gridkit.internal.com.jcraft.jsch.ForwardedTCPIPDaemon;
+import org.gridkit.internal.com.jcraft.jsch.JSchException;
+import org.gridkit.internal.com.jcraft.jsch.Session;
+import org.gridkit.internal.com.jcraft.jsch.SftpException;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
@@ -52,11 +57,6 @@ import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jcraft.jsch.ChannelForwardedTCPIP;
-import com.jcraft.jsch.ForwardedTCPIPDaemon;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
 
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)

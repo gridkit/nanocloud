@@ -19,14 +19,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.gridkit.internal.com.jcraft.jsch.JSch;
+import org.gridkit.internal.com.jcraft.jsch.JSchException;
+import org.gridkit.internal.com.jcraft.jsch.Session;
+import org.gridkit.internal.com.jcraft.jsch.UIKeyboardInteractive;
+import org.gridkit.internal.com.jcraft.jsch.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UIKeyboardInteractive;
-import com.jcraft.jsch.UserInfo;
 
 public class SimpleSshSessionProvider implements SshSessionFactory {
 
@@ -151,7 +151,7 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		}
 	}
 
-	private final static class JSchLogger implements com.jcraft.jsch.Logger {
+	private final static class JSchLogger implements org.gridkit.internal.com.jcraft.jsch.Logger {
 		
 		private org.slf4j.Logger logger;
 		
