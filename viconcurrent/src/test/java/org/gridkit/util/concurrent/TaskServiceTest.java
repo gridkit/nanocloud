@@ -54,6 +54,7 @@ public class TaskServiceTest {
 	
 	public static class SimplePollTask implements Task {
 		
+		@SuppressWarnings("unused")
 		private String name;
 		private TaskService service;
 		private long start;
