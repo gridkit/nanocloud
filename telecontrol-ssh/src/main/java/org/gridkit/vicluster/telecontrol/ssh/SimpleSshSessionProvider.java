@@ -56,6 +56,13 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 	
 	public void setKeyFile(String fileName) {
 		try {
+			if (fileName.startsWith("~/")) {
+				try {
+					fileName = new File(System.getProperty("user.home"), fileName.substring(2)).getCanonicalPath();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
 			File f = new File(fileName);
 			if (!f.exists()) {
 				// Try to lookup files in home directory
