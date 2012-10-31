@@ -75,6 +75,7 @@ class JvmNode implements ViNode {
 	private void initPropperteis() throws IOException {
 
 		final Properties props = new Properties();
+		props.put("vinode.name", name);
 		ReplyProps replay = new ReplyProps() {
 			@Override
 			protected void setPropInternal(String propName, String value) {
