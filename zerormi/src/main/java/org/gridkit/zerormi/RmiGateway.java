@@ -15,6 +15,7 @@
  */
 package org.gridkit.zerormi;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -214,7 +215,25 @@ public class RmiGateway {
 		}
 	}
 	
-	private final class SocketReader extends Thread {
+	private final class SocketReader extends Thread implements Closeable {
+		
+		// needed for Isolate shutdown support
+		@Override
+		public void close() throws IOException {
+			try {
+				in.close();
+			}
+			catch (IOException e) {
+				// ignore
+			}
+			try {
+				socket.close();
+			}
+			catch (IOException e) {
+				// ignore
+			}
+		}
+
 		@Override
 		public void run() {
 			

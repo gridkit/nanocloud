@@ -228,6 +228,11 @@ public class Isolate {
 		return stdErr;
 	}
 	
+	public void disableOutput() {
+		wrpOut.setSilenced(true);
+		wrpErr.setSilenced(true);
+	}
+	
 	public void addThreadKiller(ThreadKiller killer) {
 		threadKillers.add(killer);
 	}
@@ -1492,56 +1497,58 @@ public class Isolate {
 	    }
 	}
 	
+	// TODO make wrapper print stream shared utility class
 	private static class WrapperPrintStream extends FilterOutputStream {
 
 		private String prefix;
-		private boolean startOfLine;
 		private PrintStream printStream;
+		private ByteArrayOutputStream buffer;
+		private boolean silenced;
 		
 		public WrapperPrintStream(String prefix, PrintStream printStream) {
 			super(printStream);
 			this.prefix = prefix;
-			this.startOfLine = true;
 			this.printStream = printStream;
+			this.buffer = new ByteArrayOutputStream();
 		}
 		
 		public void setPrefix(String prefix) {
 			this.prefix = prefix;
 		}
 		
+		public void setSilenced(boolean silenced) {
+			this.silenced = silenced;
+		}
+		
+		private void dumpBuffer() throws IOException {
+			if (!silenced) {
+				printStream.append(prefix);
+				printStream.write(buffer.toByteArray());
+				printStream.flush();
+			}
+			buffer.reset();
+		}
+		
 		@Override
 		public synchronized void write(int c) throws IOException {
 			synchronized(printStream) {
-				checkNewLine();
+				buffer.write(c);
 				if (c == '\n') {
-					startOfLine = true;
-				}
-				super.write(c);
-				if (startOfLine) {
-					// flush after end of line
-					super.flush();
+					dumpBuffer();
 				}
 			}
 		}
 
-		private void checkNewLine() {
-			if (startOfLine) {
-				printStream.append(prefix);
-				startOfLine = false;
-			}
-		}
-	
 		@Override
 		public synchronized void write(byte[] b, int off, int len) throws IOException {
 			synchronized(printStream) {
-				checkNewLine();
 				for (int i = 0; i != len; ++i) {
 					if (b[off + i] == '\n') {
 						writeByChars(b, off, len);
 						return;
 					}
 				}
-				super.write(b, off, len);
+				buffer.write(b, off, len);
 			}
 		}
 
@@ -1554,8 +1561,9 @@ public class Isolate {
 		@Override
 		public void close() throws IOException {
 			super.flush();
+			dumpBuffer();			
 		}
-	}
+	}	
 	
 	private static abstract class PrintStreamMultiplexor extends PrintStream {
 		

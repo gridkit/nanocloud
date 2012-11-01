@@ -60,6 +60,11 @@
 	    	</dependency>
 	    	<dependency>
 	    		<groupId>org.gridkit.lab</groupId>
+	    		<artifactId>viconcurrent</artifactId>
+	    		<version>${project.version}</version>
+	    	</dependency>
+	    	<dependency>
+	    		<groupId>org.gridkit.lab</groupId>
 	    		<artifactId>vicluster-coherence</artifactId>
 	    		<version>${project.version}</version>
 	    	</dependency>

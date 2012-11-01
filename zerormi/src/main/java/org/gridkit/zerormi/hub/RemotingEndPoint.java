@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.gridkit.zerormi.DuplexStream;
@@ -123,6 +124,10 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				try {
 					gateway.getRemoteExecutorService().submit(new Ping()).get();
 					lastHeartBeat = System.nanoTime();
+				}
+				catch(RejectedExecutionException e) {
+					// shutting down
+					break;
 				}
 				catch(ExecutionException e) {
 					if (!gateway.isConnected()) {

@@ -41,6 +41,7 @@ public class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
 		
 		public IsolateProcess(String name, String[] isolatedPackages, final ExecCommand jvmCmd) {
 			isolate = new Isolate(name, isolatedPackages);
+			isolate.addThreadKiller(new CloseableThreadKiller());
 			isolate.start();
 			isolate.submit(new Callable<Void>() {
 				@Override
@@ -149,6 +150,10 @@ public class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
 						}						
 					}
 				});
+				isolate.getStdErr().println("Stopping isolate");
+				isolate.disableOutput();
+				// force full shutdown is creating a lot of noise
+				// it is better to ignore it
 				stopper.setDaemon(true);
 				stopper.setName("StopIsolate[" + isolate.getName() + "]");
 				stopper.start();
