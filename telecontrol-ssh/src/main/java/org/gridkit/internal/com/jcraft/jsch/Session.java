@@ -776,8 +776,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
     }
 
     if(insert &&
-       JSch.getLogger().isEnabled(Logger.WARN)){
-      JSch.getLogger().log(Logger.WARN, 
+       JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO, 
                            "Permanently added '"+host+"' ("+key_type+") to the list of known hosts.");
     }
 
