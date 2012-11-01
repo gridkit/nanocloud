@@ -50,13 +50,8 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.gridkit.lab</groupId>
-            <artifactId>vicluster-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+        	<groupId>org.gridkit.lab</groupId>
+        	<artifactId>telecontrol</artifactId>
         </dependency>
         
         <dependency>
@@ -79,8 +74,9 @@
         </dependency>
 
         <dependency>
-        	<groupId>org.gridkit.lab</groupId>
-        	<artifactId>telecontrol</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

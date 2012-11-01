@@ -69,12 +69,32 @@ public class JvmProps {
 	 */	
 	public static String JDK_CLARIFIER = "jdk:clarifier";
 
+	
+	public static JvmProps at(ViConfigurable config) {
+		return new JvmProps(config);
+	}
+	
+	private final ViConfigurable config;
+	
+	protected JvmProps(ViConfigurable config) {
+		this.config = config;
+	}
+	
+	@Deprecated
 	public static void setJvmArg(ViConfigurable config, String string) {
 		config.setProp(JVM_XX + "arg:" + string, string);
 	}
 
-	public static void setJvmArg(String name, ViConfigurable config, String string) {
-		config.setProp(JVM_XX + name, string);
+	public static void addJvmArg(ViConfigurable config, String string) {
+		config.setProp(JVM_XX + "arg:" + string, string);
 	}
-	
+
+	public JvmProps addJvmArg(String string) {
+		config.setProp(JVM_XX + "arg:" + string, string);
+		return this;
+	}
+
+	public static void setJvmArg(String logicalName, ViConfigurable config, String string) {
+		config.setProp(JVM_XX + logicalName, string);
+	}
 }

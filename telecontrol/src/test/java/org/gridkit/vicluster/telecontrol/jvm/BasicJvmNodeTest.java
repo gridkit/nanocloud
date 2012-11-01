@@ -40,7 +40,7 @@ public class BasicJvmNodeTest {
 		
 		ViNodeConfig config = new ViNodeConfig();
 		
-		JvmProps.setJvmArg(config, "-Dtest-property=Y-a-a-hoo");
+		JvmProps.addJvmArg(config, "-Dtest-property=Y-a-a-hoo");
 		
 		ViNode node = nfactory.createNode("HalloWelt", config);
 		
@@ -61,7 +61,7 @@ public class BasicJvmNodeTest {
 		
 		ViNodeConfig config = new ViNodeConfig();
 		
-		JvmProps.setJvmArg(config, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
+		JvmProps.addJvmArg(config, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
 		
 		ViNode node = nfactory.createNode("HalloWelt", config);
 		
@@ -84,7 +84,7 @@ public class BasicJvmNodeTest {
 		
 		ViNodeConfig config = new ViNodeConfig();
 		
-		JvmProps.setJvmArg(config, "-XX:+InvalidOption");
+		JvmProps.addJvmArg(config, "-XX:+InvalidOption");
 		
 		ViNode node = nfactory.createNode("HalloWelt", config);
 		
