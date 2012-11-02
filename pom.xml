@@ -28,13 +28,13 @@
 
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.7.7-SNAPSHOT</version>
+    <version>0.7.7</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.7.5</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.7.5</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.7.5</url>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/tags/vicluster-parent-0.7.7</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/tags/vicluster-parent-0.7.7</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/tags/vicluster-parent-0.7.7</url>
     </scm>
 
     <properties>
