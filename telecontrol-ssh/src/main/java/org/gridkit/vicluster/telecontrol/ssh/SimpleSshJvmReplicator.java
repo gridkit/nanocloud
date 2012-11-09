@@ -115,7 +115,7 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		BackgroundStreamDumper.link(rp.getErrorStream(), System.err, false);
 		int rcode = rp.waitFor();
 		if (rcode != 0) {
-			throw new IOException("Failed to start java");
+			throw new IOException("Failed to start java. Code: " + rcode);
 		};
                  
 		

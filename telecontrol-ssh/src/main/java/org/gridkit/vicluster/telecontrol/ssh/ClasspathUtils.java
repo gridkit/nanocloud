@@ -59,8 +59,8 @@ class ClasspathUtils {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
 		ZipOutputStream jarOut = manifest == null ? new JarOutputStream(bos) : new ZipOutputStream(bos);
 		ZipEntry e = new ZipEntry(JarFile.MANIFEST_NAME);
-		jarOut.putNextEntry(e);
 		e.setTime(0l); // this to ensure equal hash for equal content
+		jarOut.putNextEntry(e);
 		manifest.write(new BufferedOutputStream(jarOut));
 		jarOut.closeEntry();
 		jarOut.close();

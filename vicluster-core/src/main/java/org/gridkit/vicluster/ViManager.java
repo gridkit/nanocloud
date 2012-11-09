@@ -53,7 +53,7 @@ public class ViManager implements ViNodeSet {
 	private ExecutorService asyncInitThreads;
 	
 	public ViManager(ViNodeProvider provider) {
-		this(provider, 16);
+		this(provider, 8);
 	}
 
 	public ViManager(ViNodeProvider provider, int deferedTaskLimit) {
