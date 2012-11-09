@@ -22,6 +22,7 @@ public interface TaskService {
 
 		public void interrupt(Thread taskThread);
 		
+		// TODO fix typo
 		public void cancled();
 		
 	}

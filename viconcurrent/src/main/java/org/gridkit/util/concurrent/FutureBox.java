@@ -20,7 +20,7 @@ public class FutureBox<V> implements FutureEx<V>, Box<V> {
 	/**
 	 * This is a hack to make JUnit timeouts, relaying on {@link Thread#stop()} work some how.
 	 */
-	public static void enableStoppability(boolean stoppability) {
+	static void enableStoppability(boolean stoppability) {
 		STOPPABLE = stoppability;
 	}
 	
