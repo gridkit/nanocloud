@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.rmi.Remote;
 
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.StreamPipe;
 
 @SuppressWarnings("serial")
 public class ProcessRemoteAdapter extends Process implements Serializable {

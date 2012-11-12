@@ -118,4 +118,12 @@ class StreamHelper {
 			}
 		}
 	}	
+
+	public static void copyAvailable(InputStream in, OutputStream out) throws IOException {
+		byte[] buf = new byte[in.available()];
+		int n = in.read(buf);
+		if(n >= 0) {
+			out.write(buf, 0, n);
+		}
+	}	
 }

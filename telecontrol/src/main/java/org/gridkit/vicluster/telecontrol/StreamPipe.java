@@ -1,9 +1,9 @@
-package org.gridkit.vicluster.telecontrol.ssh;
+package org.gridkit.vicluster.telecontrol;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 
 public class StreamPipe {
 	
@@ -29,14 +29,14 @@ public class StreamPipe {
 	
 	private int bufferRead(byte[] target, int offs, int size) throws IOException {
 		if (size == 0) {
-			if (closedByWriter) {
+			if (closedByWriter && inBuffer == 0) {
 				return -1;
 			}
 			else {
 				return 0;
 			}
 		}
-		int pending = waitForData();		
+		int pending = waitForData();
 		if (pending == 0) {
 			// end of stream
 			return -1;
@@ -45,6 +45,7 @@ public class StreamPipe {
 		run = Math.min(run, buffer.length - in);
 		System.arraycopy(buffer, in, target, offs, run);
 		in = (in + run) % buffer.length;
+
 		readNotify(run);
 		return run;		
 	}
@@ -83,11 +84,14 @@ public class StreamPipe {
 		}
 	}
 	
-	private int waitForData() {
+	private int waitForData() throws IOException {
 		if (inBuffer > 0) {
 			return inBuffer;
 		}
 		synchronized(this) {
+			if (closedByReader) {
+				throw new IOException("Pipe is closed by reader");
+			}
 			while(true) {
 				if (inBuffer > 0 || closedByWriter) {
 					return inBuffer; 
@@ -111,6 +115,11 @@ public class StreamPipe {
 	private synchronized void readNotify(int len) {
 		inBuffer -= len;
 		this.notifyAll();		
+	}
+	
+	@Override
+	public String toString() {
+		return "Pipe@" + hashCode();
 	}
 
 	private class PipeOut extends OutputStream {
@@ -148,6 +157,11 @@ public class StreamPipe {
 				StreamPipe.this.notifyAll();
 			}
 		}
+
+		@Override
+		public String toString() {
+			return "PipeOut@" + StreamPipe.this.hashCode();
+		}
 	}
 	
 	private class PipeIn extends InputStream {
@@ -159,7 +173,7 @@ public class StreamPipe {
 				return -1;
 			}
 			else {
-				return bb[0];
+				return (0XFF) & bb[0];
 			}
 		}
 
@@ -175,6 +189,20 @@ public class StreamPipe {
 
 		@Override
 		public int available() throws IOException {
+			int ib = inBuffer;
+			if (ib > 0) {
+				return ib;
+			}
+			else {
+				synchronized(StreamPipe.this) {
+					if (closedByReader) {
+						throw new IOException("Pipe is closed by reader");
+					}
+					if (inBuffer == 0 && closedByWriter) {
+						throw new EOFException("Pipe is closed by writer");
+					}
+				}
+			}
 			return inBuffer;
 		}
 
@@ -184,6 +212,11 @@ public class StreamPipe {
 				closedByReader = true;
 				StreamPipe.this.notifyAll();
 			}
+		}
+		
+		@Override
+		public String toString() {
+			return "PipeIn@" + StreamPipe.this.hashCode();
 		}
 	}
 }

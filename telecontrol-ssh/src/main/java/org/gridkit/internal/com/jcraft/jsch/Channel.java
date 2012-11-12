@@ -702,7 +702,7 @@ public abstract class Channel implements Runnable{
 			}
 			synchronized(this) {
 				if (closedByReader) {
-					throw new EOFException("Pipe is closed by reader");
+					throw new IOException("Pipe is closed by reader");
 				}
 				while(true) {
 					if (inBuffer > 0 || closedByWriter) {
@@ -785,7 +785,7 @@ public abstract class Channel implements Runnable{
 					return -1;
 				}
 				else {
-					return bb[0];
+					return (0xFF) & bb[0];
 				}
 			}
 
