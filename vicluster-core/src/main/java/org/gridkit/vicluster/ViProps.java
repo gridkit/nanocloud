@@ -42,7 +42,7 @@ public class ViProps {
 	public static final String NODE_UID = "node:uid";
 
 	/**
-	 * Host of which node is meant to run.
+	 * Logical "host" of which node is meant to run (might be another vinode name for example).
 	 */	
 	public static final String HOST = "node:host";
 

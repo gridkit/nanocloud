@@ -76,41 +76,32 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			
 			SshSessionConfig sc = resolveSsh(name, effectiveConfig);
 			
-			String key = sc.toString();
+			RemoteJmvReplicator proto = getReplicatorProto(sc);
 			
-			session = sessions.get(key);
+			String fp = proto.getFingerPrint();
+			session = sessions.get(fp);
 			
 			if (session == null) {
 				session = new SessionInfo();
 				session.config = sc;
-				sessions.put(key, session);
+				sessions.put(fp, session);
 			}
 		}
 		
 		synchronized (session) {
-			if (session.session == null) {
-				SimpleSshSessionProvider ssh = new SimpleSshSessionProvider();
-				ssh.setUser(session.config.account);
-				if (session.config.password != null) {
-					ssh.setPassword(session.config.password);
-				}
-				if (session.config.keyFile != null) {
-					ssh.setKeyFile(session.config.keyFile);
-				}
+			if (session.replicator == null) {
+				session.replicator = getReplicatorProto(session.config);
 				
-				session.session = new SimpleSshJvmReplicator(session.config.host, session.config.account, ssh);
 				try {
-					session.session.setJavaExecPath(session.config.javaExec);
-					session.session.setAgentHome(session.config.jarCachePath);
-					session.session.init();
+					session.replicator.init();
 				} catch (Exception e) {
-					session.session = null;
+					session.replicator = null;
 					throw new RuntimeException("SSH connection failed: " + session.config.host, e);
 				}
 			}
 			
 			final SessionInfo context = session;
-			final ViNode node = new JvmNodeProvider(session.session).createNode(name, effectiveConfig);			
+			final ViNode node = new JvmNodeProvider(session.replicator).createNode(name, effectiveConfig);			
 			node.addShutdownHook("release-ssh", new HostSideHook() {
 				
 				@Override
@@ -130,14 +121,23 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			return node;			
 		}		
 	}
-	
+
+	private RemoteJmvReplicator getReplicatorProto(SshSessionConfig sc) {
+		RemoteJmvReplicator rep = new LegacySshJvmReplicator();
+		rep.configure(sc.toConfig());
+		return rep;
+	}
+
 	private void releaseConnection(SessionInfo session, ViNode connection) {
 		synchronized(session) {
 			session.processes.remove(connection);
 			if (session.processes.isEmpty()) {
 				LOGGER.info("Session " + session + " is not used");
-				session.session.shutdown();
-				session.session = null;
+				session.replicator.dispose();
+				session.replicator = null;
+			}
+			else {
+				return;
 			}
 		}
 	}
@@ -287,14 +287,25 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		String javaExec;
 		String jarCachePath;
 		
+		public Map<String, String> toConfig() {
+			Map<String, String> config = new HashMap<String, String>();
+			config.put(RemoteNodeProps.HOST, host);
+			config.put(RemoteNodeProps.ACCOUNT, account);
+			config.put(RemoteNodeProps.PASSWORD, password);
+			config.put(RemoteNodeProps.SSH_KEY_FILE, keyFile);
+			config.put(RemoteNodeProps.JAVA_EXEC, javaExec);
+			config.put(RemoteNodeProps.JAR_CACHE_PATH, jarCachePath);
+			return config;
+		}
+		
 		public String toString() {
 			return host + "|" + account + "|" + password + "|" + keyFile + "|" + javaExec + "|" + jarCachePath;
 		}		
 	}
 	
 	private static class SessionInfo {
-		SshSessionConfig config;		
-		SimpleSshJvmReplicator session;
+		SshSessionConfig config;
+		RemoteJmvReplicator replicator;
 		List<ViNode> processes = new ArrayList<ViNode>();
 	}
 }
