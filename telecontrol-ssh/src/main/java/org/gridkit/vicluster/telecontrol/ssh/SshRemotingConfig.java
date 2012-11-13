@@ -1,6 +1,7 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 class SshRemotingConfig {
@@ -53,8 +54,18 @@ class SshRemotingConfig {
 		if (password == null && keyfile == null) {
 			throw new IllegalArgumentException("SSH credentials are missing");
 		}
-		if (keyfile != null && !new File(keyfile).exists()) {
-			throw new IllegalArgumentException("SSH key file \"" + keyfile + "\" is missing");
+		if (keyfile != null) {
+			String kf = keyfile;
+			if (kf.startsWith("~/")) {
+				try {
+					kf = new File(new File(System.getProperty("user.home")), kf.substring(2)).getCanonicalPath();
+				} catch (IOException e) {
+					// ignore;
+				} 
+			}
+			if (!new File(kf).exists()) {
+				throw new IllegalArgumentException("SSH key file \"" + kf + "\" is missing");
+			}
 		}
 	}
 	
