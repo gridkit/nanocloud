@@ -242,21 +242,25 @@ class TunnellerIO {
 		writePending.release(1);
 	}
 	
-	protected synchronized void addChannel(Channel ch) {
-		if (channels.containsKey(ch.channelId)) {
-			throw new IllegalArgumentException("Channel already exists: " + ch.channelId);
-		}
-		channels.put(ch.channelId, ch);
-		if (traceChannelOpen) {
-			System.out.println("Channel open: [" + ch.channelId + "] " + ch.direction);
+	protected void addChannel(Channel ch) {
+		synchronized(channels) {
+			if (channels.containsKey(ch.channelId)) {
+				throw new IllegalArgumentException("Channel already exists: " + ch.channelId);
+			}
+			channels.put(ch.channelId, ch);
+			if (traceChannelOpen) {
+				System.out.println("Channel open: [" + ch.channelId + "] " + ch.direction);
+			}
 		}
 	}
 	
 	protected synchronized void stopChannels() {
-		for(Channel ch: channels.values()) {
-			close(ch.inbound);
-			close(ch.outbound);
-		}		
+		synchronized(channels) {
+			for(Channel ch: channels.values()) {
+				close(ch.inbound);
+				close(ch.outbound);
+			}		
+		}
 	}				
 	
 	private void close(Closeable c) {
