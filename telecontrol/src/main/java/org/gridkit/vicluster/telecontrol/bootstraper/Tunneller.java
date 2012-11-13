@@ -11,23 +11,25 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Tunneller extends TunnellerIO {
 	
-
 	public static void main(String[] args) {
 		InputStream input = System.in;
-		OutputStream output = System.err;
+		PrintStream output = System.err;
 		System.setErr(System.out);
-
+		
 		new Tunneller().process(input, output);		
 	}
 
 	private DataInputStream ctrlReq;
 	private DataOutputStream ctrlRep;
-	
+
+	private Map<Long, ProcessHandler> processes = new ConcurrentHashMap<Long, ProcessHandler>();
 	private NavigableMap<Long, ServerSocket> sockets = new TreeMap<Long, ServerSocket>();
 	
 	public Tunneller() {
@@ -45,12 +47,15 @@ public class Tunneller extends TunnellerIO {
 		ctrlReq = new DataInputStream(ctrlIn.inbound);
 		ctrlRep = new DataOutputStream(ctrlOut.outbound);
 
-		new InboundDemux(input).start();
-		new OutboundMux(output).start();
+		InboundDemux in = new InboundDemux(input);
+		OutboundMux out = new OutboundMux(output);
+		in.start();
+		out.start();
 
 		System.out.println("Tunneller started");
 		processCommands();
-		
+		in.interrupt();
+		out.interrupt();
 	}
 
 	private void processCommands() {
@@ -59,6 +64,7 @@ public class Tunneller extends TunnellerIO {
 				int cmd = ctrlReq.readInt();
 				switch(cmd) {
 					case ExecCmd.ID: processExec(); break;
+					case KillCmd.ID: processKill(); break;
 					case BindCmd.ID: processBind(); break;
 					case AcceptCmd.ID: processAccept(); break;
 					default:
@@ -86,6 +92,17 @@ public class Tunneller extends TunnellerIO {
 		addChannel(stdErr);
 		
 		startProc(cmd.procId, cmd.workingDir, cmd.command, cmd.env, stdIn.inbound, stdOut.outbound, stdErr.outbound);
+	}
+
+	private void processKill() throws IOException {
+		
+		KillCmd cmd = new KillCmd();
+		cmd.read(ctrlReq);
+
+		ProcessHandler ph = processes.get(cmd.procId);
+		if (ph != null) {
+			ph.proc.destroy();
+		}
 	}
 
 	private void processBind() throws IOException {
@@ -169,10 +186,12 @@ public class Tunneller extends TunnellerIO {
 		}		
 	}
 
-	synchronized void sendAccepted(long cmdId) {
+	synchronized void sendAccepted(long cmdId, String rhost, int rport) {
 		try {
 			AcceptedCmd cmd = new AcceptedCmd();
 			cmd.cmdId = cmdId;
+			cmd.remoteHost = rhost;
+			cmd.remotePort = rport;
 			cmd.write(ctrlRep);
 			writePending();
 		} catch (IOException e) {
@@ -248,40 +267,46 @@ public class Tunneller extends TunnellerIO {
 			this.stdErr = stdErr;
 			setDaemon(true);
 			setName("PROC[" + procId + "]");
+			processes.put(procId, this);
 		}
 		
 		@Override
 		public void run() {
-			while(true) {
-				if (	pump(stdIn, proc.getOutputStream()) 
-					  | pump(proc.getInputStream(), stdOut)
-					  | pump(proc.getErrorStream(), stdErr)) {
-					writePending();
-					continue;
-				}
-				else {
-					try {
-						int ec = proc.exitValue();
-						pump(proc.getInputStream(), stdOut);
-						pump(proc.getErrorStream(), stdErr);
-						
-						close(stdOut);
-						close(stdErr);
-						
-						proc.destroy();
-						
-						sendExitCode(procId, ec);
-						break;
-					}
-					catch(IllegalThreadStateException e) {
-						try {
-							sleep(50);
-						} catch (InterruptedException ee) {
-							// ignore;
-						}
+			try {
+				while(true) {
+					if (	pump(stdIn, proc.getOutputStream()) 
+						  | pump(proc.getInputStream(), stdOut)
+						  | pump(proc.getErrorStream(), stdErr)) {
+						writePending();
 						continue;
 					}
+					else {
+						try {
+							int ec = proc.exitValue();
+							pump(proc.getInputStream(), stdOut);
+							pump(proc.getErrorStream(), stdErr);
+							
+							close(stdOut);
+							close(stdErr);
+							
+							proc.destroy();
+							
+							sendExitCode(procId, ec);
+							break;
+						}
+						catch(IllegalThreadStateException e) {
+							try {
+								sleep(50);
+							} catch (InterruptedException ee) {
+								// ignore;
+							}
+							continue;
+						}
+					}
 				}
+			}
+			finally {
+				processes.remove(procId);
 			}
 		}
 	}
@@ -307,19 +332,24 @@ public class Tunneller extends TunnellerIO {
 		public void run() {
 			InputStream soIn;
 			OutputStream soOut;
+			String rhost;
+			int rport;
 			try {
 				sock = socket.accept();
 				sock.setKeepAlive(true);
 				soIn = sock.getInputStream();
 				soOut = sock.getOutputStream();
+				InetSocketAddress saddr = (InetSocketAddress) sock.getRemoteSocketAddress();
+				rhost = saddr.getHostName();
+				rport = saddr.getPort();
 			} catch (IOException e) {
-				sendAccepted(cmdId);
+				sendAccepted(cmdId, e.toString(), 0);
 				close(is);
 				close(os);
 				close(sock);
 				return;
 			}
-			sendAccepted(cmdId);
+			sendAccepted(cmdId, rhost, rport);
 			setName("CONNECTION[" + sock.getRemoteSocketAddress() + "]");
 
 			

@@ -33,8 +33,6 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
-
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -69,9 +67,9 @@ class ClasspathUtils {
 	}
 
 	// unused
-	public static byte[] createBootstraperJar(Manifest manifest) throws IOException {
+	public static byte[] createBootstrapperJar(Manifest manifest, Class<?> bootstrapper) throws IOException {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		String path = Bootstraper.class.getName().replace('.', '/') + ".class";
+		String path = bootstrapper.getName().replace('.', '/') + ".class";
 		String basePackage = path.substring(0, path.lastIndexOf('/'));
 		URL url = cl.getResource(path);
 		String urlp = url.toExternalForm();

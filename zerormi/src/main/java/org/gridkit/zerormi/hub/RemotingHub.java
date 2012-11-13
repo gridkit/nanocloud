@@ -90,6 +90,12 @@ public class RemotingHub {
 		return sb.toString();
 	}
 
+	public void closeAllConnections() {
+		for(String id: connections.keySet()) {
+			closeConnection(id);
+		}
+	}
+	
 	public void closeConnection(String id) {
 		SessionContext ctx = connections.get(id);
 		if (ctx != null) {

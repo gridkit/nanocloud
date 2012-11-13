@@ -1,5 +1,6 @@
 package org.gridkit.vicluster.telecontrol.bootstraper;
 
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -15,16 +16,19 @@ import org.gridkit.vicluster.telecontrol.StreamPipe;
 
 class TunnellerIO {
 
+	protected static final byte[] MAGIC = "TUNNELLER".getBytes();
+	
 	protected static final long CTRL_REQ = -1;
 	protected static final long CTRL_REP = -2;
 
 	private static final int CMD_EXEC = 1;
 	private static final int CMD_STARTED = 2;
-	private static final int CMD_EXIT_CODE = 3;
-	private static final int CMD_BIND = 4;
-	private static final int CMD_BOUND = 5;
-	private static final int CMD_ACCEPT = 6;
-	private static final int CMD_ACCEPTED = 7;
+	private static final int CMD_KILL = 3;
+	private static final int CMD_EXIT_CODE = 4;
+	private static final int CMD_BIND = 5;
+	private static final int CMD_BOUND = 6;
+	private static final int CMD_ACCEPT = 7;
+	private static final int CMD_ACCEPTED = 8;
 	
 	enum Direction {INBOUND, OUTBOUND}
 
@@ -67,6 +71,22 @@ class TunnellerIO {
 	static class StartedCmd {
 		
 		static final int ID = CMD_STARTED;
+		
+		long procId;
+		
+		public void read(DataInputStream dis) throws IOException {
+			procId = dis.readLong();
+		}
+		
+		public void write(DataOutputStream dos) throws IOException {
+			dos.writeInt(ID);
+			dos.writeLong(procId);
+		}
+	}
+
+	static class KillCmd {
+		
+		static final int ID = CMD_KILL;
 		
 		long procId;
 		
@@ -167,14 +187,20 @@ class TunnellerIO {
 		static final int ID = CMD_ACCEPTED;
 		
 		long cmdId;
+		String remoteHost;
+		int remotePort;
 		
 		public void read(DataInputStream dis) throws IOException {
 			cmdId = dis.readLong();
+			remoteHost = dis.readUTF();
+			remotePort = dis.readInt();
 		}
 		
 		public void write(DataOutputStream dos) throws IOException {
 			dos.writeInt(ID);
 			dos.writeLong(cmdId);
+			dos.writeUTF(remoteHost);
+			dos.writeInt(remotePort);
 		}
 	}
 	
@@ -202,6 +228,8 @@ class TunnellerIO {
 	protected boolean traceChannelData;
 	protected boolean traceChannelClose;
 	
+	protected boolean embededMode = true;
+	
 	private String threadSuffix;
 	private NavigableMap<Long, Channel> channels = new TreeMap<Long, Channel>();
 	private Semaphore writePending = new Semaphore(0); 
@@ -224,6 +252,22 @@ class TunnellerIO {
 		}
 	}
 	
+	protected synchronized void stopChannels() {
+		for(Channel ch: channels.values()) {
+			close(ch.inbound);
+			close(ch.outbound);
+		}		
+	}				
+	
+	private void close(Closeable c) {
+		try {
+			c.close();
+		} catch (IOException e) {
+			// ignore
+		}
+	}
+
+
 	protected class OutboundMux extends Thread {
 
 		private DataOutputStream out;
@@ -248,6 +292,8 @@ class TunnellerIO {
 		public void run() {
 			setName("OutboundMux" + threadSuffix);
 			try {
+				out.write(MAGIC);
+				out.flush();
 				byte[] buf = new byte[1024];
 				while(true) {
 					writePending.tryAcquire(100, TimeUnit.MILLISECONDS);
@@ -290,10 +336,20 @@ class TunnellerIO {
 						} catch (IOException e) {
 							System.out.println("Outbound write failed: " + e.toString());
 						}
-					}			
+					}
+					try {
+						out.flush();
+					} catch (IOException e) {
+						System.out.println("Outbound write failed: " + e.toString());
+					}
 				}
 			} catch (InterruptedException e) {
-				System.out.println("Outbound mux stopped.");
+				if (!embededMode) {
+					System.out.println("Outbound mux stopped.");
+				}
+			} catch (IOException e) {
+				System.out.println("Outbound write failed: " + e.toString());
+				System.out.println("Outbound mux stopped");
 			}
 		}
 		
@@ -345,6 +401,7 @@ class TunnellerIO {
 		public void run() {
 			setName("InboundDemux" + threadSuffix);
 			try {
+				in.readFully(new byte[MAGIC.length]);
 				while(true) {
 					long chId = in.readLong();
 					int size = in.readShort();
@@ -388,10 +445,13 @@ class TunnellerIO {
 					}
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
-				System.out.println("Inbound mux stopped");
+				if (!embededMode) {
+					e.printStackTrace();
+					System.out.println("Inbound mux stopped");
+				}
+				stopChannels();
 			}
-		}				
+		}
 	}
 	
 	private int align(int size) {

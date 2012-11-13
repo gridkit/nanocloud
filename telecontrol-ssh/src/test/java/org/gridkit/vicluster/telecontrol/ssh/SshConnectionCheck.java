@@ -1,4 +1,4 @@
-package org.gridkit.vicluster.telecontol.ssh;
+package org.gridkit.vicluster.telecontrol.ssh;
 
 import junit.framework.Assert;
 

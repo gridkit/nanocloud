@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.gridkit.vicluster.MassExec;
@@ -267,21 +268,26 @@ class JvmNode implements ViNode {
 			} catch (IOException e) {
 				e.printStackTrace(); // TODO logging
 			}
-			Future<Void> f = submit(new Runnable() {
-				@Override
-				public void run() {
-					if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
-						System.exit(0);
-					}
-				}
-			});
 			boolean destroyDelay = false;
 			try {
-				f.get(100, TimeUnit.MILLISECONDS);
-				destroyDelay = true;
-				
-			} catch (Exception e) {
-				// it doesn't matter 
+				Future<Void> f = submit(new Runnable() {
+					@Override
+					public void run() {
+						if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
+							System.exit(0);
+						}
+					}
+				});
+				try {
+					f.get(100, TimeUnit.MILLISECONDS);
+					destroyDelay = true;
+					
+				} catch (Exception e) {
+					// it doesn't matter 
+				}
+			}
+			catch(RejectedExecutionException e) {
+				// ignore
 			}
 			executor.shutdown();
 			if (destroyDelay) {

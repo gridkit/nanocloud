@@ -123,7 +123,8 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 	}
 
 	private RemoteJmvReplicator getReplicatorProto(SshSessionConfig sc) {
-		RemoteJmvReplicator rep = new LegacySshJvmReplicator();
+//		RemoteJmvReplicator rep = new LegacySshJvmReplicator();
+		RemoteJmvReplicator rep = new TunnellerJvmReplicator();
 		rep.configure(sc.toConfig());
 		return rep;
 	}

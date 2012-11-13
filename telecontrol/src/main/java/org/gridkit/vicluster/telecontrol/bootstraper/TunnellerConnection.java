@@ -32,6 +32,8 @@ public class TunnellerConnection extends TunnellerIO {
 	public TunnellerConnection(String name, InputStream is, OutputStream os) {
 		super(":" + name);
 		
+		embededMode = true;
+		
 		Channel rq = new Channel(CTRL_REQ, Direction.OUTBOUND, 4 << 10);
 		Channel rp = new Channel(CTRL_REP, Direction.INBOUND, 4 << 10);
 		
@@ -64,7 +66,7 @@ public class TunnellerConnection extends TunnellerIO {
 		}
 	}
 	
-	public synchronized void exec(String wd, String[] cmd, String[] env, ExecHandler handler) throws IOException {
+	public synchronized long exec(String wd, String[] cmd, String[] env, ExecHandler handler) throws IOException {
 		long procId = nextProc++;
 		ExecContext ctx = new ExecContext();
 		ctx.procId = procId;
@@ -82,16 +84,28 @@ public class TunnellerConnection extends TunnellerIO {
 		
 		try {
 			sendExec(procId, wd, cmd, env, stdIn, stdOut, stdErr);
+			return procId;
 		} catch (IOException e) {
 			shutdown();
 			throw new IOException("Broken tunnel");
 		}		
 	}
 	
+	public synchronized void kill(long execId) throws IOException {
+		if (execs.containsKey(execId)) {
+		
+			try {
+				sendKill(execId);
+			} catch (IOException e) {
+				shutdown();
+				throw new IOException("Broken tunnel");
+			}
+		}
+	}
+	
 	public void close() {
 		shutdown();
 	}
-	
 	
 	private void shutdown() {
 		close(ctrlRep);
@@ -174,6 +188,12 @@ public class TunnellerConnection extends TunnellerIO {
 		cmd.write(ctrlReq);
 	}
 
+	private synchronized void sendKill(long procId) throws IOException {
+		KillCmd cmd = new KillCmd();
+		cmd.procId = procId;
+		
+		cmd.write(ctrlReq);
+	}
 
 	private InputStream newInbound(long id) {
 		Channel ch = new Channel(id, Direction.INBOUND, 16 << 10);
@@ -267,7 +287,7 @@ public class TunnellerConnection extends TunnellerIO {
 				}
 				addAcceptor(ctx.context);
 			}			
-			ctx.context.handler.accepted(ctx.soIn, ctx.soOut);
+			ctx.context.handler.accepted(cmd.remoteHost, cmd.remotePort, ctx.soIn, ctx.soOut);
 		}
 
 		private void processBound() throws IOException {
@@ -332,7 +352,7 @@ public class TunnellerConnection extends TunnellerIO {
 		
 		public void bound(String host, int port);
 		
-		public void accepted(InputStream soIn, OutputStream soOut);
+		public void accepted(String remoteHost, int remotePort, InputStream soIn, OutputStream soOut);
 	}
 	
 	private class NotifyingOutputStream extends OutputStream {

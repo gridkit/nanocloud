@@ -58,6 +58,14 @@ public class ExecCommand implements Cloneable, Serializable {
 		
 		return buffer.toString();
 	}
+
+	public String[] getCommandArray() {
+		List<String> line = new ArrayList<String>(arguments.size() + 1);
+		line.add(executable);
+		line.addAll(arguments);
+		
+		return line.toArray(new String[line.size()]);
+	}
 	
 	public ProcessBuilder getProcessBuilder() {
 		List<String> line = new ArrayList<String>(arguments.size() + 1);

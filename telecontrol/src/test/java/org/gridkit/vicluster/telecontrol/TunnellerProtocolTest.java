@@ -103,8 +103,8 @@ public class TunnellerProtocolTest {
 			}
 			
 			@Override
-			public void accepted(InputStream soIn, OutputStream soOut) {
-				System.out.println("Accepted");
+			public void accepted(String rhost, int rport, InputStream soIn, OutputStream soOut) {
+				System.out.println("Accepted [" + rhost + ": " + rport + "]");
 				try {
 					soOut.write("Pong!\n".getBytes());
 					StreamHelper.copy(soIn, System.out);
@@ -205,6 +205,7 @@ public class TunnellerProtocolTest {
 		return done;
 	}
 
+	@SuppressWarnings("unused")
 	private FutureBox<Void> execCat(final String cmd) throws IOException {
 		final FutureBox<Void> done = new FutureBox<Void>();
 		

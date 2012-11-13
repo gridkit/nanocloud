@@ -1,6 +1,10 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -11,9 +15,9 @@ import java.util.WeakHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClasspathReplicator {
+public class Classpath {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathReplicator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Classpath.class);
 	private static final String DIGEST_ALGO = "SHA-1";
 	
 	private static WeakHashMap<ClassLoader, List<ClasspathEntry>> CLASSPATH_CACHE = new WeakHashMap<ClassLoader, List<ClasspathEntry>>();
@@ -21,7 +25,7 @@ public class ClasspathReplicator {
 	public static synchronized List<ClasspathEntry> getClasspath(ClassLoader classloader) {
 		List<ClasspathEntry> classpath = CLASSPATH_CACHE.get(classloader);
 		if (classpath == null) {
-			classpath = new ArrayList<ClasspathReplicator.ClasspathEntry>();
+			classpath = new ArrayList<Classpath.ClasspathEntry>();
 			fillClasspath(classpath, ((URLClassLoader)classloader).getURLs());
 			classpath = Collections.unmodifiableList(classpath);
 			CLASSPATH_CACHE.put(classloader, classpath);
@@ -62,7 +66,7 @@ public class ClasspathReplicator {
 	}
 
 
-	public static class ClasspathEntry {
+	public static class ClasspathEntry implements RemoteFileCache2.Blob {
 		
 		private URL url;
 		private String filename;
@@ -74,17 +78,33 @@ public class ClasspathReplicator {
 			return url;
 		}
 		
-		public synchronized String getHash() {
+		@Override
+		public String getFileName() {
+			return filename;
+		}
+
+		@Override
+		public synchronized String getContentHash() {
 			if (hash == null) {
-				hash = StreamHelper.digest(getData(), "SHA-1");
+				hash = StreamHelper.digest(getData(), DIGEST_ALGO);
 			}			
 			return hash;
 		}
-		
-		public String getFilename() {
-			return filename;
+
+		@Override
+		public synchronized InputStream getContent() {
+			try {
+				return (InputStream) (data != null ? new ByteArrayInputStream(data) : new FileInputStream(file));
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e.getMessage());
+			}
 		}
-		
+
+		@Override
+		public long size() {
+			return data != null ? data.length : file.length();
+		}
+
 		public synchronized byte[] getData() {
 			if (data != null) {
 				return data;
@@ -94,6 +114,5 @@ public class ClasspathReplicator {
 				return StreamHelper.readFile(file);
 			}
 		}		
-	}
-	
+	}	
 }
