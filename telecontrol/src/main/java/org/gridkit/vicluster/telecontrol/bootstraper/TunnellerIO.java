@@ -308,7 +308,8 @@ class TunnellerIO {
 						try {
 							n = ch.inbound.read(buf);
 						} catch (IOException e) {
-							throw new Error("Should never happen");
+							// can only happen if channel has been closed
+							throw new InterruptedException("Termination condition detected");
 						}
 						try {
 							if (n < 0) {
