@@ -145,8 +145,12 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		String cmd = rconfig.getJavaExec() + " -Xms32m -Xmx32m -jar " + tunnellerJarPath;
 		exec.setCommand(cmd);
 		
-		BackgroundStreamDumper.link(exec.getInputStream(), new WrapperPrintStream("[tunnel:" + rconfig.getHost() + "] ", System.out), false);
-		InputStream cin = exec.getExtInputStream();
+//		BackgroundStreamDumper.link(exec.getInputStream(), new WrapperPrintStream("[tunnel:" + rconfig.getHost() + "] ", System.out), false);
+//		InputStream cin = exec.getExtInputStream();
+//		OutputStream cout = exec.getOutputStream();
+		// use std out
+		BackgroundStreamDumper.link(exec.getExtInputStream(), new WrapperPrintStream("[tunnel:" + rconfig.getHost() + "] ", System.out), false);
+		InputStream cin = exec.getInputStream();
 		OutputStream cout = exec.getOutputStream();
 		// this should automatically kill all processes associated with session
 		exec.setPty(false);

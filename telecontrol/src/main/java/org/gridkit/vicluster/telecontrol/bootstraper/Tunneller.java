@@ -19,9 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Tunneller extends TunnellerIO {
 	
 	public static void main(String[] args) {
+//		InputStream input = System.in;
+//		PrintStream output = System.err;
+//		System.setErr(System.out);
+
+// use std out instead of system error 		
 		InputStream input = System.in;
-		PrintStream output = System.err;
-		System.setErr(System.out);
+		PrintStream output = System.out;
+		System.setOut(System.err);
 		
 		new Tunneller().process(input, output);		
 	}
@@ -47,10 +52,17 @@ public class Tunneller extends TunnellerIO {
 		ctrlReq = new DataInputStream(ctrlIn.inbound);
 		ctrlRep = new DataOutputStream(ctrlOut.outbound);
 
-		InboundDemux in = new InboundDemux(input);
+		
 		OutboundMux out = new OutboundMux(output);
-		in.start();
 		out.start();
+
+		try {
+			readMagic(input);
+		} catch (IOException e) {
+			System.out.println("Failed to init stream. " + e.toString());
+		}
+		InboundDemux in = new InboundDemux(input);
+		in.start();
 
 		System.out.println("Tunneller started");
 		processCommands();
@@ -283,6 +295,12 @@ public class Tunneller extends TunnellerIO {
 					else {
 						try {
 							int ec = proc.exitValue();
+							try {
+								// give a chance for streams to catch up
+								Thread.sleep(50);
+							} catch (InterruptedException e) {
+								// ignore
+							}; 
 							pump(proc.getInputStream(), stdOut);
 							pump(proc.getErrorStream(), stdErr);
 							
@@ -292,6 +310,7 @@ public class Tunneller extends TunnellerIO {
 							proc.destroy();
 							
 							sendExitCode(procId, ec);
+							System.out.println("Process [" + procId + "] exit code: " + ec);
 							break;
 						}
 						catch(IllegalThreadStateException e) {

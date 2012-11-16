@@ -217,17 +217,27 @@ public class RmiGateway {
 	
 	private final class SocketReader extends Thread implements Closeable {
 		
+		@Override
+		public void interrupt() {
+			super.interrupt();
+			close();			
+		}
+
 		// needed for Isolate shutdown support
 		@Override
-		public void close() throws IOException {
+		public void close() {
 			try {
-				in.close();
+				if (in != null) {
+					in.close();
+				}
 			}
 			catch (IOException e) {
 				// ignore
 			}
 			try {
-				socket.close();
+				if (socket != null) {
+					socket.close();
+				}
 			}
 			catch (IOException e) {
 				// ignore

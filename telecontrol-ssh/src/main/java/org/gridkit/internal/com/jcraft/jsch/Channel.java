@@ -683,6 +683,9 @@ public abstract class Channel implements Runnable{
 				if (closedByReader) {
 					throw new IOException("Pipe closed by reader");
 				}
+				if (closedByWriter) {
+					throw new IOException("Pipe closed by writer");
+				}
 				else if (inBuffer + size < buffer.length) {
 					return;
 				}
@@ -701,10 +704,10 @@ public abstract class Channel implements Runnable{
 				return inBuffer;
 			}
 			synchronized(this) {
-				if (closedByReader) {
-					throw new IOException("Pipe is closed by reader");
-				}
 				while(true) {
+					if (closedByReader) {
+						throw new IOException("Pipe is closed by reader");
+					}
 					if (inBuffer > 0 || closedByWriter) {
 						return inBuffer; 
 					}

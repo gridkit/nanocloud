@@ -29,7 +29,7 @@ public class TunnellerConnection extends TunnellerIO {
 	
 	boolean terminated;
 	
-	public TunnellerConnection(String name, InputStream is, OutputStream os) {
+	public TunnellerConnection(String name, InputStream is, OutputStream os) throws IOException {
 		super(":" + name);
 		
 		embededMode = true;
@@ -43,15 +43,17 @@ public class TunnellerConnection extends TunnellerIO {
 		ctrlReq = new DataOutputStream(rq.outbound);
 		ctrlRep = new DataInputStream(rp.inbound);
 		
-		inbound = new InboundDemux(is);
 		outbound = new OutboundMux(os);
-		control = new Control(name);
-		
-		inbound.start();
 		outbound.start();
+		
+		readMagic(is);
+		inbound = new InboundDemux(is);		
+		inbound.start();
+
+		control = new Control(name);
 		control.start();		
 	}
-	
+
 	public synchronized void newSocket(SocketHandler handler) throws IOException {
 		long sockId = nextSocket++;
 		SocketContext ctx = new SocketContext();

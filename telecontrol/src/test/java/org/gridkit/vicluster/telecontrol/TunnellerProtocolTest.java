@@ -15,7 +15,6 @@ import java.util.concurrent.Future;
 import junit.framework.Assert;
 
 import org.gridkit.util.concurrent.FutureBox;
-import org.gridkit.vicluster.telecontrol.bootstraper.TunnelTestHelper;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHandler;
@@ -33,7 +32,7 @@ public class TunnellerProtocolTest {
 	private Tunneller tunneler;
 	private TunnellerConnection connection;
 	
-	public void start() {
+	public void start() throws IOException {
 		StreamPipe pipeA = new StreamPipe(64 << 10);
 		StreamPipe pipeB = new StreamPipe(64 << 10);
 		masterIn = new ISW("masterIn", pipeA.getInputStream());
@@ -50,7 +49,7 @@ public class TunnellerProtocolTest {
 		}.start();
 		connection = new TunnellerConnection("TEST", masterIn, masterOut);
 		
-		TunnelTestHelper.enableChannelTrace(tunneler);
+//		TunnelTestHelper.enableChannelTrace(tunneler);
 //		TunnelTestHelper.enableChannelTrace(connection);
 	}
 	

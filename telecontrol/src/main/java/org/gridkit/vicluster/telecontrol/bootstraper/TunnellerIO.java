@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map.Entry;
+import java.util.Arrays;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
@@ -238,6 +239,28 @@ class TunnellerIO {
 		this.threadSuffix = name;
 	}
 
+	protected void readMagic(InputStream is) throws IOException {
+		byte[] data = new byte[MAGIC.length];
+		int n = 0;
+		while(n < data.length) {
+			int m = is.read(data, n, data.length - n);
+			if (m < -1) {
+				throw new IOException("Failed to read MAGIC, EOF reached");
+			}
+			n += m;
+		}
+		if (!Arrays.equals(data, MAGIC)) {
+			int x = is.available();
+			if (x > 0) {
+				byte[] buf = Arrays.copyOf(data, data.length + x);
+				is.read(buf, n, x);
+				data = buf;
+			}
+			
+			throw new IOException("Magic not match, expected [" + new String(MAGIC) + "], read [" + new String(data) + "]");
+		}
+	}
+	
 	protected void writePending() {
 		writePending.release(1);
 	}
@@ -406,7 +429,6 @@ class TunnellerIO {
 		public void run() {
 			setName("InboundDemux" + threadSuffix);
 			try {
-				in.readFully(new byte[MAGIC.length]);
 				while(true) {
 					long chId = in.readLong();
 					int size = in.readShort();

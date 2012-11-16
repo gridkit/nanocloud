@@ -11,7 +11,10 @@ class IOHelper {
 			return true;
 		}
 		else if (e.getClass() == java.io.IOException.class) {
-			if ("pipe closed".equals(e.getMessage().toLowerCase())) {
+			if ("pipe is closed by reader".equals(e.getMessage().toLowerCase())) {
+				return true;
+			}
+			if ("pipe is closed by writer".equals(e.getMessage().toLowerCase())) {
 				return true;
 			}
 		}
