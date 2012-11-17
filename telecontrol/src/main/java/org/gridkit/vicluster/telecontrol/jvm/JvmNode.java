@@ -123,6 +123,11 @@ class JvmNode implements ViNode {
 	}
 	
 	@Override
+	public void touch() {
+		ensureStarted();
+	}
+
+	@Override
 	public void exec(Runnable task) {
 		try {
 			submit(task).get();

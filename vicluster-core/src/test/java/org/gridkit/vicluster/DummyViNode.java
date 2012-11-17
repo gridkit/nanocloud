@@ -52,6 +52,10 @@ public class DummyViNode implements ViNode {
 	}
 
 	@Override
+	public void touch() {
+	}
+
+	@Override
 	public void exec(Runnable task) {
 		task.run();		
 	}

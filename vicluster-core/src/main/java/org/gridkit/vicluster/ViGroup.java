@@ -15,6 +15,7 @@
  */
 package org.gridkit.vicluster;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -137,6 +138,11 @@ public class ViGroup implements ViNode {
 	}
 
 	@Override
+	public void touch() {
+		exec(new Touch());		
+	}
+
+	@Override
 	public synchronized void exec(Runnable task) {
 		MassExec.waitAll(massSubmit(task));		
 	}
@@ -247,6 +253,15 @@ public class ViGroup implements ViNode {
 		public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
 			// TODO implement
 			throw new UnsupportedOperationException();
+		}
+	}
+	
+	private static class Touch implements Runnable, Serializable {
+
+		private static final long serialVersionUID = 20121116L;
+
+		@Override
+		public void run() {
 		}
 	}
 }

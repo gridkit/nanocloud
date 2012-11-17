@@ -15,6 +15,7 @@
  */
 package org.gridkit.vicluster;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -261,6 +262,11 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void touch() {
+			exec(new Touch());
+		}
+
+		@Override
 		public void exec(Runnable task) {
 			MassExec.submitAndWait(this, task);
 		}
@@ -462,6 +468,11 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void touch() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
 		public void exec(Runnable task) {
 			throw new UnsupportedOperationException();
 		}
@@ -603,6 +614,11 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void touch() {
+			select().touch();
+		}
+
+		@Override
 		public void exec(Runnable task) {
 			select().exec(task);
 		}
@@ -697,6 +713,11 @@ public class ViManager implements ViNodeSet {
 		}
 		
 		@Override
+		public void touch() {
+			node.touch();
+		}
+
+		@Override
 		public void exec(Runnable task) {
 			node.exec(task);			
 		}
@@ -790,4 +811,14 @@ public class ViManager implements ViNodeSet {
 			return name;
 		}
 	}	
+	
+	private static class Touch implements Runnable, Serializable {
+
+		private static final long serialVersionUID = 20121116L;
+
+		@Override
+		public void run() {
+			// do nothing
+		}		
+	}
 }

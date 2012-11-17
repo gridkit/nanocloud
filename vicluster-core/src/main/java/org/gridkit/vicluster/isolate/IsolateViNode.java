@@ -121,6 +121,11 @@ public class IsolateViNode implements ViNode {
 	}
 
 	@Override
+	public void touch() {
+		ensureStarted();
+	}
+
+	@Override
 	public void exec(Runnable task) {
 		ensureStarted();
 		resolve(isolate.submit(task));
