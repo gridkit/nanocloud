@@ -132,7 +132,7 @@ public class ViManager implements ViNodeSet {
 		Pattern regEx = GlobHelper.translate(namePattern, ".");
 		List<ViNode> result = new ArrayList<ViNode>();
 		for(ManagedNode vinode: liveNodes.values()) {
-			if (regEx.matcher(vinode.name).matches()) {
+			if (match(regEx, vinode)) {
 				result.add(vinode);
 			}
 		}
