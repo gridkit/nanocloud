@@ -385,6 +385,15 @@ public class Isolate {
 		AnyThrow.throwUncheked(e);		
 	}
 
+	/**
+	 * Executes runnable directly in isolated scope, bypassing marshaling.
+	 */
+	@SuppressWarnings("rawtypes")
+	public void execNoMarshal(Runnable task) {
+		CallableWorkUnit wu = new CallableWorkUnit((Runnable) convertIn(task));
+		process(wu);
+	}
+	
 	@SuppressWarnings("rawtypes")
 	public void exec(Runnable task) {
 		CallableWorkUnit wu = new CallableWorkUnit((Runnable) convertIn(task));
@@ -402,6 +411,13 @@ public class Isolate {
 		SubmitedWorkUnit wu = new SubmitedWorkUnit((Runnable) convertIn(task));
 		process(wu);
 		return translateFuture(wu.future);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public Future<Void> submitNoMarshal(Runnable task) {
+		SubmitedWorkUnit wu = new SubmitedWorkUnit((Runnable) task);
+		process(wu);
+		return wu.future;
 	}
 	
 	@SuppressWarnings("unchecked")

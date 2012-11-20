@@ -27,6 +27,7 @@ public class ViProps {
 	public static final String NODE_TYPE = "node:type";
 	
 	public static final String NODE_TYPE_ISOLATE = "isolate";
+	public static final String NODE_TYPE_IN_PROCESS = "in-process";
 	public static final String NODE_TYPE_LOCAL = "local";
 	public static final String NODE_TYPE_REMOTE = "remote";
 	public static final String NODE_TYPE_ALIAS = "alias";
@@ -50,4 +51,40 @@ public class ViProps {
 	 * Label
 	 */	
 	public static final String LABEL = "label:";	
+	
+	public static ViProps at(ViConfigurable config) {
+		return new ViProps(config);
+	}
+	
+	private final ViConfigurable config;
+
+	private ViProps(ViConfigurable config) {
+		this.config = config;
+	}
+
+	public ViProps setType(String type) {
+		config.setProp(NODE_TYPE, type);
+		return this;
+	}
+
+	public ViProps setIsolateType() {
+		config.setProp(NODE_TYPE, NODE_TYPE_ISOLATE);
+		return this;
+	}
+
+	public ViProps setInProcessType() {
+		config.setProp(NODE_TYPE, NODE_TYPE_IN_PROCESS);
+		return this;
+	}
+
+	public ViProps setLocalType() {
+		config.setProp(NODE_TYPE, NODE_TYPE_LOCAL);
+		return this;
+	}
+
+	public ViProps setRemoteType() {
+		config.setProp(NODE_TYPE, NODE_TYPE_REMOTE);
+		return this;
+	}
+	
 }
