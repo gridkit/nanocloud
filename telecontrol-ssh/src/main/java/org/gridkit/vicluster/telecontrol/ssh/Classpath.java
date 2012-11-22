@@ -37,7 +37,6 @@ public class Classpath {
 	private static void fillClasspath(List<ClasspathEntry> classpath, URL[] urls) {
 		for(URL url: urls) {
 			ClasspathEntry entry = new ClasspathEntry();
-			classpath.add(entry);
 			entry.url = url;
 			try {
 				File file = new File(url.toURI());
@@ -56,10 +55,15 @@ public class Classpath {
 					lname += ".jar";
 					entry.filename = lname;
 					entry.data = ClasspathUtils.jarFiles(file.getPath());
+					if (entry.data == null) {
+						LOGGER.warn("Classpath entry is empty: " + file.getCanonicalPath());
+						continue;
+					}
 				}
+				classpath.add(entry);
 			}
 			catch(Exception e) {
-				LOGGER.warn("Cannot copy to remote host URL " + url.toString(), e);
+				LOGGER.warn("Cannot copy URL content: " + url.toString(), e);
 				continue;
 			}
 		}		

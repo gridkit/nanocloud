@@ -87,15 +87,20 @@ class ClasspathUtils {
 	public static byte[] jarFiles(String path) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		JarOutputStream jarOut = new JarOutputStream(bos);
-		addFiles(jarOut, "", new File(path));
+		int size = addFiles(jarOut, "", new File(path));
+		if (size == 0) {
+			// no files in folder
+			return null;
+		}
 		jarOut.close();
 		return bos.toByteArray();
 	}
 
-	private static void addFiles(JarOutputStream jarOut, String base, File path) throws IOException {
+	private static int addFiles(JarOutputStream jarOut, String base, File path) throws IOException {
+		int count = 0;
 		for(File file : path.listFiles()) {
 			if (file.isDirectory()) {
-				addFiles(jarOut, base + file.getName() + "/", file);
+				count += addFiles(jarOut, base + file.getName() + "/", file);
 			}
 			else {
 				JarEntry entry = new JarEntry(base + file.getName());
@@ -103,8 +108,10 @@ class ClasspathUtils {
 				jarOut.putNextEntry(entry);
 				StreamHelper.copy(new FileInputStream(file), jarOut);
 				jarOut.closeEntry();
+				++count; 
 			}
 		}
+		return count;
 	}
 
 	private static void addFiles(JarOutputStream jarOut, String basePackage, String baseUrl) throws IOException, MalformedURLException {
