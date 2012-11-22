@@ -93,6 +93,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 				session.replicator = getReplicatorProto(session.config);
 				
 				try {
+					LOGGER.info("Establishing connection " + session.config.getConnectionSummary());
 					session.replicator.init();
 				} catch (Exception e) {
 					session.replicator = null;
@@ -171,11 +172,21 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		}
 		
 		if (s.account == null) {
-			throw new IllegalArgumentException("No account found for node '" + name + "'");
+			LOGGER.debug("Use default account for [" + name + "]");
+			s.account = System.getProperty("user.name");
+			if (s.account == null || s.account.trim().length() == 0) {
+				throw new IllegalArgumentException("No account found for node '" + name + "'");
+			}
 		}
 		
 		if (s.password == null && s.keyFile == null) {
-			throw new IllegalArgumentException("No creadetials found for node '" + name + "'");
+			if (s.account.equals(System.getProperty("user.name"))) {
+				LOGGER.debug("Use default SSH keys [" + name + "]");
+				s.keyFile = "~/.ssh/id_dsa|~/.ssh/id_rsa";
+			}
+			else {
+				throw new IllegalArgumentException("No creadetials found for node '" + name + "'");
+			}
 		}
 
 		if (s.javaExec == null) {
@@ -207,6 +218,11 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 				return sshConfCache.get(path);
 			}
 			else {
+				boolean optional = false;
+				if (path.startsWith("?")) {
+					optional = true;
+					path = path.substring(1);
+				}			
 				try {
 					InputStream is = null;
 					if (path.startsWith("~/")) {
@@ -243,7 +259,14 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 					sshConfCache.put(path, wp);
 					return wp;
 				} catch (IOException e) {
-					throw new RuntimeException(e);
+					if (optional) {
+						LOGGER.info("SSH config [" + path + "] is not found");
+						sshConfCache.put("?" + path, null);
+						return null;
+					}
+					else {
+						throw new RuntimeException(e);
+					}
 				}
 			}
 		}
@@ -297,6 +320,12 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			config.put(RemoteNodeProps.JAVA_EXEC, javaExec);
 			config.put(RemoteNodeProps.JAR_CACHE_PATH, jarCachePath);
 			return config;
+		}
+		
+		public String getConnectionSummary() {
+			return account + "@" + host + " - " 
+					+ (keyFile == null ? "" : " pk-auth(" + keyFile +")") 
+					+ (password == null ? "" : " password-auth");
 		}
 		
 		public String toString() {

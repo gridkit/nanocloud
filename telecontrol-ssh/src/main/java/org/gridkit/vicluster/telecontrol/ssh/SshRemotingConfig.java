@@ -54,19 +54,20 @@ class SshRemotingConfig {
 		if (password == null && keyfile == null) {
 			throw new IllegalArgumentException("SSH credentials are missing");
 		}
-		if (keyfile != null) {
-			String kf = keyfile;
-			if (kf.startsWith("~/")) {
-				try {
-					kf = new File(new File(System.getProperty("user.home")), kf.substring(2)).getCanonicalPath();
-				} catch (IOException e) {
-					// ignore;
-				} 
-			}
-			if (!new File(kf).exists()) {
-				throw new IllegalArgumentException("SSH key file \"" + kf + "\" is missing");
-			}
-		}
+// TODO SSH key file validator
+//		if (keyfile != null) {
+//			String kf = keyfile;
+//			if (kf.startsWith("~/")) {
+//				try {
+//					kf = new File(new File(System.getProperty("user.home")), kf.substring(2)).getCanonicalPath();
+//				} catch (IOException e) {
+//					// ignore;
+//				} 
+//			}
+//			if (!new File(kf).exists()) {
+//				throw new IllegalArgumentException("SSH key file \"" + kf + "\" is missing");
+//			}
+//		}
 	}
 	
 	public String getFingerPrint() {

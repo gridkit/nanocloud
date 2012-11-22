@@ -16,6 +16,7 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -55,29 +56,28 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 	}
 	
 	public void setKeyFile(String fileName) {
-		try {
-			if (fileName.startsWith("~/")) {
-				try {
-					fileName = new File(System.getProperty("user.home"), fileName.substring(2)).getCanonicalPath();
-				} catch (IOException e) {
-					// ignore
-				}
-			}
-			File f = new File(fileName);
-			if (!f.exists()) {
-				// Try to lookup files in home directory
-				File home = new File(System.getProperty("user.home"));
-				if (new File(home, fileName).exists()) {
+		boolean added = false;
+		String[] paths = fileName.split("[|]");
+		for(String path: paths) {
+			try {
+				if (path.startsWith("~/")) {
 					try {
-						fileName = new File(home, fileName).getCanonicalPath();
+						path = new File(System.getProperty("user.home"), path.substring(2)).getCanonicalPath();
 					} catch (IOException e) {
 						// ignore
 					}
 				}
+				File f = new File(path);
+				if (f.exists()) {
+					jsch.addIdentity(path);
+					added = true;
+				}
+			} catch (JSchException e) {
+				throw new IllegalArgumentException(e);
 			}
-			jsch.addIdentity(fileName);
-		} catch (JSchException e) {
-			throw new IllegalArgumentException(e);
+		}
+		if (!added) {
+			throw new IllegalArgumentException("No keys found at [" + fileName + "]");
 		}
 	}
 	
@@ -119,7 +119,7 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		@Override
 		public String[] promptKeyboardInteractive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
 			LOGGER.debug("[" + host + "] SSH: keyboard-interactive Prompt=" + Arrays.toString(prompt));
-			return new String[]{password};
+			return new String[]{password != null ? password : ""};
 		}
 
 		@Override
