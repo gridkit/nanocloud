@@ -87,65 +87,69 @@ public class Isolate {
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
 	
-	private static PrintStream rootOut;
-	private static PrintStream rootErr;
-	private static Properties rootProperties;
-	
-	static {
+	private static class Multiplexer {
 		
-		// initializing LogManager outside of isolate
-		LogManager.getLogManager();
+		private static PrintStream rootOut;
+		private static PrintStream rootErr;
+		private static Properties rootProperties;
 		
-		System.err.println("Installing java.lang.System multiplexor");
-		
-		rootOut = System.out;
-		rootErr = System.err;
-		rootProperties = System.getProperties();
-		
-		PrintStream mOut = new PrintStreamMultiplexor() {
-			@Override
-			protected PrintStream resolve() {
-				Isolate i = ISOLATE.get();
-				if (i == null) {
-					return rootOut;
+		static {
+			
+			// initializing LogManager outside of isolate
+			LogManager.getLogManager();
+			
+			System.err.println("Installing java.lang.System multiplexor");
+			
+			rootOut = System.out;
+			rootErr = System.err;
+			rootProperties = System.getProperties();
+			
+			PrintStream mOut = new PrintStreamMultiplexor() {
+				@Override
+				protected PrintStream resolve() {
+					Isolate i = ISOLATE.get();
+					if (i == null) {
+						return rootOut;
+					}
+					else {
+						return i.stdOut;
+					}
 				}
-				else {
-					return i.stdOut;
+			};
+			
+			PrintStream mErr = new PrintStreamMultiplexor() {
+				@Override
+				protected PrintStream resolve() {
+					Isolate i = ISOLATE.get();
+					if (i == null) {
+						return rootErr;
+					}
+					else {
+						return i.stdErr;
+					}
 				}
-			}
-		};
-
-		PrintStream mErr = new PrintStreamMultiplexor() {
-			@Override
-			protected PrintStream resolve() {
-				Isolate i = ISOLATE.get();
-				if (i == null) {
-					return rootErr;
+			};
+			
+			@SuppressWarnings("serial")
+			Properties mProps = new PropertiesMultiplexor() {
+				@Override
+				protected Properties resolve() {
+					Isolate i = ISOLATE.get();
+					if (i == null) {
+						return rootProperties;
+					}
+					else {
+						return i.sysProps;
+					}
 				}
-				else {
-					return i.stdErr;
-				}
-			}
-		};
-		
-		@SuppressWarnings("serial")
-		Properties mProps = new PropertiesMultiplexor() {
-			@Override
-			protected Properties resolve() {
-				Isolate i = ISOLATE.get();
-				if (i == null) {
-					return rootProperties;
-				}
-				else {
-					return i.sysProps;
-				}
-			}
-		};
-		
-		System.setOut(mOut);
-		System.setErr(mErr);
-		System.setProperties(mProps);
+			};
+			
+			System.setOut(mOut);
+			System.setErr(mErr);
+			System.setProperties(mProps);
+		}
 	}
+	
 
 	public static Isolate currentIsolate() {
 		return ISOLATE.get();
@@ -195,9 +199,9 @@ public class Isolate {
 		sysProps.putAll(System.getProperties());
 		sysProps.put("isolate.name", name);
 		
-		wrpOut = new WrapperPrintStream("[" + name + "] ", rootOut);
+		wrpOut = new WrapperPrintStream("[" + name + "] ", Multiplexer.rootOut);
 		stdOut = new PrintStream(wrpOut);
-		wrpErr = new WrapperPrintStream("[" + name + "] ", rootErr);
+		wrpErr = new WrapperPrintStream("[" + name + "] ", Multiplexer.rootErr);
 		stdErr = new PrintStream(wrpErr);
 		
 		// TODO - remove once proper marshaling is implemented
