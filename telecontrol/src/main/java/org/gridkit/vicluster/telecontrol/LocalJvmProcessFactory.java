@@ -78,23 +78,14 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	}
 
 	private void initHubSocket() {
-		Random rnd = new Random();
-		int n = 50;
-		while(n > 0) {
-			--n;
-			int port = 40000 + rnd.nextInt(10000);
-			try {
-				
-				SocketAddress addr = new InetSocketAddress("127.0.0.1", port);
-				ServerSocket socket = new ServerSocket();
-				socket.bind(addr);
-				this.socket = socket;
-			} catch (IOException e) {
-				LOGGER.debug("Failed to bind 127.0.0.1:" + port + ", " + e.toString());
-			}
-		}
-		if (socket == null) {
-			throw new RuntimeException("Failed to bind socket for slave communications");
+		try {
+			
+			SocketAddress addr = new InetSocketAddress("127.0.0.1", 0);
+			ServerSocket socket = new ServerSocket();
+			socket.bind(addr);
+			this.socket = socket;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 		Runnable accepterTask = new Runnable() {
 			@Override
