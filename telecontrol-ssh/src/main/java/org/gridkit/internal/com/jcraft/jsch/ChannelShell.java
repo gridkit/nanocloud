@@ -54,7 +54,7 @@ public class ChannelShell extends ChannelSession{
 
     if(io.in!=null){
       thread=new Thread(this);
-      thread.setName("Shell for "+_session.host);
+      thread.setName("Prompt for "+_session.host);
       if(_session.daemon_thread){
         thread.setDaemon(_session.daemon_thread);
       }
