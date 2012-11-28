@@ -29,6 +29,8 @@ import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.SocketHandler;
+import org.gridkit.zeroio.LoggerPrintStream;
+import org.gridkit.zeroio.LoggerPrintStream.Level;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.NamedStreamPair;
 import org.gridkit.zerormi.hub.RemotingHub;
@@ -145,21 +147,34 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		String cmd = rconfig.getJavaExec() + " -Xms32m -Xmx32m -jar " + tunnellerJarPath;
 		exec.setCommand(cmd);
 		
-//		BackgroundStreamDumper.link(exec.getInputStream(), new WrapperPrintStream("[tunnel:" + rconfig.getHost() + "] ", System.out), false);
-//		InputStream cin = exec.getExtInputStream();
-//		OutputStream cout = exec.getOutputStream();
-		// use std out
-		BackgroundStreamDumper.link(exec.getExtInputStream(), new WrapperPrintStream("[tunnel:" + rconfig.getHost() + "] ", System.out), false);
+		// use std out for binary communication
 		InputStream cin = exec.getInputStream();
 		OutputStream cout = exec.getOutputStream();
-		// this should automatically kill all processes associated with session
+		// use std err for diagnostic output
+		OutputStream tunnel = new LoggerPrintStream(createTunnellerOutputLogger(), Level.INFO);
+		BackgroundStreamDumper.link(exec.getExtInputStream(), tunnel, false);
+
+		// unfortunately Pty will merge out and err, so it should be disabled
 		exec.setPty(false);
 		exec.connect();
 		
 		
 		control = new TunnellerConnection(rconfig.getHost(), cin, cout);
 	}
+
+	protected Logger createTunnellerOutputLogger() {
+		String loggerName = 
+				getClass().getSimpleName()
+			+ ".out."
+			+ getShortHostName(rconfig.getHost());
+		return LoggerFactory.getLogger(loggerName);
+	}
 	
+	private String getShortHostName(String host) {
+		int n = host.indexOf('.');
+		return n < 0 ? host : host.substring(0, n);
+	}
+
 	private void initPortForwarding() throws InterruptedException, ExecutionException, IOException {
 		final FutureBox<Void> box = new FutureBox<Void>();
 		control.newSocket(new SocketHandler() {

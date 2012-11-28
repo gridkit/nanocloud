@@ -49,6 +49,7 @@ import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.vicluster.telecontrol.bootstraper.HalloWelt;
+import org.gridkit.zeroio.WrapperOutputStream;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
@@ -138,8 +139,8 @@ public class SimpleSshJvmReplicator implements JvmProcessFactory {
 		rp = createDirectProcess(jvmCmd);		
 		session.setProcess(rp);
 
-		OutputStream stdOut = new WrapperPrintStream("[exec|" + host + "] ", System.out);
-		OutputStream stdErr = new WrapperPrintStream("[exec|" + host + "] ", System.err);
+		OutputStream stdOut = new WrapperOutputStream("[exec|" + host + "] ", System.out);
+		OutputStream stdErr = new WrapperOutputStream("[exec|" + host + "] ", System.err);
 		
 		rp.getOutputStream().close();
 		BackgroundStreamDumper.link(rp.getInputStream(), stdOut);
