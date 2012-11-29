@@ -21,6 +21,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Map.Entry;
 import java.util.Arrays;
 import java.util.NavigableMap;
@@ -246,12 +247,15 @@ class TunnellerIO {
 	
 	protected boolean embededMode = true;
 	
+	protected PrintStream diagOut;
+	
 	private String threadSuffix;
 	private NavigableMap<Long, Channel> channels = new TreeMap<Long, Channel>();
 	private Semaphore writePending = new Semaphore(0); 
 
-	protected TunnellerIO(String name) {
+	protected TunnellerIO(String name, PrintStream diagOut) {
 		this.threadSuffix = name;
+		this.diagOut = diagOut;
 	}
 
 	protected void readMagic(InputStream is) throws IOException {
@@ -287,7 +291,7 @@ class TunnellerIO {
 			}
 			channels.put(ch.channelId, ch);
 			if (traceChannelOpen) {
-				System.out.println("Channel open: [" + ch.channelId + "] " + ch.direction);
+				diagOut.println("Channel open: [" + ch.channelId + "] " + ch.direction);
 			}
 		}
 	}
@@ -356,7 +360,7 @@ class TunnellerIO {
 						try {
 							if (n < 0) {
 								if (traceChannelClose) {
-									System.out.println("Channel closed: [" + ch.channelId + "] " + ch.direction);
+									diagOut.println("Channel closed: [" + ch.channelId + "] " + ch.direction);
 								}
 								synchronized(channels) {
 									channels.remove(ch.channelId);
@@ -364,7 +368,7 @@ class TunnellerIO {
 								out.writeLong(ch.channelId);
 								out.writeShort(0); // EOF marker
 								if (traceChannelData) {
-									System.out.println("Channel send: [" + ch.channelId + "] - EOF");
+									diagOut.println("Channel send: [" + ch.channelId + "] - EOF");
 								}
 							}
 							else {
@@ -372,27 +376,27 @@ class TunnellerIO {
 								out.writeShort(n);
 								out.write(buf, 0, align(n));
 								if (traceChannelData) {
-									System.out.println("Channel send: [" + ch.channelId + "] " + n + " bytes");
+									diagOut.println("Channel send: [" + ch.channelId + "] " + n + " bytes");
 								}
 
 							}
 						} catch (IOException e) {
-							System.out.println("Outbound write failed: " + e.toString());
+							diagOut.println("Outbound write failed: " + e.toString());
 						}
 					}
 					try {
 						out.flush();
 					} catch (IOException e) {
-						System.out.println("Outbound write failed: " + e.toString());
+						diagOut.println("Outbound write failed: " + e.toString());
 					}
 				}
 			} catch (InterruptedException e) {
 				if (!embededMode) {
-					System.out.println("Outbound mux stopped.");
+					diagOut.println("Outbound mux stopped.");
 				}
 			} catch (IOException e) {
-				System.out.println("Outbound write failed: " + e.toString());
-				System.out.println("Outbound mux stopped");
+				diagOut.println("Outbound write failed: " + e.toString());
+				diagOut.println("Outbound mux stopped");
 			}
 		}
 		
@@ -423,10 +427,11 @@ class TunnellerIO {
 
 	protected class InboundDemux extends Thread {
 
-		private DataInputStream in;
+		protected DataInputStream in;
 		
 		public InboundDemux(InputStream in) {
 			this.in = new DataInputStream(in);
+			setName("InboundDemux" + threadSuffix);
 			setDaemon(true);
 		}
 		
@@ -442,7 +447,6 @@ class TunnellerIO {
 		
 		@Override
 		public void run() {
-			setName("InboundDemux" + threadSuffix);
 			try {
 				while(true) {
 					long chId = in.readLong();
@@ -451,23 +455,23 @@ class TunnellerIO {
 					byte[] buf = new byte[asize];
 					in.readFully(buf);
 					if (traceChannelData) {
-						System.out.println("Channel received: [" + chId + "] " + (size == 0 ? "EOF" : size + " bytes"));
+						diagOut.println("Channel received: [" + chId + "] " + (size == 0 ? "EOF" : size + " bytes"));
 					}
 					Channel ch;
 					synchronized(channels) {
 						ch = channels.get(chId);
 					}
 					if (ch == null) {
-						System.out.println("WARN: Channel " + chId + " do not exists");
+						diagOut.println("WARN: Channel " + chId + " do not exists");
 					}
 					else if (ch.direction == Direction.OUTBOUND) {
-						System.out.println("WARN: Inbound packet to outbound channel " + chId);
+						diagOut.println("WARN: Inbound packet to outbound channel " + chId);
 					}
 					else {
 						try {
 							if (size == 0) {
 								if (traceChannelClose) {
-									System.out.println("Channel closed: [" + ch.channelId + "] " + ch.direction);
+									diagOut.println("Channel closed: [" + ch.channelId + "] " + ch.direction);
 								}
 								ch.outbound.close();
 								synchronized(channels) {
@@ -489,7 +493,7 @@ class TunnellerIO {
 			} catch (IOException e) {
 				if (!embededMode) {
 					e.printStackTrace();
-					System.out.println("Inbound mux stopped");
+					diagOut.println("Inbound mux stopped");
 				}
 				stopChannels();
 			}

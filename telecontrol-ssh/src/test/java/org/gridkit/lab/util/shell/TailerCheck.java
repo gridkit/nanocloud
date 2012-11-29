@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-public class TailerTest {
+public class TailerCheck {
 
 	@Test
 	public void test() throws IOException, InterruptedException {

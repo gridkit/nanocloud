@@ -36,10 +36,10 @@ public class RemoteJvmCheck {
 	public void check_ssh_execution() throws JSchException, SftpException, IOException, InterruptedException {
 		
 		SimpleSshSessionProvider sshFactory = new SimpleSshSessionProvider();
-		sshFactory.setUser("ubuntu");
-		sshFactory.setPassword("reverse");
-		SimpleSshJvmReplicator host = new SimpleSshJvmReplicator("localhost:11022", null, sshFactory);
-		host.setAgentHome(".gridlab-agent");
+		sshFactory.setUser("root");
+		sshFactory.setPassword("toor");
+		SimpleSshJvmReplicator host = new SimpleSshJvmReplicator("cbox1", null, sshFactory);
+		host.setAgentHome("/tmp/.gridlab-agent");
 		host.init();
 		
 		JvmNodeProvider nodeProvider = new JvmNodeProvider(host);

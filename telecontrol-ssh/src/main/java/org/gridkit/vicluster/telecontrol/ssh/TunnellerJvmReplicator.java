@@ -19,6 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,6 +56,8 @@ import org.slf4j.LoggerFactory;
 
 public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 
+	private static final long DEFAULT_CONN_TIMEOUT = 5000;
+	
 	private SshRemotingConfig rconfig = new SshRemotingConfig();
 	private boolean initialized;
 	private boolean destroyed;
@@ -69,6 +72,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	
 	private String tunnelHost;
 	private int tunnelPort;
+	private long connectTimeoutMS = DEFAULT_CONN_TIMEOUT;
 	
 	private Logger logger;
 	
@@ -89,7 +93,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			throw new IllegalStateException("Already initialized");
 		}
 		
-		logger = LoggerFactory.getLogger(getClass().getSimpleName() + "::" + rconfig.getHost());
+		logger = LoggerFactory.getLogger(getClass().getSimpleName() + "." + rconfig.getHost());
 		
 		initialized = true;
 		
@@ -172,9 +176,26 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		// unfortunately Pty will merge out and err, so it should be disabled
 		exec.setPty(false);
 		exec.connect();
+
+		PrintStream diagLog = new LoggerPrintStream(logger, Level.INFO);
 		
-		
-		control = new TunnellerConnection(rconfig.getHost(), cin, cout);
+		try {
+			control = new TunnellerConnection(rconfig.getHost(), cin, cout, diagLog, connectTimeoutMS, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			killAndDrop(exec);
+			throw new IOException("Connection aborted due to thread interrupt");
+		} catch (TimeoutException e) {
+			throw new IOException("Tunneller connection timeout");
+		}
+	}
+
+	private void killAndDrop(ChannelExec exec) {
+		try {
+			exec.sendSignal("KILL");
+		} catch (Exception e) {
+			// ignore
+		}
+		exec.disconnect();
 	}
 
 	protected Logger createTunnellerOutputLogger() {
@@ -215,8 +236,16 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 	}
 	
-	protected void handleInbound(String rhost, int rport, InputStream soIn, OutputStream soOut) {
-		DuplexStream ds = new NamedStreamPair("TUNNEL[" + rhost + ":" + rport + "]", soIn, soOut);
+	protected void handleInbound(String rhost, int rport, InputStream soIn, OutputStream soOut) {		
+		String sname;
+		if ("localhost".equals(rhost)) {
+			sname = "TUNNEL[" + rconfig.getHost() + "/*:" + rport + "]";
+		}
+		else {
+			sname = "TUNNEL[" + rconfig.getHost() + "/" + rhost + ":" + rport + "]";
+		}
+		
+		DuplexStream ds = new NamedStreamPair(sname, soIn, soOut);
 		hub.dispatch(ds);
 	}
 	

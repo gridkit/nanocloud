@@ -26,7 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-
+//TODO modify to work with cbox test cluster
 public class SshConnectionCheck {
 
 	@Test

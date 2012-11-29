@@ -21,8 +21,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.gridkit.util.concurrent.FutureBox;
 
 public class TunnellerConnection extends TunnellerIO {
 
@@ -42,10 +48,11 @@ public class TunnellerConnection extends TunnellerIO {
 	private Map<Long, SocketContext> socks = new HashMap<Long, SocketContext>();
 	private Map<Long, AcceptContext> accepts = new HashMap<Long, AcceptContext>();
 	
-	boolean terminated;
+	private FutureBox<Void> magicReceived = new FutureBox<Void>();
+	private boolean terminated;
 	
-	public TunnellerConnection(String name, InputStream is, OutputStream os) throws IOException {
-		super(":" + name);
+	public TunnellerConnection(String name, InputStream is, OutputStream os, PrintStream diagOut, long connTimeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException {
+		super(":" + name, diagOut);
 		
 		embededMode = true;
 		
@@ -61,10 +68,31 @@ public class TunnellerConnection extends TunnellerIO {
 		outbound = new OutboundMux(os);
 		outbound.start();
 		
-		readMagic(is);
-		inbound = new InboundDemux(is);		
+		inbound = new InboundDemux(is) {
+			public void run() {
+				try {
+					readMagic(in);
+					magicReceived.setData(null);
+				}
+				catch(IOException e) {
+					magicReceived.setError(e);
+				}
+				super.run();
+			};
+		};
 		inbound.start();
 
+		try {
+			magicReceived.get(connTimeout, tu);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof IOException) {
+				throw ((IOException)e.getCause());
+			}
+			else {
+				throw new IOException(e.getCause());
+			}
+		}
+		
 		control = new Control(name);
 		control.start();		
 	}
@@ -281,9 +309,9 @@ public class TunnellerConnection extends TunnellerIO {
 						}
 					}		
 				} catch (IOException e) {
-					System.out.println("Control thread stopped");
+					diagOut.println("Control thread stopped");
 				} catch (Exception e) {
-					System.out.println("Error in control thread: " + e.toString());
+					diagOut.println("Error in control thread: " + e.toString());
 				}
 			}
 			finally {

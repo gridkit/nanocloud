@@ -34,11 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Tunneller extends TunnellerIO {
 	
 	public static void main(String[] args) {
-//		InputStream input = System.in;
-//		PrintStream output = System.err;
-//		System.setErr(System.out);
-
-// use std out instead of system error 		
+		// use std out for binary communications
+		// use std err for console diagnostic 
 		InputStream input = System.in;
 		PrintStream output = System.out;
 		System.setOut(System.err);
@@ -53,7 +50,7 @@ public class Tunneller extends TunnellerIO {
 	private NavigableMap<Long, ServerSocket> sockets = new TreeMap<Long, ServerSocket>();
 	
 	public Tunneller() {
-		super("");
+		super("", System.out);
 	}
 	
 	public void process(InputStream input, OutputStream output) {
@@ -74,12 +71,12 @@ public class Tunneller extends TunnellerIO {
 		try {
 			readMagic(input);
 		} catch (IOException e) {
-			System.out.println("Failed to init stream. " + e.toString());
+			diagOut.println("Failed to init stream. " + e.toString());
 		}
 		InboundDemux in = new InboundDemux(input);
 		in.start();
 
-		System.out.println("Tunneller started");
+		diagOut.println("Tunneller started");
 		processCommands();
 		in.interrupt();
 		out.interrupt();
@@ -100,9 +97,9 @@ public class Tunneller extends TunnellerIO {
 				}
 			}		
 		} catch (IOException e) {
-			System.out.println("Control thread stopped");
+			diagOut.println("Control thread stopped");
 		} catch (Exception e) {
-			System.out.println("Error in control thread: " + e.toString());
+			diagOut.println("Error in control thread: " + e.toString());
 		}
 	}
 
@@ -325,7 +322,7 @@ public class Tunneller extends TunnellerIO {
 							proc.destroy();
 							
 							sendExitCode(procId, ec);
-							System.out.println("Process [" + procId + "] exit code: " + ec);
+							diagOut.println("Process [" + procId + "] exit code: " + ec);
 							break;
 						}
 						catch(IllegalThreadStateException e) {

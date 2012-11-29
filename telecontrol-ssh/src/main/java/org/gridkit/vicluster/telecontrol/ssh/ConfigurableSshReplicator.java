@@ -97,7 +97,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 					session.replicator.init();
 				} catch (Exception e) {
 					session.replicator = null;
-					throw new RuntimeException("SSH connection failed: " + session.config.host, e);
+					throw new RuntimeException("SSH connection failed. Host [" + session.config.host + "] Error [" + e.getMessage() + "]", e);
 				}
 			}
 			
