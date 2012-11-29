@@ -1,3 +1,18 @@
+/**
+ * Copyright 2012 Alexey Ragozin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.ByteArrayInputStream;
@@ -15,12 +30,9 @@ public class SftpCacheCheck {
 
 	public Session createSession() throws JSchException {
 		SimpleSshSessionProvider sf = new SimpleSshSessionProvider();
-//		sf.setUser("root");
-//		sf.setPassword("toor");
-//		return sf.getSession("cbox1", null);		
-		sf.setUser("grimisuat");
-		sf.setPassword("@Mon_day5");
-		return sf.getSession("longmrdfappd1.uk.db.com", null);		
+		sf.setUser("root");
+		sf.setPassword("toor");
+		return sf.getSession("cbox1", null);		
 	}
 	
 	@Test

@@ -1,3 +1,18 @@
+/**
+ * Copyright 2012 Alexey Ragozin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.util.HashMap;
@@ -12,15 +27,11 @@ public class TunnellerCheck {
 
 	public Map<String, String> config() {
 		Map<String, String> config = new HashMap<String, String>();
-//		config.put(RemoteNodeProps.HOST, "cbox1");
-//		config.put(RemoteNodeProps.ACCOUNT, "root");
-//		config.put(RemoteNodeProps.PASSWORD, "toor");
-//		config.put(RemoteNodeProps.JAVA_EXEC, "java");
-		config.put(RemoteNodeProps.HOST, "longmchcu2.uk.db.com");
-		config.put(RemoteNodeProps.ACCOUNT, "grimisuat");
-		config.put(RemoteNodeProps.PASSWORD, "@Mon_day5");
+		config.put(RemoteNodeProps.HOST, "cbox1");
+		config.put(RemoteNodeProps.ACCOUNT, "root");
+		config.put(RemoteNodeProps.PASSWORD, "toor");
+		config.put(RemoteNodeProps.JAVA_EXEC, "java");
 		config.put(RemoteNodeProps.JAR_CACHE_PATH, "/tmp/.vigrid/.cache");
-		config.put(RemoteNodeProps.JAVA_EXEC, "/local/apps/java/solaris/jdk1.6.0_18_x86/bin/java");
 		return config;
 	}
 	
