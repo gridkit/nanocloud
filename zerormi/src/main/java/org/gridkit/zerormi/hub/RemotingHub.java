@@ -196,7 +196,9 @@ public class RemotingHub {
 	
 	private static final void silentClose(Closeable ch) {
 		try {
-			ch.close();
+			if (ch != null) {
+				ch.close();
+			}
 		} catch (IOException e) {
 			// ignore
 		}
