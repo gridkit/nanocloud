@@ -27,12 +27,21 @@ public class JvmConfig implements Serializable {
 
 	private static final long serialVersionUID = 20120211L;
 	
+	private String workDir = null;
 	private List<String> jvmOptions = new ArrayList<String>();
 //	private List<String> classpathExtras = new ArrayList<String>();
 	
 	public JvmConfig() {		
 	}
 	
+	public String getWorkDir() {
+		return workDir;
+	}
+
+	public void setWorkDir(String workDir) {
+		this.workDir = workDir;
+	}
+
 	public List<String> getJvmOptions() {
 		return jvmOptions;
 	}
@@ -45,6 +54,9 @@ public class JvmConfig implements Serializable {
 	}
 
 	public void apply(ExecCommand jvmCmd) {
+		if (workDir != null) {
+			jvmCmd.setWorkDir(workDir);
+		}
 		for(String option: jvmOptions) {
 			jvmCmd.addArg(option);
 		}		

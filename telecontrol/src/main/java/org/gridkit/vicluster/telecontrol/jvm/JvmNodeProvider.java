@@ -47,6 +47,10 @@ public class JvmNodeProvider implements ViNodeProvider {
 		try {		
 			JvmConfig jvmConfig = new JvmConfig();
 			config.apply(new JvmOptionsInitializer(jvmConfig));
+			String wd = config.getProp(JvmProps.JVM_WORK_DIR);
+			if (wd != null) {
+				jvmConfig.setWorkDir(wd);
+			}
 			ControlledProcess process = factory.createProcess(name, jvmConfig);
 			return new JvmNode(name, config, process);
 		} catch (IOException e) {

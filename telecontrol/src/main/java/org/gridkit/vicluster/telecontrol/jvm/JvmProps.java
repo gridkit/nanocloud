@@ -45,6 +45,11 @@ public class JvmProps {
 	public static String JVM_XX = "jvm:xx:";
 
 	/**
+	 * Addition command line options for JVM.
+	 */	
+	public static String JVM_WORK_DIR = "jvm:work-dir";
+
+	/**
 	 * JDK version
 	 */	
 	public static String JDK_VERSION = "jdk:version";
@@ -94,7 +99,16 @@ public class JvmProps {
 		return this;
 	}
 
+	public JvmProps setWorkDir(String workDir) {
+		config.setProp(JVM_WORK_DIR, workDir);
+		return this;
+	}
+	
 	public static void setJvmArg(String logicalName, ViConfigurable config, String string) {
 		config.setProp(JVM_XX + logicalName, string);
+	}
+
+	public static void setJvmWorkDir(ViConfigurable config, String workDir) {
+		config.setProp(JVM_WORK_DIR, workDir);
 	}
 }
