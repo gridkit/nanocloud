@@ -446,32 +446,32 @@ public class Shell {
 		}
 
 		@Override
-		public Input execWithInput(String... command) throws IOException, InterruptedException {
-			return execWithInputAt(".", stdOut, command);
+		public ChildProcess execInteractive(String... command) throws IOException, InterruptedException {
+			return execInteractiveAt(".", stdOut, command);
 		}
 
 		@Override
-		public Input execWithInput(OutputStream stdOut, String... command) throws IOException, InterruptedException {
-			return execWithInputAt(".", stdOut, command);
+		public ChildProcess execInteractive(OutputStream stdOut, String... command) throws IOException, InterruptedException {
+			return execInteractiveAt(".", stdOut, command);
 		}
 
 		@Override
-		public Input execWithInput(StringBuilder stdOut, String... command) throws IOException, InterruptedException {
-			return execWithInputAt(".", stdOut, command);
+		public ChildProcess execInteractive(StringBuilder stdOut, String... command) throws IOException, InterruptedException {
+			return execInteractiveAt(".", stdOut, command);
 		}
 
 		@Override
-		public Input execWithInputAt(String path, String... command) throws IOException, InterruptedException {
-			return execWithInputAt(path, stdOut, command);
+		public ChildProcess execInteractiveAt(String path, String... command) throws IOException, InterruptedException {
+			return execInteractiveAt(path, stdOut, command);
 		}
 
 		@Override
-		public Input execWithInputAt(String path, StringBuilder stdOut, String... command) throws IOException, InterruptedException {
-			return execWithInputAt(path, new StringBufferOutputStream(stdOut), command);
+		public ChildProcess execInteractiveAt(String path, StringBuilder stdOut, String... command) throws IOException, InterruptedException {
+			return execInteractiveAt(path, new StringBufferOutputStream(stdOut), command);
 		}
 
 		@Override
-		public Input execWithInputAt(String path, OutputStream stdOut, String... command) throws IOException, InterruptedException {
+		public ChildProcess execInteractiveAt(String path, OutputStream stdOut, String... command) throws IOException, InterruptedException {
 			ProcessBuilder pb = new ProcessBuilder(command);
 			pb.directory(resolvePath(path));
 			
@@ -539,7 +539,7 @@ public class Shell {
 			return p.exitValue();
 		}
 
-		private static class ProcessMonitor extends Thread implements Input {
+		private static class ProcessMonitor extends Thread implements ChildProcess {
 			
 			private Process process;
 			private InputStream stdOut;
@@ -583,7 +583,7 @@ public class Shell {
 			}
 
 			@Override
-			public Input write(byte[] raw) throws IOException {
+			public ChildProcess write(byte[] raw) throws IOException {
 				if (!SimpleShell.isAlive(process)) {
 					throw new IOException("Process has terminated");				
 				}
@@ -595,7 +595,7 @@ public class Shell {
 			}
 
 			@Override
-			public Input write(String text) throws IOException {
+			public ChildProcess write(String text) throws IOException {
 				if (!SimpleShell.isAlive(process)) {
 					throw new IOException("Process has terminated");				
 				}
@@ -607,7 +607,7 @@ public class Shell {
 			}
 
 			@Override
-			public Input writeln(String text) throws IOException {
+			public ChildProcess writeln(String text) throws IOException {
 				if (!SimpleShell.isAlive(process)) {
 					throw new IOException("Process has terminated");				
 				}
@@ -622,16 +622,43 @@ public class Shell {
 			public void done() throws IOException, InterruptedException {
 				stdIn.close();
 				while(SimpleShell.isAlive(process)) {
-					if (!pump(stdOut, System.out) & !pump(stdErr, System.err)) {
+					if (!pump(stdOut, outSink) & !pump(stdErr, errSink)) {
 						Thread.sleep(100);
 					}
 				}
-				pump(stdOut, System.out);
-				pump(stdErr, System.err);
+				pump(stdOut, outSink);
+				pump(stdErr, errSink);
 				int exitCode = process.exitValue();
 				if (exitCode != 0) {
 					throw new NonZeroExitCodeException("Exit code " + exitCode);
 				}			
+			}
+
+			@Override
+			public void done(long timeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException {
+				long deadline = System.nanoTime() + tu.toNanos(timeout);
+				stdIn.close();
+				while(SimpleShell.isAlive(process)) {
+					if (!pump(stdOut, outSink) & !pump(stdErr, errSink)) {
+						if (deadline - System.nanoTime() > 0) {
+							Thread.sleep(100);
+						}
+					}
+					if (deadline - System.nanoTime() <= 0) {
+						process.destroy();
+						pump(stdOut, outSink);
+						pump(stdErr, errSink);
+						stdOut.close();
+						stdErr.close();
+						throw new TimeoutException();
+					}
+				}
+				pump(stdOut, outSink);
+				pump(stdErr, errSink);
+				int exitCode = process.exitValue();
+				if (exitCode != 0) {
+					throw new NonZeroExitCodeException("Exit code " + exitCode);
+				}							
 			}
 		}
 		
@@ -746,7 +773,7 @@ public class Shell {
 				.exec("dir");
 			System.err.println(list);
 			
-			Input x = prompt().execWithInputAt(".", "cmd", "/C", "cat");
+			ChildProcess x = prompt().execInteractiveAt(".", "cmd", "/C", "cat");
 			x.writeln("This is cat");
 			x.writeln("Another line");
 			x.done();
@@ -758,11 +785,12 @@ public class Shell {
 		}
 	}	
 	
-	public interface Input {
-		public Input write(byte[] raw) throws IOException;
-		public Input write(String text) throws IOException;
-		public Input writeln(String text) throws IOException;
+	public interface ChildProcess {
+		public ChildProcess write(byte[] raw) throws IOException;
+		public ChildProcess write(String text) throws IOException;
+		public ChildProcess writeln(String text) throws IOException;
 		public void done() throws IOException, InterruptedException;
+		public void done(long timeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException;
 	}
 	
 	public static class NonZeroExitCodeException extends IOException {

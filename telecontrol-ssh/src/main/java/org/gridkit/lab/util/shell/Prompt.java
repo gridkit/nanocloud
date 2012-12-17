@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.gridkit.lab.util.shell.Shell.Input;
+import org.gridkit.lab.util.shell.Shell.ChildProcess;
 
 public interface Prompt {
 	
@@ -95,15 +95,15 @@ public interface Prompt {
 
 	public Prompt execAt(String path, StringBuilder stdOut, String... command) throws IOException, InterruptedException;
 	
-	public Input execWithInput(String... command) throws IOException, InterruptedException;
+	public ChildProcess execInteractive(String... command) throws IOException, InterruptedException;
 
-	public Input execWithInput(OutputStream stdOut, String... command) throws IOException, InterruptedException;
+	public ChildProcess execInteractive(OutputStream stdOut, String... command) throws IOException, InterruptedException;
 
-	public Input execWithInput(StringBuilder stdOut, String... command) throws IOException, InterruptedException;
+	public ChildProcess execInteractive(StringBuilder stdOut, String... command) throws IOException, InterruptedException;
 
-	public Input execWithInputAt(String path, String... command) throws IOException, InterruptedException;
+	public ChildProcess execInteractiveAt(String path, String... command) throws IOException, InterruptedException;
 
-	public Input execWithInputAt(String path, StringBuilder stdOut, String... command) throws IOException, InterruptedException;
+	public ChildProcess execInteractiveAt(String path, StringBuilder stdOut, String... command) throws IOException, InterruptedException;
 
-	public Input execWithInputAt(String path, OutputStream stdOut, String... command) throws IOException, InterruptedException;
+	public ChildProcess execInteractiveAt(String path, OutputStream stdOut, String... command) throws IOException, InterruptedException;
 }
