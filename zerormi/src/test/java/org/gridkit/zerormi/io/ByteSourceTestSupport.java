@@ -13,5 +13,7 @@ public interface ByteSourceTestSupport {
 	public void pushProducerException(IOException e) throws ClosedStreamException;
 	
 	public void closeOutput() throws ClosedStreamException;
+
+	public void flusOutput() throws ClosedStreamException;
 	
 }

@@ -87,7 +87,7 @@ public abstract class ByteSinkBasicChecks extends Assert {
 		reader.join();
 	}
 
-	public void small_message_whole_by_x(int size) throws IOException {
+	protected void small_message_whole_by_x(int size) throws IOException {
 		final String msg = "test message";
 
 		AfterRunner<Void> reader = assertInput(msg);
@@ -113,7 +113,7 @@ public abstract class ByteSinkBasicChecks extends Assert {
 		reader.join();
 	}
 
-	public void data_stream(int lenght, int sendBuffer, boolean direct) throws IOException {
+	protected void data_stream(int lenght, int sendBuffer, boolean direct) throws IOException {
 		int mod = 203;
 		AfterRunner<Void> reader = assertByteStream(mod, lenght);
 		ByteBuffer wb = direct ? ByteBuffer.allocateDirect(sendBuffer) : ByteBuffer.allocate(sendBuffer);

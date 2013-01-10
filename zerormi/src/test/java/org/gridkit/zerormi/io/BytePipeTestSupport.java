@@ -77,4 +77,9 @@ public class BytePipeTestSupport implements ByteSourceTestSupport, ByteSinkTestS
 	public void closeOutput() throws ClosedStreamException {
 		sink.endOfStream();
 	}
+
+	@Override
+	public void flusOutput() throws ClosedStreamException {
+		// nothing to do
+	}
 }

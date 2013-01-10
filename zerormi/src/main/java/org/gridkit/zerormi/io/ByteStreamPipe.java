@@ -48,9 +48,24 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 
 	// TODO use buffer directly
 	private void bufferRead(ByteBuffer buffer) throws IOException {
+		// TODO legacy case, reading with empty buffer to check EOF
+		// probably should drop it
+		if (buffer.remaining() == 0) {
+			if (bufferRead(null, 0, 0) == -1) {
+				throw new EOFException();
+			}
+			else {
+				return;
+			}
+		}
 		if (!buffer.isDirect() && !buffer.isReadOnly()) {
 			int n = bufferRead(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-			buffer.position(buffer.position() + n);
+			if (n > 0) {
+				buffer.position(buffer.position() + n);
+			}
+			else {
+				throw new EOFException();
+			}
 		}
 		else {
 			byte[] buf = new byte[buffer.remaining()];
@@ -78,8 +93,10 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 			if (writePushError != null) {
 				throw new ChainedIOException(writePushError);
 			}
-			// end of stream
-			return -1;
+			else {
+				// end of stream
+				return -1;
+			}
 		}
 		int run = Math.min(size, pending);
 		run = Math.min(run, buffer.length - in);
@@ -288,6 +305,7 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 	private class PipeIn implements ByteStreamSource {
 
 		volatile boolean active = true;
+		boolean selfInterrupted = false; 
 		
 		@Override
 		public boolean isActive() {
@@ -320,13 +338,14 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 			else {
 				synchronized(ByteStreamPipe.this) {
 					if (closedByReader) {
-						return -1;
+						return selfInterrupted ? 1 : -1;
 					}
 					if (inBuffer == 0 && closedByWriter) {
 						if (active && writePushError != null) {
 							return 1;
 						}
 						else {
+							active = false;
 							return -1;
 						}
 					}
@@ -352,6 +371,7 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 		@Override
 		public void pull(ByteBuffer buffer) throws IOException {
 			if (!active) {
+				selfInterrupted = false;
 				throw new ClosedStreamException();
 			}
 			try {
@@ -359,6 +379,8 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 			}
 			catch(IOException e) {
 				active = false;
+				selfInterrupted = false;
+				throw e;
 			}
 		}
 
@@ -367,6 +389,7 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 			if (!active) {
 				throw new ClosedStreamException();
 			}
+			selfInterrupted = true;
 			active = false;
 			readPushError = e;
 			readerCloseNotify();

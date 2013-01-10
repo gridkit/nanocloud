@@ -1,5 +1,6 @@
 package org.gridkit.zerormi.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +22,8 @@ public interface ByteStreamSource {
 	public boolean setNotifier(Latch latch);
 	
 	/**
-	 * @return amount of data available or -1 if EOF have been reached. If error is pending {@link #available()} would return positive value, even if there is no data in buffer.
+	 * Returns amount of data available or -1 if EOF have been reached. If error is pending {@link #available()} would return positive value, even if there is no data in buffer. <br/>
+	 * Once {@link #available()} have return -1 at least once, that means stream is not an active state anymore.
 	 * @throws IOException
 	 */
 	public int available();
@@ -33,9 +35,10 @@ public interface ByteStreamSource {
 	/**
 	 * Do not forget to flip buffer. Before reading from it.
 	 * @param buffer
+	 * @throws EOFException if end of stream reached. This exception is thrown is all data in stream have been read successfully and not producer induced exception have been received.
 	 * @throws IOException
 	 */
-	public void pull(ByteBuffer buffer) throws IOException;
+	public void pull(ByteBuffer buffer) throws IOException, EOFException;
 
 	/**
 	 * Notifies stream about consumer side problem. Dependent on implementation, exception cloud be pushed to producer.
