@@ -1,6 +1,5 @@
 package org.gridkit.zerormi.io;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
@@ -176,7 +175,7 @@ public abstract class ByteSinkBasicChecks extends Assert {
 						}
 					}
 				}
-				catch(EOFException e) {
+				catch(EndOfStreamException e) {
 					assertEquals(count, n);
 					return null;
 				}

@@ -1,6 +1,5 @@
 package org.gridkit.zerormi.io;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -24,7 +23,7 @@ public class BytePipeTestSupport implements ByteSourceTestSupport, ByteSinkTestS
 	public byte[] read() throws IOException {
 		int n = source.available();
 		if (n < 0) {
-			throw new EOFException();
+			throw new EndOfStreamException();
 		}
 		if (n == 0) {
 			return new byte[0];
