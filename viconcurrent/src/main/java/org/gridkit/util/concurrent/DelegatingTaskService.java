@@ -50,6 +50,7 @@ public class DelegatingTaskService implements TaskService, TaskService.Component
 	private void enqueue(TaskWrapper wrapper, long delay, TimeUnit tu) {
 		synchronized (this) {
 			if (!terminated) {
+				tasks.add(wrapper);
 				delegate.schedule(wrapper, delay, tu);
 				return;
 			}			
@@ -87,7 +88,7 @@ public class DelegatingTaskService implements TaskService, TaskService.Component
 		private final Task task;
 
 		private Thread execThread;
-		private boolean started = true;
+		private boolean started = false;
 		private boolean canceled = false;
 		private boolean finished = false;
 		
@@ -122,7 +123,7 @@ public class DelegatingTaskService implements TaskService, TaskService.Component
 		@Override
 		public void interrupt(Thread taskThread) {
 			synchronized (this) {
-				if (canceled) {
+				if (canceled || finished) {
 					return;
 				}
 			}
