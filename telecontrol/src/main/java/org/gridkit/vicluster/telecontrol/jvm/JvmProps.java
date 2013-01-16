@@ -49,6 +49,11 @@ public class JvmProps {
 	 */	
 	public static String JVM_WORK_DIR = "jvm:work-dir";
 
+    /**
+     * Addition environment variables for JVM.
+     */ 
+    public static String JVM_ENV = "jvm:env:";
+	
 	/**
 	 * JDK version
 	 */	
@@ -111,4 +116,13 @@ public class JvmProps {
 	public static void setJvmWorkDir(ViConfigurable config, String workDir) {
 		config.setProp(JVM_WORK_DIR, workDir);
 	}
+	
+    public JvmProps setEnv(String string, String value) {
+        setEnv(config, string, value);
+        return this;
+    }
+
+    public static void setEnv(ViConfigurable config, String string, String value) {
+        config.setProp(JVM_ENV + string, value);
+    }
 }

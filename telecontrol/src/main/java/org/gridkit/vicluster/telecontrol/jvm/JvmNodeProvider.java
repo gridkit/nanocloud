@@ -47,6 +47,7 @@ public class JvmNodeProvider implements ViNodeProvider {
 		try {		
 			JvmConfig jvmConfig = new JvmConfig();
 			config.apply(new JvmOptionsInitializer(jvmConfig));
+			config.apply(new JvmEnvironmentInitializer(jvmConfig));
 			String wd = config.getProp(JvmProps.JVM_WORK_DIR);
 			if (wd != null) {
 				jvmConfig.setWorkDir(wd);
@@ -83,5 +84,20 @@ public class JvmNodeProvider implements ViNodeProvider {
 				config.addOption(value);
 			}
 		}
+	}
+	
+	private static class JvmEnvironmentInitializer extends ViNodeConfig.ReplyProps {
+	       
+	    private JvmConfig config;
+	        
+	    public JvmEnvironmentInitializer(JvmConfig config) {
+	        super(JvmProps.JVM_ENV);
+	        this.config = config;
+	    }
+	    
+	    @Override
+	    protected void setPropInternal(String propName, String value) {
+	        config.setEnv(propName.substring(JvmProps.JVM_ENV.length()), value);
+	    }
 	}
 }

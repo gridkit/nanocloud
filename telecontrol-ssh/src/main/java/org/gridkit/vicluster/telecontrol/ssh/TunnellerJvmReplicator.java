@@ -289,7 +289,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	}
 	
 	protected void exec(ExecCommand jvmCmd, RemoteControlSession handler) throws IOException {
-		handler.execId = control.exec(jvmCmd.getWorkDir(), jvmCmd.getCommandArray(), new String[0], handler);		 
+		handler.execId = control.exec(jvmCmd.getWorkDir(), jvmCmd.getCommandArray(), jvmCmd.getEnviromentArray(), handler);		 
 	}
 	
 	@Override

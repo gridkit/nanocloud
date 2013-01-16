@@ -17,7 +17,9 @@ package org.gridkit.vicluster.telecontrol;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -30,6 +32,7 @@ public class JvmConfig implements Serializable {
 	private String workDir = null;
 	private List<String> jvmOptions = new ArrayList<String>();
 //	private List<String> classpathExtras = new ArrayList<String>();
+	private Map<String, String> enviroment = new HashMap<String, String>();
 	
 	public JvmConfig() {		
 	}
@@ -52,13 +55,24 @@ public class JvmConfig implements Serializable {
 		}
 		jvmOptions.add(option);		
 	}
+	
+	public void setEnv(String name, String value) {
+	    enviroment.put(name, value);
+	}
 
+	public Map<String, String> getEnviroment() {
+        return enviroment;
+    }
+	
 	public void apply(ExecCommand jvmCmd) {
 		if (workDir != null) {
 			jvmCmd.setWorkDir(workDir);
 		}
 		for(String option: jvmOptions) {
 			jvmCmd.addArg(option);
-		}		
+		}
+		for(Map.Entry<String, String> var : enviroment.entrySet()) {
+		    jvmCmd.setVar(var.getKey(), var.getValue());
+		}
 	}	
 }

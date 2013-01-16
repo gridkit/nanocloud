@@ -67,6 +67,16 @@ public class ExecCommand implements Cloneable, Serializable {
 		return line.toArray(new String[line.size()]);
 	}
 	
+	public String[] getEnviromentArray() {
+	    List<String> lines = new ArrayList<String>(enviroment.size());
+	    
+	    for (Map.Entry<String, String> var : enviroment.entrySet()) {
+	        lines.add(var.getKey() + "=" + var.getValue()); 
+	    }
+	    
+	    return lines.toArray(new String[lines.size()]);
+	}
+	
 	public ProcessBuilder getProcessBuilder() {
 		List<String> line = new ArrayList<String>(arguments.size() + 1);
 		line.add(executable);
