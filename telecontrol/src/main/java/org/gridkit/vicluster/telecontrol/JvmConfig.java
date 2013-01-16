@@ -72,7 +72,7 @@ public class JvmConfig implements Serializable {
 			jvmCmd.addArg(option);
 		}
 		for(Map.Entry<String, String> var : enviroment.entrySet()) {
-		    jvmCmd.setVar(var.getKey(), var.getValue());
+		    jvmCmd.setEnvironment(var.getKey(), var.getValue());
 		}
 	}	
 }
