@@ -20,8 +20,6 @@ import junit.framework.Assert;
 import org.gridkit.internal.com.jcraft.jsch.JSch;
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
-import org.gridkit.vicluster.telecontrol.ssh.ConfigurableSshSessionProvider;
-import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,6 +61,7 @@ public class SshConnectionCheck {
 	}
 	
 	@Test 
+	@SuppressWarnings("deprecation")
 	public void test_configurable_factory() throws JSchException {
 		ConfigurableSshSessionProvider provider = new ConfigurableSshSessionProvider();
 		

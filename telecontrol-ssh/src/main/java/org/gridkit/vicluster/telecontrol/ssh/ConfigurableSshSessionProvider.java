@@ -32,11 +32,13 @@ import org.gridkit.internal.com.jcraft.jsch.Session;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
+@Deprecated
 public class ConfigurableSshSessionProvider implements SshSessionFactory {
 	
 	private static final Pattern ENTRY_PATTERN = Pattern.compile("(\\w+@)?([a-zA-Z0-9.*?\\-]+)([!][a-zA-Z\\-]+)?");
 	
 	private static final String CFG_DEFAULT_PROFILE = "default-profile";
+	private static final String CFG_HOSTNAME = "hostname";
 	private static final String CFG_LOGIN = "login";
 	private static final String CFG_PASSWORD = "password";
 	private static final String CFG_PRIVATE_KEY = "private-key";
@@ -84,6 +86,9 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 				else if (CFG_PRIVATE_KEY.equals(conf)) {
 					provider.hosts(host).profile(profile).usePrivateKey(value);
 				}
+				else if (CFG_HOSTNAME.equals(conf)) {
+					provider.hosts(host).profile(profile).overrideHostname(value);
+				}
 				else {
 					throw new IllegalArgumentException("Wrong key format: " + key);
 				}
@@ -110,7 +115,8 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 			}
 			return getSession(host, user);
 		}
-		
+
+		String targetHost = host;
 		Map<String, String> config = resolveConfig(host, account);
 		SimpleSshSessionProvider simpleProvider = new SimpleSshSessionProvider();
 		if (config.containsKey(CFG_LOGIN)) {
@@ -125,8 +131,11 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 		if (config.containsKey(CFG_PRIVATE_KEY)) {
 			simpleProvider.setKeyFile(resolveFile(config.get(CFG_PRIVATE_KEY)));
 		}
+		if (config.containsKey(CFG_HOSTNAME)) {
+			targetHost = config.get(CFG_HOSTNAME);
+		}
 		
-		return simpleProvider.getSession(host, null);
+		return simpleProvider.getSession(targetHost, null);
 	}
 
 	private String resolveFile(String filename) {
@@ -174,6 +183,8 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 		public SshConfig defaultProfile(String account);
 		
 		public SshConfig useLogin(String login);
+		
+		public SshConfig overrideHostname(String hostname);
 
 		public SshConfig usePassword(String password);
 		
@@ -217,6 +228,15 @@ public class ConfigurableSshSessionProvider implements SshSessionFactory {
 				throw new IllegalArgumentException("Profile name is not set");
 			}
 			entries.add(new ConfigEntry(hostPattern, profile, CFG_LOGIN, login));
+			return this;
+		}
+
+		@Override
+		public SshConfig overrideHostname(String hostname) {
+			if (profile == null) {
+				throw new IllegalArgumentException("Profile name is not set");
+			}
+			entries.add(new ConfigEntry(hostPattern, profile, CFG_HOSTNAME, hostname));
 			return this;
 		}
 

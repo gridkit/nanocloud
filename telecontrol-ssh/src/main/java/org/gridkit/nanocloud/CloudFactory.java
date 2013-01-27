@@ -25,22 +25,43 @@ import java.net.URL;
 
 import org.gridkit.vicluster.ViHelper;
 import org.gridkit.vicluster.ViManager;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.WildProps;
+import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 import org.gridkit.vicluster.telecontrol.ssh.ConfigurableNodeProvider;
+import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
 
 public class CloudFactory {
 
+	/**
+	 * Creates {@link ViManager} with {@link Isolate} provider.
+	 * @param packages - list of packages to "isolate"
+	 */
 	public static ViManager createIsolateCloud(String... packages) {
 		return IsolateCloudFactory.createCloud(packages);
 	}
-	
+
+	/**
+	 * Creates {@link ViManager} which interprets remote nodes as local.
+	 * Useful for testing.
+	 * 
+	 * @deprecated same effect cloud be achieved by normal configuration
+	 */
+	@Deprecated
 	public static ViManager createLocalCloud() {
 		ConfigurableNodeProvider provider = new ConfigurableNodeProvider(true);
 		ViManager cloud = new ViManager(provider);
 		return cloud;
 	}
 
+	/**
+	 * Creates {@link ViManager} which interprets remote nodes as local.
+	 * Useful for testing.
+	 * 
+	 * @deprecated same effect cloud be achieved by normal configuration
+	 */
 	public static ViManager createLocalCloud(String configFile) {
 		try {
 			
@@ -55,6 +76,12 @@ public class CloudFactory {
 		}		
 	}
 
+	/**
+	 * Creates {@link ViManager} which interprets remote nodes as local.
+	 * Useful for testing.
+	 * 
+	 * @deprecated same effect cloud be achieved by normal configuration
+	 */
 	public static ViManager createLocalCloud(Reader configReader) {
 		ConfigurableNodeProvider provider = new ConfigurableNodeProvider(true);
 		ViManager cloud = new ViManager(provider);
@@ -62,8 +89,41 @@ public class CloudFactory {
 		
 		return cloud;
 	}
-	
+
+	/**
+	 * @deprecated Use {@link #createCloud(String)}
+	 */
+	@Deprecated
 	public static ViManager createSshCloud(String configFile) {
+		return createCloud(configFile);
+	}
+
+	/**
+	 * @deprecated Use {@link #createCloud(Reader)}
+	 */
+	@Deprecated
+	public static ViManager createSshCloud(Reader configReader) {
+		return createCloud(configReader);
+	}
+
+	/**
+	 * Create {@link ViManager} with configuration driven node provider.
+	 * @see #applyConfig(ViManager, String)
+	 * @return unconfigured instance of {@link ViManager}
+	 */
+	public static ViManager createCloud() {
+		ConfigurableNodeProvider provider = new ConfigurableNodeProvider(false);
+		ViManager cloud = new ViManager(provider);
+		
+		return cloud;
+	}
+	
+	/**
+	 * Create {@link ViManager} with configuration driven node provider.
+	 * @see #applyConfig(ViManager, String)
+	 * @return configured instance of {@link ViManager}
+	 */
+	public static ViManager createCloud(String configFile) {
 		try {
 			
 			ConfigurableNodeProvider provider = new ConfigurableNodeProvider(false);
@@ -77,12 +137,37 @@ public class CloudFactory {
 		}				
 	}
 
-	public static ViManager createSshCloud(Reader configReader) {
+	/**
+	 * Create {@link ViManager} with configuration driven node provider.
+	 * @see #applyConfig(ViManager, String)
+	 * @return configured instance of {@link ViManager}
+	 */
+	public static ViManager createCloud(Reader configReader) {
 		ConfigurableNodeProvider provider = new ConfigurableNodeProvider(false);
 		ViManager cloud = new ViManager(provider);
 		applyConfig(cloud, configReader);
 		
 		return cloud;		
+	}
+
+	/**
+	 * Creates instance of configuration driven {@link ViManager}, configured to interpret {@link ViNode}'s name as hostname.
+	 * <br/>
+	 * Default SSH configuration is used.
+	 * If password-less SSH is set up in environment, this {@link ViManager} cloud be used without further configuration.
+	 * <br/>
+	 * If present, <code>~/ssh-credentials.prop</code> would be used for SSH credentials lookup. 
+	 * @return configured instance of {@link ViManager}
+	 */
+	public static ViManager createSimpleSshCloud() {
+		ViManager cloud = createCloud();
+		ViProps.at(cloud.node("**")).setRemoteType();
+		RemoteNodeProps.at(cloud.node("**")).setRemoteJavaExec("java");
+		RemoteNodeProps.at(cloud.node("**")).setRemoteJarCachePath("/tmp/.telecontrol");
+		RemoteNodeProps.at(cloud.node("**")).setSshConfig("?~/ssh-credentials.prop");
+		RemoteNodeProps.at(cloud.node("**")).setRemoteHost("~%s!(.*)");
+		
+		return cloud;
 	}
 	
 	public static void applyConfig(ViManager manager, String config) {

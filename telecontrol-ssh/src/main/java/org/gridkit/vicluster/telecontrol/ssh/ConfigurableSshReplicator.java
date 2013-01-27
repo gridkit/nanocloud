@@ -148,7 +148,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		SshSessionConfig s = new SshSessionConfig();
 		s.host = nodeConfig.getProp(RemoteNodeProps.HOST);
 		if (s.host == null) {
-			throw new IllegalArgumentException("No host defined for '" + name + "'");
+			throw new IllegalArgumentException("Remote host is not specified for node '" + name + "'");
 		}
 		if (s.host.startsWith("~")) {
 			s.host = transform(s.host, name);
@@ -156,12 +156,16 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		WildProps sshconf = getConf(nodeConfig.getProp(RemoteNodeProps.SSH_CREDENTIAL_FILE));
 		if (sshconf != null) {
 			s.account = sshconf.get(s.host);
-			s.account = override(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
+			s.account = overrideUser(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
 			s.password = sshconf.get(s.account + "@" + s.host + "!password");
 			s.keyFile = sshconf.get(s.account + "@" + s.host + "!private-key");
+			String hostOverride = sshconf.get(s.account + "@" + s.host + "!hostname");
+			if (hostOverride != null) {
+				s.host = hostOverride;
+			}
 		}
 		
-		s.account = override(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
+		s.account = overrideUser(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
 		s.password = override(s.password, nodeConfig.getProp(RemoteNodeProps.PASSWORD));
 		s.keyFile = override(s.keyFile, nodeConfig.getProp(RemoteNodeProps.SSH_KEY_FILE));
 		s.javaExec = override(s.javaExec, nodeConfig.getProp(RemoteNodeProps.JAVA_EXEC));
@@ -203,6 +207,18 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 	private String override(String def, String override) {
 		if (override != null) {
 			return override;
+		}
+		else {
+			return def;
+		}
+	}
+
+	private String overrideUser(String def, String override) {
+		if (override != null) {
+			return override;
+		}
+		else if (def == null){
+			return System.getProperty("user.name");
 		}
 		else {
 			return def;

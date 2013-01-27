@@ -33,6 +33,7 @@ public class HostTransformTest {
 		Assert.assertEquals("host1", ConfigurableSshReplicator.transform("~host%2$s!.*(host([0-9]+)).*", "zoo.host1"));		
 		Assert.assertEquals("host1", ConfigurableSshReplicator.transform("~host%2$s!.*(host([0-9]+)).*", "zoo.host1.xxx"));		
 		Assert.assertEquals("host1", ConfigurableSshReplicator.transform("~host%2$s!.*(host([0-9]+)).*", "host1.xxx"));		
+		Assert.assertEquals("server.acme.com", ConfigurableSshReplicator.transform("~%s!(.*)", "server.acme.com"));		
 	}
 
 	@Test(expected=IllegalArgumentException.class)

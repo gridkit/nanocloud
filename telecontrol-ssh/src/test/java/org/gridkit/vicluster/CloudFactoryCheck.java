@@ -50,7 +50,7 @@ public class CloudFactoryCheck {
 	@Test
 	public void test_ssh_node() throws InterruptedException {
 		
-		manager = CloudFactory.createSshCloud(CONFIG);
+		manager = CloudFactory.createCloud(CONFIG);
 		
 		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
 		manager.node("jvm.remote.host1");
@@ -73,6 +73,7 @@ public class CloudFactoryCheck {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void test_ssh_forced_local() throws InterruptedException {
 		
 		manager = CloudFactory.createLocalCloud(CONFIG);
@@ -99,7 +100,7 @@ public class CloudFactoryCheck {
 	
 	@Test
 	public void test_bulk_ssh_nodes() {
-		manager = CloudFactory.createSshCloud(CONFIG);
+		manager = CloudFactory.createCloud(CONFIG);
 		
 		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
 
@@ -125,7 +126,7 @@ public class CloudFactoryCheck {
 	
 	@Test
 	public void test_isolate_and_local_node() {
-		manager = CloudFactory.createSshCloud(CONFIG);
+		manager = CloudFactory.createCloud(CONFIG);
 		
 		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
 		manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
@@ -153,7 +154,7 @@ public class CloudFactoryCheck {
 
 	@Test
 	public void test_isolate_local_remote_node() {
-		manager = CloudFactory.createSshCloud(CONFIG);
+		manager = CloudFactory.createCloud(CONFIG);
 		
 		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
 		manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
