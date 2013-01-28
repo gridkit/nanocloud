@@ -24,14 +24,22 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -39,20 +47,74 @@ import java.util.zip.ZipOutputStream;
  */
 class ClasspathUtils {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathUtils.class);
+	
+	private static final ConcurrentMap<String, String> MISSING_URL = new ConcurrentHashMap<String, String>(64, 0.75f, 1);
+	
 	public static Collection<URL> listCurrentClasspath() {
 		URLClassLoader classLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
-		return Arrays.asList(classLoader.getURLs());
+		return listCurrentClasspath(classLoader);
 	}
 
-//	public static Collection<URL> listCurrentEffectiveClasspath() throws IOException {
-//		List<URL> result = new ArrayList<URL>();
-//		Enumeration<URL> en = Thread.currentThread().getContextClassLoader().getResources("/");
-//		while(en.hasMoreElements()) {
-//			result.add(en.nextElement());
-//		}
-//		return result;
-//	}
+	public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
+		List<URL> result = new ArrayList<URL>();
+		for(URL url: classLoader.getURLs()) {
+			addEntriesFromManifest(result, url);
+		}
+		return result;
+	}
 	
+	private static void addEntriesFromManifest(List<URL> list, URL url) {
+		try {
+//			if ("file".equals(url.getProtocol())) {
+//				File f = new File(url.getPath());
+//				if (f.isDirectory()) {
+//					list.add(url);
+//					return;
+//				}
+//			}
+			InputStream is;
+			try {
+				is = url.openStream();
+			}
+			catch(Exception e) {
+				String path = url.toString();
+				if (MISSING_URL.put(path, path) == null) {
+					LOGGER.warn("URL not found and will be excluded from classpath: " + path);
+				}
+				throw e;
+			}
+			if (is != null) {
+				list.add(url);
+			}
+			else {
+				String path = url.toString();
+				if (MISSING_URL.put(path, path) == null) {
+					LOGGER.warn("URL not found and will be excluded from classpath: " + path);
+				}
+			}
+			JarInputStream jar = new JarInputStream(is);
+			Manifest mf = jar.getManifest();
+			if (mf == null) {
+				return;
+			}
+			String cp = mf.getMainAttributes().getValue(Attributes.Name.CLASS_PATH);
+			if (cp != null) {
+				for(String entry: cp.split("\\s+")) {
+					try {
+						URL ipath = new URL(url, entry);
+						addEntriesFromManifest(list, ipath);
+					}
+					catch(Exception e) {
+						// ignore
+					}
+				}
+			}
+		}
+		catch(Exception e) {
+		}
+	}
+
 	public static byte[] createManifestJar(Manifest manifest) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
 		ZipOutputStream jarOut = manifest == null ? new JarOutputStream(bos) : new ZipOutputStream(bos);

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.WeakHashMap;
@@ -41,7 +42,7 @@ public class Classpath {
 		List<ClasspathEntry> classpath = CLASSPATH_CACHE.get(classloader);
 		if (classpath == null) {
 			classpath = new ArrayList<Classpath.ClasspathEntry>();
-			fillClasspath(classpath, ((URLClassLoader)classloader).getURLs());
+			fillClasspath(classpath, ClasspathUtils.listCurrentClasspath(((URLClassLoader)classloader)));
 			classpath = Collections.unmodifiableList(classpath);
 			CLASSPATH_CACHE.put(classloader, classpath);
 		}
@@ -49,7 +50,7 @@ public class Classpath {
 	}
 	
 	
-	private static void fillClasspath(List<ClasspathEntry> classpath, URL[] urls) {
+	private static void fillClasspath(List<ClasspathEntry> classpath, Collection<URL> urls) {
 		for(URL url: urls) {
 			ClasspathEntry entry = new ClasspathEntry();
 			entry.url = url;
