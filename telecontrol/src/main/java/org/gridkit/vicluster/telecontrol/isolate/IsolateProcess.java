@@ -67,8 +67,8 @@ class IsolateProcess extends Process {
 		System.setProperty(RemotingEndPoint.HEARTBEAT_PERIOD, String.valueOf(Integer.MAX_VALUE));
 		System.setProperty(RemotingEndPoint.HEARTBEAT_TIMEOUT, String.valueOf(Integer.MAX_VALUE));
 		System.setProperty("org.gridkit.suppress-system-exit", "true");
-		
-		System.out.println("Starting: " + jvmCmd.getCommand());
+
+//		System.out.println("Starting: " + jvmCmd.getCommand());
 		try {
 			String main = null;
 			List<String> args = new ArrayList<String>();

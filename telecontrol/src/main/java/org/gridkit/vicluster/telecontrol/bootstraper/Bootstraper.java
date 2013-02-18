@@ -45,7 +45,9 @@ public class Bootstraper {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		System.out.println("Exec command: " + ManagementFactory.getRuntimeMXBean().getInputArguments().toString());
+		if (System.getProperty("org.gridkit.telecontrol.verbose") != null) {
+			System.out.println("Exec command: " + ManagementFactory.getRuntimeMXBean().getInputArguments().toString());
+		}
 		String id = args[0];
 		String host = args[1];
 		int port = Integer.valueOf(args[2]);

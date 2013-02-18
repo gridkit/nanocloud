@@ -328,9 +328,11 @@ class JvmNode implements ViNode {
 			this.buffer = new ByteArrayOutputStream();
 		}
 		
-		public void silence() {
+		public synchronized void silence() {
 			try {
-				dumpBuffer();
+				if (buffer.size() > 0) {
+					dumpBuffer();
+				}
 			} catch (IOException e) {
 				// ignore
 			}

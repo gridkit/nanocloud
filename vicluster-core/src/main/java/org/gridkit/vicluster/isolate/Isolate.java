@@ -743,8 +743,13 @@ public class Isolate {
 		for(int i = 0; i != n; ++i) {
 			++threadCount;
 			Thread t = threads[i];
-			if (Runtime.getRuntime().removeShutdownHook(t)) {
-				stdErr.println("Removing shutdown hook: " + t.getName());
+			try {
+				if (Runtime.getRuntime().removeShutdownHook(t)) {
+					stdErr.println("Removing shutdown hook: " + t.getName());
+				}
+			}
+			catch(IllegalStateException e) {
+				// ignore
 			}
 			if (t.getState() != State.TERMINATED) {
 				stdErr.println("Killing: " + t.getName());
@@ -907,7 +912,6 @@ public class Isolate {
 			Map<Thread, Thread> hooks = (Map<Thread, Thread>) f.get(null);
 			return new ArrayList<Thread>(hooks.values());
 		} catch (Exception e) {
-			e.printStackTrace();
 			return Collections.emptyList();
 		}
 	}
@@ -1672,9 +1676,6 @@ public class Isolate {
 			Boolean isolate = rules.shouldIsolate(url, name);
 			if (isolate == null) {
 				throw new ClassNotFoundException("No isolation rule for [" + name + "]");
-			}
-			if (isolate) {
-				System.out.println("Loading in isolate: " + name);
 			}
 			return isolate;
 		}
