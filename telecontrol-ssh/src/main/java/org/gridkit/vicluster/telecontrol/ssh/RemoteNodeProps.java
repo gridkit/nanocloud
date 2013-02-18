@@ -16,13 +16,14 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.vicluster.ViNodeProps;
 
 /**
  * Config properties for remote nodes.
  *  
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class RemoteNodeProps {
+public class RemoteNodeProps implements ViNodeProps {
 
 	/**
 	 * Hint, where to execute process 

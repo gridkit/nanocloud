@@ -30,7 +30,7 @@ import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
  */
 public class JvmNodeProvider implements ViNodeProvider {
 
-	private JvmProcessFactory factory;
+	protected final JvmProcessFactory factory;
 	
 	public JvmNodeProvider(JvmProcessFactory factory) {
 		this.factory = factory;
@@ -45,20 +45,30 @@ public class JvmNodeProvider implements ViNodeProvider {
 	@Override
 	public ViNode createNode(String name, ViNodeConfig config) {
 		try {		
-			JvmConfig jvmConfig = new JvmConfig();
-			config.apply(new JvmOptionsInitializer(jvmConfig));
-			config.apply(new JvmEnvironmentInitializer(jvmConfig));
-			String wd = config.getProp(JvmProps.JVM_WORK_DIR);
-			if (wd != null) {
-				jvmConfig.setWorkDir(wd);
-			}
+			JvmConfig jvmConfig = prepareJvmConfig(config);
 			ControlledProcess process = factory.createProcess(name, jvmConfig);
-			return new JvmNode(name, config, process);
+			return createViNode(name, config, process);
 		} catch (IOException e) {
 			// TODO special exception for node creation failure
 			throw new RuntimeException("Failed to create node '" + name + "'", e);
 		}		
 	}
+
+	protected JvmConfig prepareJvmConfig(ViNodeConfig config) {
+		JvmConfig jvmConfig = new JvmConfig();
+		config.apply(new JvmOptionsInitializer(jvmConfig));
+		config.apply(new JvmEnvironmentInitializer(jvmConfig));
+		String wd = config.getProp(JvmProps.JVM_WORK_DIR);
+		if (wd != null) {
+			jvmConfig.setWorkDir(wd);
+		}
+		return jvmConfig;
+	}
+
+	protected ViNode createViNode(String name, ViNodeConfig config, ControlledProcess process) throws IOException {
+		return new JvmNode(name, config, process);
+	}
+	
 	
 	private static class JvmOptionsInitializer extends ViNodeConfig.ReplyProps {
 

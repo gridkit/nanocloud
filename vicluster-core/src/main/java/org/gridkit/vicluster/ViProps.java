@@ -19,7 +19,7 @@ package org.gridkit.vicluster;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class ViProps {
+public class ViProps implements ViNodeProps {
 
 	/**
 	 * Type of ViNode (e.g. isolate, local ...). Types have associated provider.
@@ -39,7 +39,8 @@ public class ViProps {
 
 	/**
 	 * Arbitrary UID of ViNode. May be used by certain providers.
-	 */	
+	 */
+	@Deprecated
 	public static final String NODE_UID = "node:uid";
 
 	/**
@@ -50,7 +51,14 @@ public class ViProps {
 	/**
 	 * Label
 	 */	
+	@Deprecated
 	public static final String LABEL = "label:";	
+
+	/**
+	 * If <code>true</code> provider is expected to suppress node output
+	 * after shutdown.
+	 */
+	public static final String NODE_SILENT_SHUTDOWN = "node:silent-shutdown";
 	
 	public static ViProps at(ViConfigurable config) {
 		return new ViProps(config);
@@ -87,4 +95,8 @@ public class ViProps {
 		return this;
 	}
 	
+	public ViProps setSilentShutdown() {
+		config.setProp(NODE_SILENT_SHUTDOWN, "true");
+		return this;
+	}	
 }

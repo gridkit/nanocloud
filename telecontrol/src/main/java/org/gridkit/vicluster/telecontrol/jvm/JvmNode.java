@@ -34,6 +34,7 @@ import org.gridkit.vicluster.MassExec;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
+import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 
@@ -273,6 +274,10 @@ class JvmNode implements ViNode {
 			} catch (IOException e) {
 				e.printStackTrace(); // TODO logging
 			}
+			if ("TRUE".equals(config.getProp(ViProps.NODE_SILENT_SHUTDOWN, "false").toUpperCase())) {
+				stdOut.silence();
+				stdErr.silence();
+			}
 			boolean destroyDelay = false;
 			try {
 				Future<Void> f = submit(new Runnable() {
@@ -314,6 +319,7 @@ class JvmNode implements ViNode {
 		private String prefix;
 		private PrintStream printStream;
 		private ByteArrayOutputStream buffer;
+		private boolean silence;
 		
 		public WrapperPrintStream(String prefix, PrintStream printStream) {
 			super(printStream);
@@ -322,11 +328,22 @@ class JvmNode implements ViNode {
 			this.buffer = new ByteArrayOutputStream();
 		}
 		
+		public void silence() {
+			try {
+				dumpBuffer();
+			} catch (IOException e) {
+				// ignore
+			}
+			silence = true;
+		}
+		
 		private void dumpBuffer() throws IOException {
-			printStream.append(prefix);
-			printStream.write(buffer.toByteArray());
-			printStream.flush();
-			buffer.reset();
+			if (!silence) {
+				printStream.append(prefix);
+				printStream.write(buffer.toByteArray());
+				printStream.flush();
+				buffer.reset();
+			}
 		}
 		
 		@Override

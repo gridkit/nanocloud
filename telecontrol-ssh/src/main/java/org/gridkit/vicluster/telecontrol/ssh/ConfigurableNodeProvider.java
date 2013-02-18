@@ -21,7 +21,7 @@ import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
-import org.gridkit.vicluster.telecontrol.isolate.IsolateJvmNodeFactory;
+import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 
 public class ConfigurableNodeProvider implements ViNodeProvider {
@@ -70,7 +70,7 @@ public class ConfigurableNodeProvider implements ViNodeProvider {
 
 	private synchronized ViNodeProvider getIsolateProvider() {
 		if (isolateProvider == null) {
-			isolateProvider = new JvmNodeProvider(new IsolateJvmNodeFactory());
+			isolateProvider = new IsolateAwareNodeProvider();
 		}
 		return isolateProvider;
 	}

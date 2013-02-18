@@ -17,6 +17,7 @@ package org.gridkit.vicluster.isolate;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,12 +50,10 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -75,6 +74,9 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.jar.Attributes;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 import java.util.logging.LogManager;
 
 import org.gridkit.vicluster.VoidCallable;
@@ -191,7 +193,19 @@ public class Isolate {
 	
 	public Isolate(String name, String... packages) {		
 		this.name = name;
-		this.cl = new IsolatedClassloader(getClass().getClassLoader(), packages);
+		this.cl = new IsolatedClassloader(getClass().getClassLoader());
+		if (packages.length > 0) {
+			// legacy configuration style
+			this.cl.addPackageRule("", false);
+			for(String p: packages) {
+				this.cl.addPackageRule(p, true);
+			}
+		}
+		else {
+			// new default, isolate all except JDK
+			this.cl.addPackageRule("", true);
+			this.cl.addRule(new ShareJreClasses());			
+		}
 
 		threadGroup = new IsolateThreadGroup(name);
 		
@@ -259,22 +273,71 @@ public class Isolate {
 		isolateControlThread.start();		
 	}
 	
+	public void addPackageRule(List<Object> ruleList, String pack, boolean isolate) {
+		if (pack.length() > 0 && !pack.endsWith(".")) {
+			pack = pack + ".";
+		}
+		ruleList.add(new PackageIsolationRule(pack, isolate));
+	}
+
+	public void addClassRule(String className, boolean isolate) {
+		if (className.indexOf('$') >= 0) {
+			throw new IllegalArgumentException("You should provide top level class name");
+		}
+		cl.addClassRule(className, isolate);
+	}
+
+	public void addClassRule(List<Object> ruleList, String className, boolean isolate) {
+		if (className.indexOf('$') >= 0) {
+			throw new IllegalArgumentException("You should provide top level class name");
+		}
+		ruleList.add(new ClassIsolationRule(className, isolate));
+	}
+
+	public void addUrlRule(List<Object> ruleList, URL path, boolean isolate) {
+		ruleList.add(new UrlIsolationRule(path, isolate));
+	}
+
+	public void addShareBootstrapRule(List<Object> ruleList) {
+		ruleList.add(new ShareBootstrapClasses());
+	}
+
+	public void addShareJreRule(List<Object> ruleList) {
+		ruleList.add(new ShareJreClasses());
+	}
+	
+	public synchronized void applyRules(List<?> rules) {
+		for(Object r: rules) {
+			if (!(r instanceof IsolationRule)) {
+				throw new IllegalArgumentException("Unsupported rule: " + r);
+			}
+		}
+		for(Object r: rules) {
+			cl.addRule((IsolationRule) r);
+		}		
+	}
+	
 	public synchronized void addPackage(String packageName) {
-		cl.addPackage(packageName);
+		cl.addPackageRule(packageName, true);
 	}
 	
 	/**
 	 * Classes marked as "excluded" will always be loaded from parent class loader.
 	 */
 	public synchronized void exclude(String exclude) {
-		cl.exclude(exclude);
+		cl.addClassRule(exclude, false);
 	}
 
 	/**
 	 * Classes marked as "excluded" will always be loaded from parent class loader.
 	 */
 	public synchronized void exclude(Class<?>... excludes) {
-		cl.exclude(excludes);
+		for(Class<?> c: excludes) {
+			while(c.getDeclaringClass() != null) {
+				c = c.getDeclaringClass();
+			}
+			cl.addClassRule(c.getName(), false);
+		}
 	}
 
 	/**
@@ -1253,24 +1316,218 @@ public class Isolate {
 		};		
 	}
 	
+	
+	
+	private interface IsolationRule {
+		
+		public Boolean shouldIsolate(URL resource, String className);
+		
+	}
+	
+	private class IsolationRuleSet implements IsolationRule {
+		
+		private List<IsolationRule> rules = new ArrayList<Isolate.IsolationRule>();
+
+		public void addRule(IsolationRule rule) {
+			rules.add(0, rule);
+		}
+		
+		@Override
+		public Boolean shouldIsolate(URL resource, String className) {
+			for(IsolationRule rule: rules) {
+				Boolean b = rule.shouldIsolate(resource, className);
+				if (b != null) {
+					return b;
+				}
+			}
+			return null;
+		}
+	}
+	
+	private static List<URL> listBootstrapClasspath() {
+		String bcp = System.getProperty("sun.boot.class.path");
+		List<URL> result = new ArrayList<URL>();
+		for(String path: bcp.split("\\" + System.getProperty("path.separator"))) {
+			try {
+				addEntriesFromManifest(result, new File(path).toURI().toURL());
+			} catch (MalformedURLException e) {
+				// ignore
+			}
+		}
+		return result;
+	}
+	
+	private static void addEntriesFromManifest(List<URL> list, URL url) {
+		try {
+			InputStream is;
+			is = url.openStream();
+			if (is != null) {
+				list.add(url);
+				try {
+					JarInputStream jar = new JarInputStream(is);
+					list.add(new URL("jar:" + url.toString() + "!/"));
+					Manifest mf = jar.getManifest();
+					if (mf == null) {
+						return;
+					}
+					String cp = mf.getMainAttributes().getValue(Attributes.Name.CLASS_PATH);
+					if (cp != null) {
+						for(String entry: cp.split("\\s+")) {
+							try {
+								URL ipath = new URL(url, entry);
+								addEntriesFromManifest(list, ipath);
+							}
+							catch(Exception e) {
+								// ignore
+							}
+						}
+					}
+				}
+				catch(IOException e) {
+					throw e;
+				}
+			}
+		}
+		catch(Exception e) {
+		}
+	}
+	
+	private static boolean belongs(URL base, URL derived) {
+		// TODO not exactly correct, but should work
+		return derived.toString().startsWith(base.toString());				
+	}
+
+	private static boolean belongs(List<URL> baseList, URL derived) {
+		for(URL base: baseList) {
+			if (belongs(base, derived)) {
+				return true;
+			}
+		}
+		return false;				
+	}
+	
+	private static class ShareBootstrapClasses implements IsolationRule {
+		
+		private final List<URL> bootclassPath = listBootstrapClasspath();
+		
+		@Override
+		public Boolean shouldIsolate(URL resource, String className) {
+			if (belongs(bootclassPath, resource)) {
+				return Boolean.FALSE;
+			}
+			else {
+				return null;
+			}
+		}
+	}
+
+	private static class ShareJreClasses implements IsolationRule {
+		
+		private final URL jvmHome;
+		
+		public ShareJreClasses() {
+			try {
+				jvmHome = new File(System.getProperty("java.home")).toURI().toURL();
+			} catch (MalformedURLException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public Boolean shouldIsolate(URL resource, String className) {
+			if ("jar".equals(resource.getProtocol())) {
+				String path = resource.getPath();
+				int n = path.indexOf("!");
+				if (n > 0) {
+					path = path.substring(0, n);					
+				}
+				try {
+					resource = new URL(path);
+				} catch (MalformedURLException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			if (belongs(jvmHome, resource)) {
+				return Boolean.FALSE;
+			}
+			else {
+				return null;
+			}
+		}
+	}
+
+	private static class PackageIsolationRule implements IsolationRule {
+		
+		private final String prefix; 
+		private final boolean isolate;
+		
+		public PackageIsolationRule(String prefix, boolean isolate) {
+			this.prefix = prefix;
+			this.isolate = isolate;			
+		}
+
+		@Override
+		public Boolean shouldIsolate(URL resource, String className) {
+			return className.startsWith(prefix) ? isolate : null;
+		}
+	}
+	
+	private static class ClassIsolationRule implements IsolationRule {
+		
+		private final String className;
+		private final boolean isolate;
+		
+		public ClassIsolationRule(String className, boolean isolate) {
+			this.className = className;
+			this.isolate = isolate;
+		}
+
+		@Override
+		public Boolean shouldIsolate(URL resource, String className) {
+			int n = className.indexOf("$");
+			if (n >= 0) {
+				String topClass = className.substring(0, n);
+				return this.className.equals(topClass) ? isolate : null;
+			}
+			else {
+				return this.className.equals(className) ? isolate : null;
+			}
+		}
+	}
+
+	private static class UrlIsolationRule implements IsolationRule {
+		
+		private final URL urlPath;
+		private final boolean isolate;
+		
+		public UrlIsolationRule(URL urlPath, boolean isolate) {
+			this.urlPath = urlPath;
+			this.isolate = isolate;
+		}
+		
+		@Override
+		public Boolean shouldIsolate(URL resource, String className) {
+			return belongs(urlPath, resource) ? isolate : null;
+		}
+	}
+	
 	private class IsolatedClassloader extends ClassLoader {
 		
 		private ClassLoader baseClassloader;
-		private List<String> packages;
-		private Set<String> excludes;
 		
-		private Collection<String> forbidenPaths = new ArrayList<String>();
-		private Collection<URL> externalPaths = new ArrayList<URL>();
+		private IsolationRuleSet rules;
+				
+		private List<URL> externalPaths = new ArrayList<URL>();
 		private URLClassLoader cpExtention;
+		private List<String> forbidenPaths = new ArrayList<String>();
 		
 		private ProtectionDomain isolateDomain;
 		private Map<URL, ProtectionDomain> domainCache = new HashMap<URL, ProtectionDomain>();
 		
-		IsolatedClassloader(ClassLoader base, String[] packages) {
+		IsolatedClassloader(ClassLoader base) {
 			super(null);			
 			this.baseClassloader = base;
-			this.packages = new ArrayList<String>(Arrays.asList(packages));
-			this.excludes = new HashSet<String>();
+			this.rules = new IsolationRuleSet();
 
 			PermissionCollection pc = new Permissions();
 			pc.add(new AllPermission());
@@ -1283,23 +1540,21 @@ public class Isolate {
 			this.isolateDomain = domain;
 		}
 		
-		public void addPackage(String prefix) {
-			packages.add(prefix);
+		public void addRule(IsolationRule rule) {
+			rules.addRule(rule);
+		}
+		
+		public void addPackageRule(String prefix, boolean isolate) {
+			if (prefix.length() > 0 && !prefix.endsWith(".")) {
+				prefix = prefix + ".";
+			}
+			rules.addRule(new PackageIsolationRule(prefix, isolate));
 		}
 
-		public void exclude(String className) {
-			excludes.add(className);
+		public void addClassRule(String className, boolean isolate) {
+			rules.addRule(new ClassIsolationRule(className, isolate));
 		}
-		
-		/** 
-		 * "Excluded" classes are always to be loaded from parent ClassLoader 
-		 */
-		public void exclude(Class<?>... excludedClasses) {
-			for (Class<?> clazz : excludedClasses) {
-				excludes.add(clazz.getName());
-			}
-		}
-		
+
 		/**
 		 * Prohibits loading classes or resources from specific URL is isolate. 
 		 */
@@ -1363,6 +1618,7 @@ public class Isolate {
 			if (r != null && !forbidenPaths.isEmpty()) {
 				String s = r.toString();
 				for(String path: forbidenPaths) {
+					// TODO not exactly correct, but unlikely to cause troubles
 					if (s.startsWith(path)) {
 						return true;
 					}
@@ -1385,18 +1641,24 @@ public class Isolate {
 
 		@Override
 		public Class<?> loadClass(String name) throws ClassNotFoundException {
-			if (!isExcluded(name)) {
-				for(String prefix: packages) {
-					if (name.startsWith(prefix + ".")) {
-						Class<?> cl = findLoadedClass(name);
-						if (cl == null) {
-							cl = findClass(name);
-						}
-						if (cl == null) {
-							throw new ClassNotFoundException(name);
-						}
-						return cl;
+			if (!isInterallyShared(name)) {
+				String bytepath = name.replace('.', '/') + ".class";
+				URL url = getResource(bytepath);
+				if (url == null) {
+					throw new ClassNotFoundException(name);
+				}
+				URL baseurl = baseClassloader.getResource(bytepath);
+				if (isInterallyIsolated(name) 
+						|| baseurl == null 
+						|| shouldIsolate(url, name)) {
+					Class<?> cl = findLoadedClass(name);
+					if (cl == null) {
+						cl = findClass(name);
 					}
+					if (cl == null) {
+						throw new ClassNotFoundException(name);
+					}					
+					return cl;				
 				}
 			}
 			if (name.equals("sun.awt.AppContext")) {
@@ -1406,19 +1668,38 @@ public class Isolate {
 			return cc;
 		}
 		
-		private boolean isExcluded(String name) {	
-			if (name.equals(Isolate.class.getName()) 
+		private boolean shouldIsolate(URL url, String name) throws ClassNotFoundException {
+			Boolean isolate = rules.shouldIsolate(url, name);
+			if (isolate == null) {
+				throw new ClassNotFoundException("No isolation rule for [" + name + "]");
+			}
+			if (isolate) {
+				System.out.println("Loading in isolate: " + name);
+			}
+			return isolate;
+		}
+		
+		private boolean isInterallyShared(String name) {
+			if (name.startsWith("java.")) {
+				return true;
+			}
+			else if (name.equals(Isolate.class.getName()) 
 					|| name.startsWith(Isolate.class.getName() + "$")
 					|| name.equals(ThreadKiller.class.getName())) {
 				return true;
 			}
 			else {
-				String topClass = name;
-				int n = topClass.indexOf('$');
-				if (n >= 0) {
-					topClass = topClass.substring(0, n);
-				}
-				return excludes.contains(topClass);
+				return false;
+			}
+		}
+
+		private boolean isInterallyIsolated(String name) {
+			if (name.startsWith("org.gridkit.zerormi.")) {
+				// TODO Until migration to new comm layer, we have to force ZeroRMI isolation.
+				return true;
+			}
+			else {
+				return false;
 			}
 		}
 
