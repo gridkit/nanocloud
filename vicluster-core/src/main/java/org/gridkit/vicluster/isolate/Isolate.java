@@ -1686,7 +1686,8 @@ public class Isolate {
 			}
 			else if (name.equals(Isolate.class.getName()) 
 					|| name.startsWith(Isolate.class.getName() + "$")
-					|| name.equals(ThreadKiller.class.getName())) {
+					|| name.equals(ThreadKiller.class.getName())
+					|| name.equals(VoidCallable.class.getName())) {
 				return true;
 			}
 			else {

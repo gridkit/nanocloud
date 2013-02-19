@@ -358,6 +358,6 @@ public class IsolateViNode implements ViNode {
 	}
 
 	public static void removeFromClasspath(ViConfigurable node, URL url) {
-		node.setProp(IsolateProps.CP_INCLDUE + url.toString(), url.toString());
+		node.setProp(IsolateProps.CP_EXCLUDE + url.toString(), url.toString());
 	}
 }
