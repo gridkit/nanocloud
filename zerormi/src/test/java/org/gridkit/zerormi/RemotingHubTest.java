@@ -41,6 +41,7 @@ public class RemotingHubTest {
 				ServerSocket ssock = new ServerSocket(port);
 				ssock.close();
 				freePort = port;
+				System.out.println("Port " + port + " seems to be free");
 				return;
 			} catch (BindException e) {
 				continue;
@@ -92,7 +93,7 @@ public class RemotingHubTest {
 		acceptor = new SimpleSocketAcceptor();
 		ServerSocket ssock;
 		try {
-			ssock = new ServerSocket(21000);
+			ssock = new ServerSocket(freePort);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -100,12 +101,12 @@ public class RemotingHubTest {
 		acceptor.bind(ssock, hub);
 		acceptor.start();
 		
-		endPoint1 = new RemotingEndPoint(uid1, new InetSocketAddress("localhost", 21000));
+		endPoint1 = new RemotingEndPoint(uid1, new InetSocketAddress("localhost", freePort));
 		new Thread(endPoint1).start();
 		
 		remoteExecutor1 = hub.getExecutionService(uid1);
 
-		endPoint2 = new RemotingEndPoint(uid2, new InetSocketAddress("localhost", 21000));
+		endPoint2 = new RemotingEndPoint(uid2, new InetSocketAddress("localhost", freePort));
 		new Thread(endPoint2).start();
 		
 		remoteExecutor2 = hub.getExecutionService(uid2);
