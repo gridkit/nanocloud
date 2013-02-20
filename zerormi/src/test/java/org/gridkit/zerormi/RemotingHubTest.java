@@ -2,9 +2,11 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.rmi.Remote;
+import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -22,10 +24,31 @@ import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RemotingHubTest {
 
+	static int freePort = 21000;
+	
+	@BeforeClass
+	public static void findPort() throws IOException {
+		Random rnd = new Random();
+		int n = 100;
+		while(n-- > 0) {
+			int port = 10000 + rnd.nextInt(50000);
+			try {
+				ServerSocket ssock = new ServerSocket(port);
+				ssock.close();
+				freePort = port;
+				return;
+			} catch (BindException e) {
+				continue;
+			}
+		}
+		throw new RuntimeException("Cannot find free port");
+	}
+	
 	private RemotingHub hub;
 	private RemotingEndPoint endPoint1;
 	private RemotingEndPoint endPoint2;

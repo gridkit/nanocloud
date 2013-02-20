@@ -23,9 +23,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.gridkit.util.concurrent.Barriers;
-import org.gridkit.util.concurrent.BlockingBarrier;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 

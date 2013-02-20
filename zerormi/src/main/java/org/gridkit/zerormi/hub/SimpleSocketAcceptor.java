@@ -52,20 +52,25 @@ public class SimpleSocketAcceptor implements Runnable {
 		try {
 			while(true) {
 				Socket con =socket.accept();
+				// TODO logging
 				System.out.println("Connection accepted: " + con.getRemoteSocketAddress());
 				DuplexStream ds = new SocketStream(con);
 				hub.dispatch(ds);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();			
+			if (!socket.isClosed()) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
 	public void close() {
-		try {
-			socket.close();
-		} catch (IOException e) {
-			// ignore
+		if (socket != null) {
+			try {
+				socket.close();
+			} catch (IOException e) {
+				// ignore
+			}
 		}
 	}
 }
