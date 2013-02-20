@@ -45,7 +45,6 @@
     <modules>
         <module>viconcurrent</module>
         <module>vicluster-core</module>
-        <module>vicluster-coherence</module>
         <module>zerormi</module>
         <module>telecontrol</module>
         <module>telecontrol-ssh</module>
