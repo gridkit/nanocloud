@@ -18,7 +18,7 @@ package org.gridkit.vicluster;
 import java.util.Map;
 
 /**
- * 
+ * TODO config calls chaining 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public interface ViConfigurable {

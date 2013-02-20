@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DynamicExporter {
+public class RemoteExporter {
 	
 	public static <T> T export(T instance, Class<T> facade, Class<?>... otherFacades) {
 		Class<?>[] ifs = new Class[otherFacades.length + 1];
