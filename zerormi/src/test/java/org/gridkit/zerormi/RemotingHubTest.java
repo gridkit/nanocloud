@@ -2,11 +2,9 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.rmi.Remote;
-import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -16,39 +14,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.RemotingHub;
-import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
+import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RemotingHubTest {
 
-	static int freePort = 21000;
-	
-	@BeforeClass
-	public static void findPort() throws IOException {
-		Random rnd = new Random();
-		int n = 100;
-		while(n-- > 0) {
-			int port = 10000 + rnd.nextInt(50000);
-			try {
-				ServerSocket ssock = new ServerSocket(port);
-				ssock.close();
-				freePort = port;
-				System.out.println("Port " + port + " seems to be free");
-				return;
-			} catch (BindException e) {
-				continue;
-			}
-		}
-		throw new RuntimeException("Cannot find free port");
-	}
+	int hubPort;
 	
 	private RemotingHub hub;
 	private RemotingEndPoint endPoint1;
@@ -91,27 +68,33 @@ public class RemotingHubTest {
 		
 		
 		acceptor = new SimpleSocketAcceptor();
-		ServerSocket ssock;
-		try {
-			ssock = new ServerSocket(freePort);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		ServerSocket ssock = openServerSocket();
 		
 		acceptor.bind(ssock, hub);
 		acceptor.start();
 		
-		endPoint1 = new RemotingEndPoint(uid1, new InetSocketAddress("localhost", freePort));
+		endPoint1 = new RemotingEndPoint(uid1, new InetSocketAddress("localhost", hubPort));
 		new Thread(endPoint1).start();
 		
 		remoteExecutor1 = hub.getExecutionService(uid1);
 
-		endPoint2 = new RemotingEndPoint(uid2, new InetSocketAddress("localhost", freePort));
+		endPoint2 = new RemotingEndPoint(uid2, new InetSocketAddress("localhost", hubPort));
 		new Thread(endPoint2).start();
 		
 		remoteExecutor2 = hub.getExecutionService(uid2);
 		
-		latch.await(5000, TimeUnit.MILLISECONDS);
+		latch.await(5000, TimeUnit.MILLISECONDS);		
+	}
+
+	protected ServerSocket openServerSocket() {
+		ServerSocket ssock;
+		try {
+			ssock = new ServerSocket(0);
+			hubPort = ssock.getLocalPort();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return ssock;
 	}
 	
 	@After
