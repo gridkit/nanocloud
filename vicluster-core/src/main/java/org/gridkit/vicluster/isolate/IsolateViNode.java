@@ -272,10 +272,10 @@ public class IsolateViNode implements ViNode {
 						String cn = propName.substring(IsolateProps.SHARED.length());
 						isolate.exclude(cn);
 					}
-					else if (propName.startsWith(IsolateProps.CP_INCLDUE)) {
+					else if (propName.startsWith(IsolateProps.CP_INCLUDE)) {
 						try {
 							if (value.length() == 0) {
-								value = propName.substring(IsolateProps.CP_INCLDUE.length());
+								value = propName.substring(IsolateProps.CP_INCLUDE.length());
 							}
 							isolate.addToClasspath(new URL(value));
 						} catch (MalformedURLException e) {
@@ -354,7 +354,7 @@ public class IsolateViNode implements ViNode {
 	}	
 	
 	public static void addToClasspath(ViConfigurable node, URL url) {
-		node.setProp(IsolateProps.CP_INCLDUE + url.toString(), url.toString());
+		node.setProp(IsolateProps.CP_INCLUDE + url.toString(), url.toString());
 	}
 
 	public static void removeFromClasspath(ViConfigurable node, URL url) {

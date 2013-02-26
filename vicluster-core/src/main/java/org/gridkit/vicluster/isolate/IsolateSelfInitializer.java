@@ -45,6 +45,12 @@ public class IsolateSelfInitializer implements Runnable, Serializable {
 				else if (null != (val = matchProp(key, IsolateProps.SHARE_URL))) {
 					isolate.addUrlRule(cpRules, new URL(val), false);
 				}
+				else if (null != (val = matchProp(key, IsolateProps.CP_INCLUDE))) {
+					isolate.addToClasspath(new URL(val));
+				}
+				else if (null != (val = matchProp(key, IsolateProps.CP_EXCLUDE))) {
+					isolate.removeFromClasspath(new URL(val));
+				}
 			} catch (MalformedURLException e) {
 				throw new RuntimeException(e);
 			}			

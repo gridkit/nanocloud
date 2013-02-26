@@ -37,7 +37,7 @@ public class IsolateProps implements ViNodeProps {
 	public static String SHARED = "isolate:shared:";
 	
 	/** Use for adding additional URLs to classpath */
-	public static String CP_INCLDUE = "isolate:cp-include:";
+	public static String CP_INCLUDE = "isolate:cp-include:";
 	
 	/** Use for prohibiting URLs in classpath */
 	public static String CP_EXCLUDE = "isolate:cp-exclude:";
@@ -135,7 +135,7 @@ public class IsolateProps implements ViNodeProps {
 		return this;
 	}
 
-	private static String toRootUrl(String resource) {
+	public static String toRootUrl(String resource) {
 		URL path = Thread.currentThread().getContextClassLoader().getResource(resource);
 		if (path == null) {
 			throw new IllegalArgumentException("Cannot locate resource on classpath '" + resource + "'");
@@ -153,7 +153,7 @@ public class IsolateProps implements ViNodeProps {
 		throw new IllegalArgumentException("Cannot find root. URL: " + path + " Relative path: " + resource);
 	}
 	
-	private static String toRootUrl(Class<?> c) {
+	public static String toRootUrl(Class<?> c) {
 		while(c.getDeclaringClass() != null) {
 			c = c.getDeclaringClass();
 		}

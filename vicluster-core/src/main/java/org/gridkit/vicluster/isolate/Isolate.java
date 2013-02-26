@@ -1583,7 +1583,7 @@ public class Isolate {
 				cpExtention = new URLClassLoader(externalPaths.toArray(new URL[0]));
 			}
 			URL r = cpExtention.findResource(name);
-			if (r != null) {
+			if (r != null && !isForbiden(r)) {
 				return r;
 			}
 			r = baseClassloader.getResource(name);
