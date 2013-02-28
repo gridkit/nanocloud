@@ -895,8 +895,13 @@ public class Isolate {
 		for(Thread t : getSystemShutdownHooks()) {
 			if (isOwnedThreadGroup(t.getThreadGroup()) || t.getContextClassLoader() == cl) {
 				++threadCount;
-				if (Runtime.getRuntime().removeShutdownHook(t)) {
-					stdErr.println("Removing shutdown hook: " + t.getName());
+				try {
+					if (Runtime.getRuntime().removeShutdownHook(t)) {
+						stdErr.println("Removing shutdown hook: " + t.getName());
+					}
+				}
+				catch(IllegalStateException e) {
+					// ignore
 				}
 			}
 		}
@@ -1579,19 +1584,17 @@ public class Isolate {
 		}
 
 		public synchronized URL getResource(String name) {
-			if (cpExtention == null) {
-				cpExtention = new URLClassLoader(externalPaths.toArray(new URL[0]));
-			}
-			URL r = cpExtention.findResource(name);
-			if (r != null && !isForbiden(r)) {
-				return r;
-			}
-			r = baseClassloader.getResource(name);
-			if (r == null || isForbiden(r)) {
+			Enumeration<URL> all;
+			try {
+				all = getResources(name);
+			} catch (IOException e) {
 				return null;
 			}
+			if (all.hasMoreElements()) {
+				return all.nextElement();
+			}
 			else {
-				return r;
+				return null;
 			}
 		}
 
@@ -1600,17 +1603,20 @@ public class Isolate {
 				cpExtention = new URLClassLoader(externalPaths.toArray(new URL[0]));
 			}
 			Vector<URL> result = new Vector<URL>();
-			// TODO my have several names
-			URL r = cpExtention.findResource(name);
-			if (r != null) {
-				result.add(r);
+			URL r;
+			Enumeration<URL> en = cpExtention.findResources(name);
+			while(en.hasMoreElements()) {
+				r = en.nextElement();
+				if (!result.contains(r) && !isForbiden(r)) {
+					result.add(r);
+				}
 			}
 			
-			Enumeration<URL> en = baseClassloader.getResources(name);
+			en = baseClassloader.getResources(name);
 			
 			while(en.hasMoreElements()) {
 				r = en.nextElement();
-				if (!isForbiden(r)) {
+				if (!result.contains(r) && !isForbiden(r)) {
 					result.add(r);
 				}
 			}

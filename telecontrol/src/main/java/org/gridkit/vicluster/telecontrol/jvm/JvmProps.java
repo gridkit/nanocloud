@@ -31,14 +31,14 @@ public class JvmProps implements ViNodeProps {
 	public static String PROC_ID = "jvm:proc-id";
 	
 	/**
-	 * Main classpath entry of JVM
-	 */
-	public static String CP = "jvm:cp"; 
-
-	/**
 	 * JVM classpath extension. Multiple named extensions could be specified.
 	 */	
-	public static String CP_EX = "jvm:cp:"; 
+	public static String CP_ADD = "jvm:cp-add:"; 
+
+	/**
+	 * Removes part of replicated classpath. Multiple named extensions could be specified.
+	 */	
+	public static String CP_REMOVE = "jvm:cp-remove:"; 
 
 	/**
 	 * Addition command line options for JVM.

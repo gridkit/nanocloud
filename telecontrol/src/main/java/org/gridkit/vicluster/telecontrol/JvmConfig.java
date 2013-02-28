@@ -15,11 +15,14 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 
@@ -31,7 +34,8 @@ public class JvmConfig implements Serializable {
 	
 	private String workDir = null;
 	private List<String> jvmOptions = new ArrayList<String>();
-//	private List<String> classpathExtras = new ArrayList<String>();
+	private List<String> classpathIncludes = new ArrayList<String>();
+	private List<String> classpathExcludes = new ArrayList<String>();
 	private Map<String, String> enviroment = new HashMap<String, String>();
 	
 	public JvmConfig() {		
@@ -48,6 +52,14 @@ public class JvmConfig implements Serializable {
 	public List<String> getJvmOptions() {
 		return jvmOptions;
 	}
+	
+	public void classpathAdd(String path) {
+		classpathIncludes.add(path);
+	}
+
+	public void classpathExclude(String path) {
+		classpathExcludes.add(path);
+	}
 
 	public void addOption(String option) {
 		if (!option.startsWith("-")) {
@@ -63,6 +75,33 @@ public class JvmConfig implements Serializable {
 	public Map<String, String> getEnviroment() {
         return enviroment;
     }
+	
+	public String filterClasspath(String defaultClasspath) {
+		if (classpathExcludes.isEmpty() && classpathIncludes.isEmpty()) {
+			return defaultClasspath;
+		}
+		else {
+			String fs = System.getProperty("path.separator");
+			StringBuilder sb = new StringBuilder();
+			for(String cpe: defaultClasspath.split(Pattern.quote(fs))) {
+				try {
+					// normalize path entry if possible
+					cpe = new File(cpe).getCanonicalPath();
+				} catch (IOException e) {
+					// ignore
+				}
+				if (classpathExcludes.contains(cpe)) {
+					continue;
+				}
+				sb.append(cpe).append(fs);
+			}
+			for(String cpe: classpathIncludes) {
+				sb.append(cpe).append(fs);
+			}
+			sb.setLength(sb.length() - fs.length());
+			return sb.toString();
+		}
+	}
 	
 	public void apply(ExecCommand jvmCmd) {
 		if (workDir != null) {

@@ -139,7 +139,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 
 		String filesep = System.getProperty("file.separator");
 		ExecCommand jvmCmd = new ExecCommand(javaHome + filesep + "bin" + filesep + "java");
-		jvmCmd.addArg("-cp").addArg(defaultClasspath);
+		jvmCmd.addArg("-cp").addArg(jvmArgs.filterClasspath(defaultClasspath));
 		jvmArgs.apply(jvmCmd);
 		jvmCmd.addArg(Bootstraper.class.getName());
 

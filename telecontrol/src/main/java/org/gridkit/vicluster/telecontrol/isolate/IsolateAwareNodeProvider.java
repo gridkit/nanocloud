@@ -1,5 +1,6 @@
 package org.gridkit.vicluster.telecontrol.isolate;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -18,6 +19,7 @@ import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
+import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 
 public class IsolateAwareNodeProvider extends JvmNodeProvider {
 
@@ -29,6 +31,30 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 	public ViNode createNode(String name, ViNodeConfig config) {
 		try {
 			Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
+
+			for(String key: config.getAllProps(JvmProps.CP_ADD).keySet()) {
+				String path = config.getProp(key);
+				if (path == null) {
+					continue;
+				}
+				if ("".equals(path)) {
+					path = key.substring(JvmProps.CP_ADD.length());
+				}
+				isolateProps.put(IsolateProps.CP_INCLUDE + new File(path).toURI().toString(), "");
+			}
+			for(String key: config.getAllProps(JvmProps.CP_REMOVE).keySet()) {				
+				String path = config.getProp(key);
+				if (path == null) {
+					continue;
+				}
+				if ("".equals(path)) {
+					path = key.substring(JvmProps.CP_ADD.length());
+				}
+				String url = new File(path).toURI().toString();
+				isolateProps.put(IsolateProps.CP_EXCLUDE + url, "");
+				isolateProps.put(IsolateProps.CP_EXCLUDE + "jar:" + url + "!/", "");
+			}
+			
 			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps);
 			JvmConfig jvmConfig = prepareJvmConfig(config);
 			ControlledProcess process = factory.createProcess(name, jvmConfig);

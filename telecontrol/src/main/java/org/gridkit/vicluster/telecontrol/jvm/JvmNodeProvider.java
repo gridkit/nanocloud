@@ -15,6 +15,7 @@
  */
 package org.gridkit.vicluster.telecontrol.jvm;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.gridkit.vicluster.ViNode;
@@ -58,6 +59,7 @@ public class JvmNodeProvider implements ViNodeProvider {
 		JvmConfig jvmConfig = new JvmConfig();
 		config.apply(new JvmOptionsInitializer(jvmConfig));
 		config.apply(new JvmEnvironmentInitializer(jvmConfig));
+		config.apply(new JvmClasspathInitializer(jvmConfig));
 		String wd = config.getProp(JvmProps.JVM_WORK_DIR);
 		if (wd != null) {
 			jvmConfig.setWorkDir(wd);
@@ -68,7 +70,6 @@ public class JvmNodeProvider implements ViNodeProvider {
 	protected ViNode createViNode(String name, ViNodeConfig config, ControlledProcess process) throws IOException {
 		return new JvmNode(name, config, process);
 	}
-	
 	
 	private static class JvmOptionsInitializer extends ViNodeConfig.ReplyProps {
 
@@ -109,5 +110,43 @@ public class JvmNodeProvider implements ViNodeProvider {
 	    protected void setPropInternal(String propName, String value) {
 	        config.setEnv(propName.substring(JvmProps.JVM_ENV.length()), value);
 	    }
+	}
+
+	private static class JvmClasspathInitializer extends ViNodeConfig.ReplyProps {
+		
+		private JvmConfig config;
+		
+		public JvmClasspathInitializer(JvmConfig config) {
+			super(JvmProps.CP_ADD, JvmProps.CP_REMOVE);
+			this.config = config;
+		}
+		
+		@Override
+		protected void setPropInternal(String propName, String value) {
+			if (propName.startsWith(JvmProps.CP_ADD)) {
+				String path = value;
+				if ("".equals(path)) {
+					path = propName.substring(JvmProps.CP_ADD.length());                  
+				}
+				try {
+					path = new File(path).getCanonicalPath();
+				} catch (IOException e) {
+					// ignore
+				}
+				config.classpathAdd(path);
+			}
+			else if (propName.startsWith(JvmProps.CP_REMOVE)) {
+				String path = value;
+				if ("".equals(path)) {
+					path = propName.substring(JvmProps.CP_REMOVE.length());                  
+				}
+				try {
+					path = new File(path).getCanonicalPath();
+				} catch (IOException e) {
+					// ignore
+				}
+				config.classpathExclude(path);
+			}
+		}
 	}
 }
