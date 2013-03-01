@@ -23,12 +23,12 @@
     <parent>
         <groupId>org.gridkit.lab</groupId>
         <artifactId>grid-lab-pom</artifactId>
-        <version>1-SNAPSHOT</version>        
+        <version>1</version>        
     </parent>
 
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.7.13-SNAPSHOT</version>
+    <version>0.7.14-SNAPSHOT</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
     <licenses>
