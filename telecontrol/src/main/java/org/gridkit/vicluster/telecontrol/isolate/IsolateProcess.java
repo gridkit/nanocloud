@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
@@ -149,6 +151,7 @@ class IsolateProcess extends Process {
 	@Override
 	public synchronized void destroy() {
 		if (down.getCount() > 0) {
+			final CountDownLatch deathConfirmed = new CountDownLatch(1);
 			Thread stopper = new Thread(new Runnable() {
 				
 				@Override
@@ -157,6 +160,7 @@ class IsolateProcess extends Process {
 						down.countDown();
 						isolate.stop();
 					}
+					deathConfirmed.countDown();
 				}
 			});
 			isolate.getStdErr().println("Stopping isolate");
@@ -166,6 +170,14 @@ class IsolateProcess extends Process {
 			stopper.setDaemon(true);
 			stopper.setName("StopIsolate[" + isolate.getName() + "]");
 			stopper.start();
+			
+			// We do not want to return while Isolate is still kicking,
+			// but wait forever is not an option either
+			try {
+				deathConfirmed.await(300, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				// ignore
+			}
 		}
 	}
 }

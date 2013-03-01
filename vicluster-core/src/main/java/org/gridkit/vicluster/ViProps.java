@@ -33,9 +33,9 @@ public class ViProps implements ViNodeProps {
 	public static final String NODE_TYPE_ALIAS = "alias";
 	
 	/**
-	 * Name of node.
+	 * System property there name of node could be found
 	 */
-	public static final String NODE_NAME = "node:name";
+	public static final String NAME_PROP = "vinode.name";
 
 	/**
 	 * Arbitrary UID of ViNode. May be used by certain providers.
