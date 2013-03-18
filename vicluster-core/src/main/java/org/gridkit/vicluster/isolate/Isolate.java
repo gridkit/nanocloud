@@ -723,6 +723,7 @@ public class Isolate {
 				break;
 			}
 		}
+		threadKillers = null;
 		cl = null;
 		threadGroup = null;
 		isolateControlThread = null;
