@@ -1,9 +1,9 @@
-**: remote:account=grimisuat
-**: remote:java-exec=/apps/grimis/java/linux/jdk1.6.0_22/jre/bin/java
+**: remote:account=user
+**: remote:java-exec=java
 **: remote:jar-cache-path=.gridagent
 
-**.node1: remote:host=longmltsreu5.uk.db.com
-**.node1: remote:password=@Mon_day5
+**.node1: remote:host=hostname
+**.node1: remote:password=****
 
-**.node2: remote:host=longmltsreu5.uk.db.com
-**.node2: remote:ssh-key-file=grimisuat.id_dsa
+**.node2: remote:host=hostname
+**.node2: remote:ssh-key-file=file.id_dsa
