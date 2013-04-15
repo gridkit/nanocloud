@@ -690,7 +690,7 @@ public class Isolate {
 		if (threadPool != null) {
 			threadPool.shutdown();
 			try {
-				// give thread pool a chance to gracefull shutdown itself
+				// give thread pool a chance to gracefully shutdown itself
 				threadPool.awaitTermination(100, TimeUnit.MILLISECONDS);
 			} catch (InterruptedException e) {
 				// ignore
@@ -735,7 +735,6 @@ public class Isolate {
 		Runtime.getRuntime().runFinalization();
 	}
 	
-	@SuppressWarnings("deprecation")
 	private int kill(ThreadGroup tg) {
 		int threadCount = 0;
 		
@@ -753,11 +752,7 @@ public class Isolate {
 				// ignore
 			}
 			if (t.getState() != State.TERMINATED) {
-				stdErr.println("Killing: " + t.getName());
-				try { t.resume(); }	catch(Exception e) {/* ignore */};
-				try { t.start(); }	catch(Exception e) {/* ignore */};
-				try { t.interrupt(); }	catch(Exception e) {/* ignore */};
-				try { t.stop(new ThreadDoomError()); }	catch(IllegalStateException e) {/* ignore */};				
+				killThread(t, false);
 			}
 			else {
 				if (shutdownRetry % 10 == 9) {
@@ -766,18 +761,15 @@ public class Isolate {
 			}
 			
 			if (t.isAlive() && shutdownRetry > 24) {
-				if (shutdownRetry > 10 && (shutdownRetry % 10 == 5)) {
+				stdErr.println("Killing: " + t.getName());
+				if (shutdownRetry > 30 && (shutdownRetry % 10 == 5)) {
 					StackTraceElement[] trace = t.getStackTrace();
 					for(StackTraceElement e: trace) {
 						stdErr.println("  at " + e);
 					}
 				}
 				try {
-					try { t.interrupt(); }	catch(Exception e) {/* ignore */};
-					trySocketInterrupt(t);
-//					tryStop(t);
-					try { t.interrupt(); }	catch(Exception e) {/* ignore */};
-					try { t.stop(new ThreadDoomError()); }	catch(IllegalStateException e) {/* ignore */};				
+					killThread(t, true);
 				}
 				catch(Exception e) {
 					stdErr.println("Socket interruption failed: " + e.toString());
@@ -794,6 +786,23 @@ public class Isolate {
 		}
 		
 		return threadCount;
+	}
+	
+	@SuppressWarnings("deprecation")
+	private void killThread(Thread t, boolean force) {
+		if (!force) {
+			try { t.resume(); }	catch(Exception e) {/* ignore */};
+			try { t.start(); }	catch(Exception e) {/* ignore */};
+			try { t.interrupt(); }	catch(Exception e) {/* ignore */};
+			try { t.stop(new ThreadDoomError(name)); }	catch(IllegalStateException e) {/* ignore */};
+		}
+		else {
+			try { t.interrupt(); }	catch(Exception e) {/* ignore */};
+			trySocketInterrupt(t);
+			tryStop(t);
+			try { t.interrupt(); }	catch(Exception e) {/* ignore */};
+			try { t.stop(new ThreadDoomError(name)); }	catch(IllegalStateException e) {/* ignore */};							
+		}
 	}
 	
 	private void trySocketInterrupt(Thread t) {
@@ -838,7 +847,6 @@ public class Isolate {
 	}
 
 	// TODO plugable thread killers
-	@SuppressWarnings("unused")
 	private void tryStop(Thread thread) {
 		Object target = getField(thread, "target");
 		if (target != null) {
@@ -947,7 +955,13 @@ public class Isolate {
 	}
 
 	@SuppressWarnings("serial")
-	private class ThreadDoomError extends ThreadDeath {
+	private static class ThreadDoomError extends ThreadDeath {
+
+		private final String name;
+		
+		public ThreadDoomError(String name) {
+			this.name = name;
+		}
 
 		@Override
 		public Throwable getCause() {
@@ -1437,10 +1451,34 @@ public class Isolate {
 		
 		public ShareJreClasses() {
 			try {
-				jvmHome = new File(System.getProperty("java.home")).toURI().toURL();
-			} catch (MalformedURLException e) {
+				jvmHome = getJreRoot();
+			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
+		}
+		
+		private static URL getJavaHome() throws MalformedURLException {
+			return new File(System.getProperty("java.home")).toURI().toURL();			
+		}
+
+		private static URL getJreRoot() throws MalformedURLException {
+			String jlo = ClassLoader.getSystemResource("java/lang/Object.class").toString();
+			String root = jlo;
+			if (root.startsWith("jar:")) {
+				root = root.substring("jar:".length());
+				int n = root.indexOf('!');
+				root = root.substring(0, n);
+				
+				if (root.endsWith("/rt.jar")) {
+					root = root.substring(0, root.lastIndexOf('/'));
+					if (root.endsWith("/lib")) {
+						root = root.substring(0, root.lastIndexOf('/'));
+						return new URL(root);
+					}
+				}
+			}
+			// fall back
+			return getJavaHome();
 		}
 
 		@Override
@@ -1463,6 +1501,11 @@ public class Isolate {
 			else {
 				return null;
 			}
+		}
+		
+		@Override
+		public String toString() {
+			return "ShareJreClasses[" + jvmHome + "]";
 		}
 	}
 
@@ -1659,6 +1702,13 @@ public class Isolate {
 					throw new ClassNotFoundException(name);
 				}
 				URL baseurl = baseClassloader.getResource(bytepath);
+//				if (name.startsWith("sun.reflect")) {
+//					Multiplexer.rootOut.println("java.home=" + System.getProperty("java.home"));
+//					Multiplexer.rootOut.println("CL:" + name + " baseurl: " + baseurl + " shouldIsolate:" + shouldIsolate(url, name));
+//					for(IsolationRule rule: rules.rules) {
+//						Multiplexer.rootOut.println("CL rule: " + rule + " -> " + rule.shouldIsolate(baseurl, name));
+//					}
+//				}
 				if (isInterallyIsolated(name) 
 						|| baseurl == null 
 						|| shouldIsolate(url, name)) {

@@ -60,27 +60,29 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	}
 	
 	public void enableHeartbeatDeatchWatch() {
-		Thread t = new Thread() {
-			@Override
-			public void run() {
-				while(true) {
-					Thread.currentThread().setName("HeatbeatDethWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
-					long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
-					if (stale > heartBeatTimeout) {
-						System.err.println("Terminating process due to heartbeat timeout");
-						Runtime.getRuntime().halt(0);
-					}
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// ignore;
+		if (heartBeatTimeout != Integer.MAX_VALUE) {
+			Thread t = new Thread() {
+				@Override
+				public void run() {
+					while(true) {
+						Thread.currentThread().setName("HeatbeatDeathWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
+						long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
+						if (stale > heartBeatTimeout) {
+							System.err.println("Terminating process due to heartbeat timeout");
+							Runtime.getRuntime().halt(0);
+						}
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// ignore;
+						}
 					}
 				}
-			}
-		};
-		t.setDaemon(true);
-		t.setName("HeatbeatDethWatch");
-		t.start();
+			};
+			t.setDaemon(true);
+			t.setName("HeartbeatDeathWatch");
+			t.start();
+		}
 	}
 	
 	public void run() {

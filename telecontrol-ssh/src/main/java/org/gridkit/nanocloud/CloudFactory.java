@@ -29,7 +29,6 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.WildProps;
 import org.gridkit.vicluster.isolate.Isolate;
-import org.gridkit.vicluster.telecontrol.isolate.IsolateCloudFactory;
 import org.gridkit.vicluster.telecontrol.ssh.ConfigurableNodeProvider;
 import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
 
@@ -39,8 +38,9 @@ public class CloudFactory {
 	 * Creates {@link ViManager} with {@link Isolate} provider.
 	 * @param packages - list of packages to "isolate"
 	 */
+	@Deprecated
 	public static ViManager createIsolateCloud(String... packages) {
-		return IsolateCloudFactory.createCloud(packages);
+		throw new UnsupportedOperationException();
 	}
 
 	/**
