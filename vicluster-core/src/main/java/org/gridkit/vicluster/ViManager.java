@@ -112,6 +112,8 @@ public class ViManager implements ViNodeSet {
 	public ViNode nodes(String... patterns) {
 		Set<ViNode> nodes = new LinkedHashSet<ViNode>();
 		for(String pattern: patterns) {
+			// this will enforce creation of node is pattern is specific
+			node(pattern);
 			nodes.addAll(listNodes(pattern));
 		}
 		return ViGroup.group(nodes);
