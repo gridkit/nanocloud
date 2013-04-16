@@ -28,6 +28,7 @@ public class JvmProps implements ViNodeProps {
 	/**
 	 * Read-only process id of JVM
 	 */
+    @Deprecated
 	public static String PROC_ID = "jvm:proc-id";
 	
 	/**
@@ -58,26 +59,31 @@ public class JvmProps implements ViNodeProps {
 	/**
 	 * JDK version
 	 */	
+    @Deprecated
 	public static String JDK_VERSION = "jdk:version";
 
 	/**
 	 * CPU Architecture 32 or 64
 	 */	
+    @Deprecated
 	public static String JDK_ARCH = "jdk:arch";
 
 	/**
 	 * Use JRE instead of JDK
 	 */	
+    @Deprecated
 	public static String JDK_JRE_ONLY = "jdk:jre-only";
 
 	/**
 	 * Use particular vendor
 	 */	
+    @Deprecated
 	public static String JDK_VENDOR = "jdk:vendor";
 
 	/**
 	 * Custom clarifier to select JDK
 	 */	
+    @Deprecated
 	public static String JDK_CLARIFIER = "jdk:clarifier";
 
 	

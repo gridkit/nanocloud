@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
@@ -108,9 +110,9 @@ public class ViManager implements ViNodeSet {
 	}
 
 	public ViNode nodes(String... patterns) {
-		List<ViNode> nodes = new ArrayList<ViNode>();
+		Set<ViNode> nodes = new LinkedHashSet<ViNode>();
 		for(String pattern: patterns) {
-			nodes.add(node(pattern));
+			nodes.addAll(listNodes(pattern));
 		}
 		return ViGroup.group(nodes);
 	}
@@ -128,12 +130,14 @@ public class ViManager implements ViNodeSet {
 	}
 
 	@Override
-	public synchronized Collection<ViNode> listNodes(String namePattern) {
-		Pattern regEx = GlobHelper.translate(namePattern, ".");
-		List<ViNode> result = new ArrayList<ViNode>();
-		for(ManagedNode vinode: liveNodes.values()) {
-			if (match(regEx, vinode)) {
-				result.add(vinode);
+	public synchronized Collection<ViNode> listNodes(String... namePatterns) {
+		Set<ViNode> result = new LinkedHashSet<ViNode>();
+		for(String namePattern: namePatterns) {
+			Pattern regEx = GlobHelper.translate(namePattern, ".");
+			for(ManagedNode vinode: liveNodes.values()) {
+				if (match(regEx, vinode)) {
+					result.add(vinode);
+				}
 			}
 		}
 		return result;
