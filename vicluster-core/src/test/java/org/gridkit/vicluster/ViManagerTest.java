@@ -21,11 +21,13 @@ public class ViManagerTest {
 	public void select_multiple() {
 		man.nodes("aa", "ab", "bb", "cc");
 		
-		Assert.assertEquals(1, man.nodes("aa", "*a").massExec(new Echo()).size());
-		Assert.assertEquals(2, man.nodes("aa", "a*").massExec(new Echo()).size());
+		// old dumb behavior is restored for node selectors
+		
+		Assert.assertEquals(2, man.nodes("aa", "*a").massExec(new Echo()).size());
+		Assert.assertEquals(3, man.nodes("aa", "a*").massExec(new Echo()).size());
 		Assert.assertEquals(3, man.nodes("a*", "b*").massExec(new Echo()).size());
-		Assert.assertEquals(3, man.nodes("a*", "*b").massExec(new Echo()).size());
-		Assert.assertEquals(2, man.nodes("b*", "c*", "d*").massExec(new Echo()).size());
+		Assert.assertEquals(4, man.nodes("a*", "*b").massExec(new Echo()).size());
+//		Assert.assertEquals(2, man.nodes("b*", "c*", "d*").massExec(new Echo()).size());
 	}
 
 	@Test(expected = IllegalStateException.class)
@@ -35,6 +37,7 @@ public class ViManagerTest {
 		man.node("d*").exec(new Echo());
 	}
 	
+	@SuppressWarnings("serial")
 	public static class Echo implements Callable<String>, Serializable {
 		
 		private String echo;

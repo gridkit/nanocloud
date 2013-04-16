@@ -112,9 +112,7 @@ public class ViManager implements ViNodeSet {
 	public ViNode nodes(String... patterns) {
 		Set<ViNode> nodes = new LinkedHashSet<ViNode>();
 		for(String pattern: patterns) {
-			// this will enforce creation of node is pattern is specific
-			node(pattern);
-			nodes.addAll(listNodes(pattern));
+			nodes.add(node(pattern));
 		}
 		return ViGroup.group(nodes);
 	}
@@ -132,14 +130,12 @@ public class ViManager implements ViNodeSet {
 	}
 
 	@Override
-	public synchronized Collection<ViNode> listNodes(String... namePatterns) {
+	public synchronized Collection<ViNode> listNodes(String namePattern) {
 		Set<ViNode> result = new LinkedHashSet<ViNode>();
-		for(String namePattern: namePatterns) {
-			Pattern regEx = GlobHelper.translate(namePattern, ".");
-			for(ManagedNode vinode: liveNodes.values()) {
-				if (match(regEx, vinode)) {
-					result.add(vinode);
-				}
+		Pattern regEx = GlobHelper.translate(namePattern, ".");
+		for(ManagedNode vinode: liveNodes.values()) {
+			if (match(regEx, vinode)) {
+				result.add(vinode);
 			}
 		}
 		return result;

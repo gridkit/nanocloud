@@ -33,7 +33,7 @@ public interface ViNodeSet {
 	/**
 	 * List non-terminated nodes matching namePattern
 	 */	
-	public Collection<ViNode> listNodes(String... namePattern);
+	public Collection<ViNode> listNodes(String namePattern);
 	
 	public void shutdown();
 
