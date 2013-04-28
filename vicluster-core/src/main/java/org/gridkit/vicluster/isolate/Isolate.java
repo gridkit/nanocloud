@@ -1577,6 +1577,8 @@ public class Isolate {
 		private ProtectionDomain isolateDomain;
 		private Map<URL, ProtectionDomain> domainCache = new HashMap<URL, ProtectionDomain>();
 		
+		private boolean disableSourceDecoration = "false".equals(System.getProperty("gridkit.isolate.class-source-decoration", "true"));
+		
 		IsolatedClassloader(ClassLoader base) {
 			super(null);			
 			this.baseClassloader = base;
@@ -1826,7 +1828,13 @@ public class Isolate {
 				if ("jar".equals(url.getProtocol())) {
 					String jarPath = url.getPath();
 					jarPath = jarPath.substring(0, jarPath.lastIndexOf('!'));
-					URL jarUrl = new URL(jarPath + "?isolate=" + name);
+					URL jarUrl;
+					if (disableSourceDecoration) {
+						jarUrl = new URL(jarPath);
+					}
+					else {
+						jarUrl = new URL(jarPath + "?isolate=" + name);
+					}
 					ProtectionDomain domain = domainCache.get(jarUrl);
 					if (domain == null) {
 						domain = new ProtectionDomain(
