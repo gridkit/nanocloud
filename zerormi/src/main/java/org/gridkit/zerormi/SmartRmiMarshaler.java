@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.lang.reflect.Proxy;
 import java.rmi.Remote;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -85,12 +84,12 @@ public class SmartRmiMarshaler implements RmiMarshaler {
     }
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Class<?>[] detectRemoteInterfaces(Class<?> objClass) throws IOException {
+	Class<?>[] detectRemoteInterfaces(Class<?> objClass) throws IOException {
 		Class<?>[] result;
-		List<Class> iflist = new ArrayList<Class>();
-		iflist.addAll(Arrays.asList(objClass.getInterfaces()));
+		List<Class<?>> iflist = new ArrayList<Class<?>>();
+		collect(iflist, objClass);
 
-		Iterator<Class> it = iflist.iterator();
+		Iterator<Class<?>> it = iflist.iterator();
 		while (it.hasNext()) {
 		    Class intf = it.next();
 
@@ -99,7 +98,7 @@ public class SmartRmiMarshaler implements RmiMarshaler {
 		        continue;
 		    }
 
-		    for (Class other : iflist) {
+		    for (Class other : new ArrayList<Class<?>>(iflist)) {
 		        if (intf != other && intf.isAssignableFrom(other)) {
 		            it.remove();
 		        }
@@ -126,12 +125,23 @@ public class SmartRmiMarshaler implements RmiMarshaler {
 		return result;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void reduceSuperTypes(List<Class> iflist) {
-		Iterator<Class> it = iflist.iterator();
+	private void collect(List<Class<?>> iflist, Class<?> objClass) {
+		if (objClass == Object.class) {
+			return;
+		}
+		for(Class<?> c: objClass.getInterfaces()) {
+			if (!iflist.contains(c)) {
+				iflist.add(c);
+			}
+		}
+		collect(iflist, objClass.getSuperclass());
+	}
+
+	private void reduceSuperTypes(List<Class<?>> iflist) {
+		Iterator<Class<?>> it = iflist.iterator();
 		while (it.hasNext()) {
-		    Class intf = it.next();
-		    for (Class other : iflist) {
+		    Class<?> intf = it.next();
+		    for (Class<?> other : iflist) {
 		        if (intf != other && intf.isAssignableFrom(other)) {
 		            it.remove();
 		        }

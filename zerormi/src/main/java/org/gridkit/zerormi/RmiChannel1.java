@@ -379,7 +379,8 @@ public class RmiChannel1 implements RmiChannel {
     public Class[] toClassObjects(String[] names) throws ClassNotFoundException {
         Class[] classes = new Class[names.length];
         for (int i = 0; i != names.length; ++i) {
-            classes[i] = classForName(names[i]);
+        	Class<?> c = ReflectionHelper.primitiveToClass(names[i]);
+            classes[i] = c != null ? c : classForName(names[i]);
         }
         return classes;
     }
