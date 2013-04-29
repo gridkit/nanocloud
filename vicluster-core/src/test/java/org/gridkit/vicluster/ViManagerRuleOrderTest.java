@@ -92,6 +92,50 @@ public class ViManagerRuleOrderTest {
 		
 		Assert.assertEquals("ABCDEF", cloud.node("node").getProp("test-prop"));
 	}
+
+	@Test
+	public void verify_init_prop_override_order_with_lazy_node() {
+		
+		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
+		
+		ViNode r1 = cloud.node("n*");
+		ViNode r2 = cloud.node("*o*");
+		ViNode r3 = cloud.node("*d*");
+		ViNode r4 = cloud.node("*e");
+		
+		r4.setProp("test-prop", "r4");
+		r3.setProp("test-prop", "r3");
+		r2.setProp("test-prop", "r2");
+		r1.setProp("test-prop", "r1");
+		r2.setProp("test-prop", "r2");
+		
+		cloud.node("node").touch();
+		
+		Assert.assertEquals("r2", cloud.node("node").getProp("test-prop"));
+	}
+
+	@Test
+	public void verify_init_prop_override_order_with_eager_node() {
+		
+		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
+
+		cloud.node("node");
+		
+		ViNode r1 = cloud.node("n*");
+		ViNode r2 = cloud.node("*o*");
+		ViNode r3 = cloud.node("*d*");
+		ViNode r4 = cloud.node("*e");
+		
+		r4.setProp("test-prop", "r4");
+		r3.setProp("test-prop", "r3");
+		r2.setProp("test-prop", "r2");
+		r1.setProp("test-prop", "r1");
+		r2.setProp("test-prop", "r2");
+		
+		cloud.node("node").touch();
+		
+		Assert.assertEquals("r2", cloud.node("node").getProp("test-prop"));
+	}
 	
 	
 	private PropInitializer initProp(String name, String val) {
