@@ -33,6 +33,10 @@ import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
 
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ * 
+ * @deprecated 
+ * CloudFactory offers RMI based version of Isolate node.
+ * This class remains in code base mostly for testing purposes (CloudFactory is not accessible in this module) 
  */
 public class IsolateViNode implements ViNode {
 

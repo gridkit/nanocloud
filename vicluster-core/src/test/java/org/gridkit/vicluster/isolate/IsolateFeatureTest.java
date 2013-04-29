@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class IsolateFeatureTest {
 
 	private static Map<String, String> ISOLATE_PROPS = new HashMap<String, String>();

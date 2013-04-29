@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+@SuppressWarnings("deprecation")
 public class IsolatePermSpaceLeakTest {
 
 	@Test

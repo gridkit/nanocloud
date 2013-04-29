@@ -31,6 +31,7 @@ import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class RmiIsolationTest {
 
 	ViGroup hosts = new ViGroup();

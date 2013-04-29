@@ -55,8 +55,10 @@ public class ViManager implements ViNodeSet {
 	private ViNodeProvider provider;
 	private ExecutorService asyncInitThreads;
 	
+	private long ruleCounter = 0;
+	
 	public ViManager(ViNodeProvider provider) {
-		this(provider, 8);
+		this(provider, 32);
 	}
 
 	public ViManager(ViNodeProvider provider, int deferedTaskLimit) {
@@ -118,11 +120,16 @@ public class ViManager implements ViNodeSet {
 	}
 	
 	private synchronized void inferConfiguration(ManagedNode node) {
+		List<Rule> rules = new ArrayList<ViManager.Rule>();
 		for(NodeSelector selector: dynamicSelectors.values()) {
 			if (selector.match(node)) {
-				selector.config.apply(node);
+				rules.addAll(selector.rules);
 			}
 		}		
+		Collections.sort(rules);
+		for(Rule rule: rules) {
+			rule.getConfig().apply(node);
+		}
 	}
 
 	private boolean isPattern(String namePattern) {		
@@ -182,6 +189,11 @@ public class ViManager implements ViNodeSet {
 	protected synchronized void markAsDead(ManagedNode node) {
 		liveNodes.remove(node.name);
 		deadNodes.put(node.name, node);
+	}
+	
+	protected synchronized Rule newRule(NodeSelector selector) {
+		Rule rule = new Rule(ruleCounter++, selector);
+		return rule;
 	}
 	
 	static String transform(String pattern, String name) {
@@ -563,13 +575,39 @@ public class ViManager implements ViNodeSet {
 		}
 	}
 	
+	private static class Rule implements Comparable<Rule> {
+		
+		private final long ruleNo;
+		private final NodeSelector selector;
+		private final ViNodeConfig config = new ViNodeConfig();
+		
+		public Rule(long ruleNo, NodeSelector selector) {
+			this.ruleNo = ruleNo;
+			this.selector = selector;
+		}
+		
+		public ViNodeConfig getConfig() {
+			return config;
+		}
+
+		@Override
+		public int compareTo(Rule o) {
+			return Long.signum(ruleNo - o.ruleNo);
+		}
+
+		@Override
+		public String toString() {
+			return "[" + ruleNo + "] " + selector.pattern + " -> " + config.toString();
+		}
+	}
+	
 	private class NodeSelector implements ViNode {
 		
 		private String pattern;
 		private Pattern regEx;
 		
-		private ViNodeConfig config = new ViNodeConfig();
-
+		private List<Rule> rules = new ArrayList<Rule>();
+		
 		public NodeSelector(String pattern) {
 			this.pattern = pattern;
 			this.regEx = GlobHelper.translate(pattern, ".");
@@ -583,18 +621,24 @@ public class ViManager implements ViNodeSet {
 			return ViGroup.group(listNodes(regEx));
 		}
 		
+		private ViNodeConfig rule() {
+			Rule rule = newRule(this);
+			rules.add(rule);
+			return rule.getConfig();
+		}
+		
 		@Override
 		public void setProp(String propName, String value) {
 			synchronized(ViManager.this) { 
-				config.setProp(propName, value);
+				rule().setProp(propName, value);
 				select().setProp(propName, value);
 			}
 		}
 
 		@Override
 		public void setProps(Map<String, String> props) {
-			synchronized(ViManager.this) { 
-				config.setProps(props);
+			synchronized(ViManager.this) {
+				rule().setProps(props);
 				select().setProps(props);
 			}
 		}
@@ -602,7 +646,7 @@ public class ViManager implements ViNodeSet {
 		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
-				config.addStartupHook(name, hook, override);
+				rule().addStartupHook(name, hook, override);
 				select().addStartupHook(name, hook, override);
 			}
 		}
@@ -610,7 +654,7 @@ public class ViManager implements ViNodeSet {
 		@Override
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
-				config.addShutdownHook(name, hook, override);
+				rule().addShutdownHook(name, hook, override);
 				select().addShutdownHook(name, hook, override);
 			}
 		}
