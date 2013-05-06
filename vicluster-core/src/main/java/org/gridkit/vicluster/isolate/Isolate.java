@@ -1577,7 +1577,7 @@ public class Isolate {
 		private ProtectionDomain isolateDomain;
 		private Map<URL, ProtectionDomain> domainCache = new HashMap<URL, ProtectionDomain>();
 		
-		private boolean disableSourceDecoration = "false".equals(System.getProperty("gridkit.isolate.class-source-decoration", "true"));
+		private boolean disableSourceDecoration = !("true".equals(System.getProperty("gridkit.isolate.class-source-decoration", "false")));
 		
 		IsolatedClassloader(ClassLoader base) {
 			super(null);			
