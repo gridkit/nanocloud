@@ -450,7 +450,7 @@ public class SensibleTaskService implements TaskService.Component {
 				if (!started) {
 					canceled = true;
 					try {
-						task.cancled();
+						task.canceled();
 					}
 					catch(Throwable e) {
 						shipException(e);

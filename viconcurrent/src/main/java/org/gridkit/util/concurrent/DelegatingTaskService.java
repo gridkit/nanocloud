@@ -131,7 +131,7 @@ public class DelegatingTaskService implements TaskService, TaskService.Component
 		}
 
 		@Override
-		public void cancled() {
+		public void canceled() {
 			synchronized (this) {
 				if (canceled) {
 					return;
@@ -139,7 +139,7 @@ public class DelegatingTaskService implements TaskService, TaskService.Component
 				canceled = true;
 			}
 			removeTask(this);
-			task.cancled();
+			task.canceled();
 		}
 		
 		public void abort() {
@@ -154,7 +154,7 @@ public class DelegatingTaskService implements TaskService, TaskService.Component
 				}
 			}
 			try {
-				task.cancled();
+				task.canceled();
 			}
 			catch(Exception e) {
 				// ignore

@@ -127,7 +127,7 @@ public class SimpleTaskService implements TaskService {
 				if (!started) {
 					canceled = true;
 					try {
-						task.cancled();
+						task.canceled();
 					}
 					catch(Throwable e) {
 						shipException(e);

@@ -25,7 +25,7 @@ public interface TaskService {
 	
 	/**
 	 * If {@link TaskService#schedule(Task)} method havn't thrown an
-	 * exception, it is guaranteed that eigther {@link #run()} or {@link #cancled()}
+	 * exception, it is guaranteed that eigther {@link #run()} or {@link #canceled()}
 	 * would be called eventually.
 	 * 
 	 * {@link #interrupt(Thread)} may be used to abort task execution, beware that it could be called when {@link #run()} is already finished or have yet to be started.
@@ -37,8 +37,7 @@ public interface TaskService {
 
 		public void interrupt(Thread taskThread);
 		
-		// TODO fix typo
-		public void cancled();
+		public void canceled();
 		
 	}
 	

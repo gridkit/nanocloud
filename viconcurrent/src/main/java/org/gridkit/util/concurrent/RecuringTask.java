@@ -71,7 +71,7 @@ public class RecuringTask implements Task {
 	}
 
 	@Override
-	public void cancled() {
-		task.cancled();
+	public void canceled() {
+		task.canceled();
 	}
 }
