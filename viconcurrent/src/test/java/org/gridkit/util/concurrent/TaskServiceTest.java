@@ -62,7 +62,7 @@ public class TaskServiceTest {
 		}
 
 		@Override
-		public void cancled() {
+		public void canceled() {
 			lock.release();
 		}
 	}
@@ -93,7 +93,7 @@ public class TaskServiceTest {
 		}
 
 		@Override
-		public void cancled() {
+		public void canceled() {
 			long time = System.nanoTime();
 			if (pollCount > 0) {
 				long interval = (time - start) / pollCount;
