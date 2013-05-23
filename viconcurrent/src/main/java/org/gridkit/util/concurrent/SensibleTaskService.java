@@ -29,8 +29,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * <p>
- * Practice have shown that standard java thread pools are total
- * crap then you are dealing with complex multi-agent system.
+ * Practice have shown that standard java thread pools are totally
+ * useless, when you are dealing with complex multi-agent system.
  * </p>
  * <p>
  * They doesn't solve problem of thread sharing between activities 
@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Ironically thread per action approach end up being much more practical.
  * </p>
  * <p>
- * Here is may attempt for create dead lock resistant by economic
+ * Here is may attempt for create dead lock resistant, but economic
  * thread scheduler.
  * </p>
  * 
