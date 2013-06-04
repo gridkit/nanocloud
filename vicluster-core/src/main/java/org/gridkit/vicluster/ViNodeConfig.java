@@ -49,6 +49,19 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		}
 		return result;
 	}
+
+	/**
+	 * @return all non-special (not containing ':' in name props)
+	 */
+	public Map<String, String> getAllVanilaProps() {
+		Map<String, String> result = new LinkedHashMap<String, String>();
+		for(String key: props.keySet()) {
+			if (key.indexOf(':') < 0) {
+				result.put(key, props.get(key));
+			}			
+		}
+		return result;
+	}
 	
 	@Override
 	public void setProp(String propName, String value) {

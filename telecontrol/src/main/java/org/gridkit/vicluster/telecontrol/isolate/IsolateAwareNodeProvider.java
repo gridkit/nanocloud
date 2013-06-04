@@ -55,7 +55,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 				isolateProps.put(IsolateProps.CP_EXCLUDE + "jar:" + url + "!/", "");
 			}
 			
-			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps);
+			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps, config.getAllVanilaProps());
 			JvmConfig jvmConfig = prepareJvmConfig(config);
 			ControlledProcess process = factory.createProcess(name, jvmConfig);
 			return createViNode(name, config, process);
@@ -78,16 +78,18 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 	
 	static class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
 
-		private Map<String, String> isolateProps;
+		private Map<String, String> isolateConfigProps;
+		private Map<String, String> vanilaProps;
 
 		
-		private IsolateJvmNodeFactory(Map<String, String> isolateProps) {
-			this.isolateProps = isolateProps;
+		private IsolateJvmNodeFactory(Map<String, String> isolateConfigProps, Map<String, String> vanilaProps) {
+			this.isolateConfigProps = isolateConfigProps;
+			this.vanilaProps = vanilaProps;
 		}
 
 		@Override
 		protected Process startProcess(String name, ExecCommand jvmCmd) throws IOException {
-			return new IsolateProcess(name, isolateProps, jvmCmd);
+			return new IsolateProcess(name, isolateConfigProps, vanilaProps, jvmCmd);
 		}
 	}
 	

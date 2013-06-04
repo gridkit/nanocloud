@@ -47,8 +47,9 @@ class IsolateProcess extends Process {
 		});
 	}
 
-	public IsolateProcess(String name, Map<String, String> config, final ExecCommand jvmCmd) {
+	public IsolateProcess(String name, Map<String, String> config, Map<String, String> vanilaProps, final ExecCommand jvmCmd) {
 		isolate = new Isolate(name);
+		isolate.setProp(vanilaProps);
 		new IsolateSelfInitializer(config).apply(isolate);
 		// TODO override interrupt in ZeroRMI
 		isolate.addThreadKiller(new CloseableThreadKiller());
