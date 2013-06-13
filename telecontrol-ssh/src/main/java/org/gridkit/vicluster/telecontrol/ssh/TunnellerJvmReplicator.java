@@ -70,7 +70,6 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	private TunnellerConnection control;
 	
 	private RemoteFileCache jarCache;
-	private String bootJarPath;
 	private String tunnellerJarPath;
 	
 	private String tunnelHost;
@@ -152,15 +151,62 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		Manifest mf = new Manifest();
 		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, remoterClasspath.toString());
-		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, Bootstraper.class.getName());
-		
-		byte[] bootJar = ClasspathUtils.createManifestJar(mf);
-		bootJarPath = jarCache.upload(new ByteBlob("booter.jar", bootJar));
-
 		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, Tunneller.class.getName());
 
 		byte[] tunnelerJar = ClasspathUtils.createManifestJar(mf);
 		tunnellerJarPath = jarCache.upload(new ByteBlob("tunneller.jar", tunnelerJar));		
+	}
+
+	private String createBootJar(String name, JvmConfig config) throws IOException {
+		
+		List<Classpath.ClasspathEntry> classpath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
+		classpath = config.filterClasspath(classpath);
+
+		// random upload order improve performance if cache is on shared mount
+		List<Classpath.ClasspathEntry> uploadJars = new ArrayList<Classpath.ClasspathEntry>(classpath);
+		Collections.shuffle(uploadJars);
+		List<String> rnames = jarCache.upload(uploadJars);
+		Map<String, String> pathMap = new HashMap<String, String>();
+		for(int i = 0; i != rnames.size(); ++i) {
+			pathMap.put(uploadJars.get(i).getUrl().toString(), rnames.get(i));
+		}
+
+		StringBuilder remoterClasspath = new StringBuilder();
+		for(Classpath.ClasspathEntry ce: classpath) {
+			if (remoterClasspath.length() > 0) {
+				remoterClasspath.append(' ');
+			}
+			remoterClasspath.append(pathMap.get(ce.getUrl().toString()));			
+		}
+
+		Manifest mf = new Manifest();
+		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+		mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, remoterClasspath.toString());
+		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, Bootstraper.class.getName());
+		
+		byte[] bootJar = ClasspathUtils.createManifestJar(mf);
+		String bootJarPath = jarCache.upload(new ByteBlob(makeBootJarName(name), bootJar));
+
+		return bootJarPath;
+	}
+	
+	private String makeBootJarName(String name) {
+		// jar is content hashed so nodes with same classpath will receive same name
+		// using neutral booter.jar is less confusing
+		return "booter.jar";
+//		StringBuilder sb = new StringBuilder();
+//		for(int i = 0; i != name.length(); ++i) {
+//			char ch = name.charAt(i);
+//			if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '-' || ch == '.') {
+//				sb.append(ch);				
+//			}
+//		}
+//		if (sb.length() == 0) {
+//			return "booter.jar";
+//		}
+//		else {
+//			return sb.append(".jar").toString();
+//		}
 	}
 
 	private void startTunneler() throws JSchException, IOException {
@@ -265,9 +311,12 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 		ensureActive();
 		
+		String bootJarPath = createBootJar(caption, jvmArgs);
+		
 		ExecCommand jvmCmd = new ExecCommand(rconfig.getJavaExec());
 		jvmArgs.apply(jvmCmd);
-		jvmCmd.addArg("-jar").addArg(bootJarPath);
+		jvmCmd.addArg("-jar")
+			.addArg(bootJarPath);
 		
 		RemoteControlSession session = new RemoteControlSession();
 		String sessionId = hub.newSession(caption, session);

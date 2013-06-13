@@ -19,7 +19,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -37,6 +41,7 @@ public class Classpath {
 	private static final String DIGEST_ALGO = "SHA-1";
 	
 	private static WeakHashMap<ClassLoader, List<ClasspathEntry>> CLASSPATH_CACHE = new WeakHashMap<ClassLoader, List<ClasspathEntry>>();
+	private static WeakHashMap<URL, WeakReference<ClasspathEntry>> CUSTOM_ENTRIES = new WeakHashMap<URL, WeakReference<ClasspathEntry>>();
 	
 	public static synchronized List<ClasspathEntry> getClasspath(ClassLoader classloader) {
 		List<ClasspathEntry> classpath = CLASSPATH_CACHE.get(classloader);
@@ -49,32 +54,31 @@ public class Classpath {
 		return classpath;
 	}
 	
+	public static synchronized ClasspathEntry getLocalEntry(String path) throws IOException {
+		try {
+			URL url = new File(path).toURI().toURL();
+			WeakReference<ClasspathEntry> wr = CUSTOM_ENTRIES.get(url);
+			if (wr != null) {
+				ClasspathEntry entry = wr.get();
+				return entry;
+			}
+			ClasspathEntry entry = newEntry(url);
+			CUSTOM_ENTRIES.put(url, new WeakReference<ClasspathEntry>(entry));
+			return entry;
+		} catch (MalformedURLException e) {
+			throw new IOException(e);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+	}
 	
 	private static void fillClasspath(List<ClasspathEntry> classpath, Collection<URL> urls) {
 		for(URL url: urls) {
-			ClasspathEntry entry = new ClasspathEntry();
-			entry.url = url;
 			try {
-				File file = new File(url.toURI());
-				if (file.isFile()) {
-					entry.file = file;
-					entry.filename = file.getName();
-				}
-				else {
-					String lname = file.getName();
-					if ("classes".equals(lname)) {
-						lname = file.getParentFile().getName();
-					}
-					if ("target".equals(lname)) {
-						lname = file.getParentFile().getParentFile().getName();
-					}
-					lname += ".jar";
-					entry.filename = lname;
-					entry.data = ClasspathUtils.jarFiles(file.getPath());
-					if (entry.data == null) {
-						LOGGER.warn("Classpath entry is empty: " + file.getCanonicalPath());
-						continue;
-					}
+				ClasspathEntry entry = newEntry(url);
+				if (entry == null) {
+					LOGGER.warn("Cannot copy URL content: " + url.toString());
+					continue;
 				}
 				classpath.add(entry);
 			}
@@ -85,6 +89,33 @@ public class Classpath {
 		}		
 	}
 
+	private static ClasspathEntry newEntry(URL url) throws IOException, URISyntaxException {
+		ClasspathEntry entry = new ClasspathEntry();
+		entry.url = url;
+		File file = new File(url.toURI());
+		if (file.isFile()) {
+			entry.file = file;
+			entry.filename = file.getName();
+		}
+		else {
+			String lname = file.getName();
+			if ("classes".equals(lname)) {
+				lname = file.getParentFile().getName();
+			}
+			if ("target".equals(lname)) {
+				lname = file.getParentFile().getParentFile().getName();
+			}
+			lname += ".jar";
+			entry.filename = lname;
+			entry.data = ClasspathUtils.jarFiles(file.getPath());
+			if (entry.data == null) {
+				LOGGER.warn("Classpath entry is empty: " + file.getCanonicalPath());
+				return null;
+			}
+		}
+		return entry;
+	}
+	
 	public static class ClasspathEntry implements FileBlob {
 		
 		private URL url;

@@ -18,11 +18,17 @@ package org.gridkit.vicluster.telecontrol;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 
 /**
  * 
@@ -34,8 +40,7 @@ public class JvmConfig implements Serializable {
 	
 	private String workDir = null;
 	private List<String> jvmOptions = new ArrayList<String>();
-	private List<String> classpathIncludes = new ArrayList<String>();
-	private List<String> classpathExcludes = new ArrayList<String>();
+	private List<String> classpathChanges = new ArrayList<String>();
 	private Map<String, String> enviroment = new HashMap<String, String>();
 	
 	public JvmConfig() {		
@@ -54,11 +59,11 @@ public class JvmConfig implements Serializable {
 	}
 	
 	public void classpathAdd(String path) {
-		classpathIncludes.add(path);
+		classpathChanges.add("+" + path);
 	}
 
 	public void classpathExclude(String path) {
-		classpathExcludes.add(path);
+		classpathChanges.add("-" + path);
 	}
 
 	public void addOption(String option) {
@@ -76,30 +81,106 @@ public class JvmConfig implements Serializable {
         return enviroment;
     }
 	
+	public List<ClasspathEntry> filterClasspath(List<ClasspathEntry> classpath) {
+		if (classpathChanges.isEmpty()) {
+			return classpath;
+		}
+		else {
+			List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(classpath);
+			
+			for(String change: classpathChanges) {
+				if (change.startsWith("+")) {
+					String cpe = normalize(change.substring(1));
+					addEntry(entries, cpe);
+				}
+				else if (change.startsWith("-")) {
+					String cpe = normalize(change.substring(1));
+					removeEntry(entries, cpe);
+				}
+			}
+			
+			return entries;
+		}
+	}
+	
+	private void addEntry(List<ClasspathEntry> entries, String path) {
+		try {
+			ClasspathEntry entry = Classpath.getLocalEntry(path);
+			if (entry != null) {
+				entries.add(entry);
+			}
+		} catch (IOException e) {
+			// TODO logging
+		}		
+	}
+
+	private void removeEntry(List<ClasspathEntry> entries, String path) {
+		Iterator<ClasspathEntry> it = entries.iterator();
+		while(it.hasNext()) {
+			if (path.equals(normalize(it.next().getUrl()))) {
+				it.remove();
+			}
+		}
+	}
+
 	public String filterClasspath(String defaultClasspath) {
-		if (classpathExcludes.isEmpty() && classpathIncludes.isEmpty()) {
+		if (classpathChanges.isEmpty()) {
 			return defaultClasspath;
 		}
 		else {
 			String fs = System.getProperty("path.separator");
-			StringBuilder sb = new StringBuilder();
+			List<String> pathList = new ArrayList<String>();
+			
 			for(String cpe: defaultClasspath.split(Pattern.quote(fs))) {
+				pathList.add(normalize(cpe));
+			}
+			
+			for(String change: classpathChanges) {
+				if (change.startsWith("+")) {
+					String cpe = normalize(change.substring(1));
+					pathList.add(cpe);
+				}
+				else if (change.startsWith("-")) {
+					String cpe = normalize(change.substring(1));
+					// remove all occurences
+					pathList.removeAll(Collections.singleton(cpe));
+				}
+			}
+
+			StringBuilder sb = new StringBuilder();
+			for(String cpe: pathList) {
 				try {
 					// normalize path entry if possible
 					cpe = new File(cpe).getCanonicalPath();
 				} catch (IOException e) {
 					// ignore
 				}
-				if (classpathExcludes.contains(cpe)) {
-					continue;
-				}
-				sb.append(cpe).append(fs);
-			}
-			for(String cpe: classpathIncludes) {
 				sb.append(cpe).append(fs);
 			}
 			sb.setLength(sb.length() - fs.length());
 			return sb.toString();
+		}
+	}
+
+	private String normalize(String path) {
+		try {
+			// normalize path entry if possible
+			return new File(path).getCanonicalPath();
+		} catch (IOException e) {
+			return path;
+		}
+	}
+
+	private String normalize(URL url) {
+		try {
+			if (!"file".equals(url.getProtocol())) {
+				throw new IllegalArgumentException("Non file URL in classpath: " + url);
+			}
+			File f = new File(url.toURI());
+			String path = f.getPath();
+			return normalize(path);
+		} catch (URISyntaxException e) {
+			throw new IllegalArgumentException("Malformed URL in classpath: " + url);
 		}
 	}
 	
