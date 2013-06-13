@@ -77,6 +77,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import java.util.jar.Attributes.Name;
 import java.util.logging.LogManager;
 
 import org.gridkit.vicluster.VoidCallable;
@@ -1594,7 +1595,7 @@ public class Isolate {
 					/* principals - */ getClass().getProtectionDomain().getPrincipals());
 			this.isolateDomain = domain;
 		}
-		
+
 		public void addRule(IsolationRule rule) {
 			rules.addRule(rule);
 		}
@@ -1820,9 +1821,101 @@ public class Isolate {
 
 		private Class<?> defineClass(URL url, String classname, byte[] cd) throws ClassFormatError {
 			Class<?> c = defineClass(classname, cd, 0, cd.length, getProtectionDomain(url));
+			ensurePackage(classname, url);
 			return c;
 		}
 
+		private void ensurePackage(String classname, URL url) {
+			if (classname.indexOf('.') > 0) {
+				String pname = classname.substring(0, classname.lastIndexOf('.'));
+				if (getPackage(pname) == null) {
+					URL baseUrl = getBaseURL(url, classname);
+					if (baseUrl != null) {
+						Manifest mf = readManifest(baseUrl);
+						if (mf != null) {
+							definePackage(pname, mf, baseUrl);
+							return;
+						}
+					}
+					definePackage(pname, null, null, null, null, null, null, null);
+				}
+			}
+		}
+
+		private Manifest readManifest(URL baseUrl) {
+			try {
+				URL umf = new URL(baseUrl + "META-INF/MANIFEST.MF");
+				InputStream is = umf.openStream();
+				Manifest mf = new Manifest(is);
+				is.close();
+				return mf;
+			} catch (Exception e) {
+				return null;
+			}
+		}
+
+		private URL getBaseURL(URL url, String classname) {
+			try {
+				String u = url.toExternalForm();
+				if (url.getQuery() != null) {
+					u = u.substring(0, u.lastIndexOf('?'));
+				}
+				u = u.substring(0, u.length() - (classname + ".class").length());
+				return new URL(u);
+			} catch (MalformedURLException e) {
+				return null;
+			}
+		}
+
+		protected Package definePackage(String name, Manifest man, URL url)
+				throws IllegalArgumentException {
+			String path = name.replace('.', '/').concat("/");
+			String specTitle = null, specVersion = null, specVendor = null;
+			String implTitle = null, implVersion = null, implVendor = null;
+			String sealed = null;
+			URL sealBase = null;
+
+			Attributes attr = man.getAttributes(path);
+			if (attr != null) {
+				specTitle = attr.getValue(Name.SPECIFICATION_TITLE);
+				specVersion = attr.getValue(Name.SPECIFICATION_VERSION);
+				specVendor = attr.getValue(Name.SPECIFICATION_VENDOR);
+				implTitle = attr.getValue(Name.IMPLEMENTATION_TITLE);
+				implVersion = attr.getValue(Name.IMPLEMENTATION_VERSION);
+				implVendor = attr.getValue(Name.IMPLEMENTATION_VENDOR);
+				sealed = attr.getValue(Name.SEALED);
+			}
+			attr = man.getMainAttributes();
+			if (attr != null) {
+				if (specTitle == null) {
+					specTitle = attr.getValue(Name.SPECIFICATION_TITLE);
+				}
+				if (specVersion == null) {
+					specVersion = attr.getValue(Name.SPECIFICATION_VERSION);
+				}
+				if (specVendor == null) {
+					specVendor = attr.getValue(Name.SPECIFICATION_VENDOR);
+				}
+				if (implTitle == null) {
+					implTitle = attr.getValue(Name.IMPLEMENTATION_TITLE);
+				}
+				if (implVersion == null) {
+					implVersion = attr.getValue(Name.IMPLEMENTATION_VERSION);
+				}
+				if (implVendor == null) {
+					implVendor = attr.getValue(Name.IMPLEMENTATION_VENDOR);
+				}
+				if (sealed == null) {
+					sealed = attr.getValue(Name.SEALED);
+				}
+			}
+//          no sealing
+//			if ("true".equalsIgnoreCase(sealed)) {
+//				sealBase = url;
+//			}
+			return definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
+		}		
+		
 		private synchronized ProtectionDomain getProtectionDomain(URL url) {
 			try {
 				if ("jar".equals(url.getProtocol())) {

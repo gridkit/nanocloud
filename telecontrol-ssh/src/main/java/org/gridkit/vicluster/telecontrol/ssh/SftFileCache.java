@@ -39,6 +39,7 @@ import org.gridkit.internal.com.jcraft.jsch.ChannelSftp;
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.internal.com.jcraft.jsch.SftpException;
+import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class SftFileCache implements RemoteFileCache2 {
+public class SftFileCache implements RemoteFileCache {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(SftFileCache.class);
 	
@@ -123,7 +124,7 @@ public class SftFileCache implements RemoteFileCache2 {
 	}
 
 	@Override
-	public String upload(Blob blob) {
+	public String upload(FileBlob blob) {
 		try {
 			if (fileMapping.containsKey(blob.getContentHash())) {
 				return fileMapping.get(blob.getContentHash());
@@ -141,7 +142,7 @@ public class SftFileCache implements RemoteFileCache2 {
 	}
 
 	@Override
-	public List<String> upload(List<? extends Blob> blobs) {
+	public List<String> upload(List<? extends FileBlob> blobs) {
 		
 		final String[] result = new String[blobs.size()];
 		List<Future<?>> futures = new ArrayList<Future<?>>();
@@ -149,7 +150,7 @@ public class SftFileCache implements RemoteFileCache2 {
 		try {
 			for(int i = 0; i != blobs.size(); ++i) {
 				final int n = i;
-				final Blob blob = blobs.get(i);
+				final FileBlob blob = blobs.get(i);
 				if (fileMapping.containsKey(blob.getContentHash())) {
 					result[i] = fileMapping.get(blob.getContentHash());
 					continue;
@@ -183,7 +184,7 @@ public class SftFileCache implements RemoteFileCache2 {
 		return Arrays.asList(result);
 	}
 
-	private String upload(ChannelSftp sftp, Blob blob) {
+	private String upload(ChannelSftp sftp, FileBlob blob) {
 		String rname = absoluteCachPath + "/" + blob.getContentHash() + "/" + blob.getFileName();
 		try {
 			sftpMkdirs(sftp, absoluteCachPath + "/" + blob.getContentHash());

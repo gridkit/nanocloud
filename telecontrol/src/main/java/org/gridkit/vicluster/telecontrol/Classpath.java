@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.vicluster.telecontrol.ssh;
+package org.gridkit.vicluster.telecontrol;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -85,8 +85,7 @@ public class Classpath {
 		}		
 	}
 
-
-	public static class ClasspathEntry implements RemoteFileCache2.Blob {
+	public static class ClasspathEntry implements FileBlob {
 		
 		private URL url;
 		private String filename;

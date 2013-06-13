@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.vicluster.telecontrol.ssh;
+package org.gridkit.vicluster.telecontrol;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,9 +43,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 
+ * TODO make it package private
+ * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-class ClasspathUtils {
+public class ClasspathUtils {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathUtils.class);
 	
@@ -66,13 +68,6 @@ class ClasspathUtils {
 	
 	private static void addEntriesFromManifest(List<URL> list, URL url) {
 		try {
-//			if ("file".equals(url.getProtocol())) {
-//				File f = new File(url.getPath());
-//				if (f.isDirectory()) {
-//					list.add(url);
-//					return;
-//				}
-//			}
 			InputStream is;
 			try {
 				is = url.openStream();

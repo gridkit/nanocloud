@@ -37,8 +37,11 @@ import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
+import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
@@ -66,7 +69,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	private RemotingHub hub;
 	private TunnellerConnection control;
 	
-	private RemoteFileCache2 jarCache;
+	private RemoteFileCache jarCache;
 	private String bootJarPath;
 	private String tunnellerJarPath;
 	
@@ -455,7 +458,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 	}
 	
-	static class ByteBlob implements RemoteFileCache2.Blob {
+	static class ByteBlob implements FileBlob {
 
 		private String filename;
 		private String hash;

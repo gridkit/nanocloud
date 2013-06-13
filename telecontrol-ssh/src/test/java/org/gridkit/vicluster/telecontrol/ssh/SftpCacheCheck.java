@@ -24,6 +24,7 @@ import java.util.Random;
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.internal.com.jcraft.jsch.SftpException;
+import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.junit.Test;
 
 public class SftpCacheCheck {
@@ -64,7 +65,7 @@ public class SftpCacheCheck {
 		cache.upload(blobs);		
 	}
 	
-	public static class TestBlob implements RemoteFileCache2.Blob {
+	public static class TestBlob implements FileBlob {
 
 		private String filename;
 		private String hash;
