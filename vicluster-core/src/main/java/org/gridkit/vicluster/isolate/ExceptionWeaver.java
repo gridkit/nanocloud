@@ -18,6 +18,8 @@ package org.gridkit.vicluster.isolate;
 import java.util.Arrays;
 
 /**
+ * TODO corrent handling of interceptor induced exceptions.
+ * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 class ExceptionWeaver {

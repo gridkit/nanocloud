@@ -24,6 +24,6 @@ package org.gridkit.lab.interceptor;
  */
 public interface Interceptor {
 	
-	public void handle(Interception hook);
+	public void handle(Interception call);
 
 }

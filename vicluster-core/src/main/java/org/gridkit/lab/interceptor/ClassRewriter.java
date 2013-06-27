@@ -25,8 +25,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Instance of this class is capable of parsing Java byte code (class file), identify call sites and optionally inject call interception if mandated by {@link HookManager}.
@@ -34,8 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ClassRewriter {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ClassRewriter.class);
-	
 	private static final String HOOK_PREFIX = "$$hook_";
 	private static final String STUB_PREFIX = "$$stub_";
 	
@@ -588,7 +584,9 @@ public class ClassRewriter {
 						ndesc = "(L" + targetClass + ";" + desc.substring(1);
 					}
 					addHookMethod(hookId, opcode, ndesc, targetClass, targetMethod, targetSignature);
-					LOGGER.debug("[" + className + "] instrumenting " + name + desc);
+					if ("true".equalsIgnoreCase(System.getProperty("gridkit.interceptor.trace"))) {
+						System.out.println("[" + className + "] instrumenting " + name + desc);
+					}
 					super.visitMethodInsn(INVOKESTATIC, className, HOOK_PREFIX + hookId, ndesc);
 				}
 			}

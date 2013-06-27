@@ -50,6 +50,7 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -75,17 +76,25 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.jar.Attributes;
+import java.util.jar.Attributes.Name;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
-import java.util.jar.Attributes.Name;
 import java.util.logging.LogManager;
 
+import org.gridkit.lab.interceptor.ClassRewriter;
+import org.gridkit.lab.interceptor.CutPoint;
+import org.gridkit.lab.interceptor.HookManager;
+import org.gridkit.lab.interceptor.Interception;
+import org.gridkit.lab.interceptor.Interceptor;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
+
+import sun.reflect.Reflection;
 
 /**
  *	@author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings("restriction")
 public class Isolate {
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
@@ -176,6 +185,7 @@ public class Isolate {
 	private ThreadGroup threadGroup;
 	private Thread isolateControlThread;
 	private IsolatedClassloader cl;
+	private InterceptorManager hookman;
 	private long lastThreadScan = System.nanoTime();
 	
 	private PrintStream stdOut;
@@ -316,6 +326,14 @@ public class Isolate {
 		for(Object r: rules) {
 			cl.addRule((IsolationRule) r);
 		}		
+	}
+	
+	public synchronized void addInstrumenationRule(CutPoint cutPoint, Interceptor interceptor) {
+		if (hookman == null) {
+			hookman = new InterceptorManager();
+		}
+		
+		hookman.addRule(new InstrumentationRule(cutPoint, interceptor));
 	}
 	
 	public synchronized void addPackage(String packageName) {
@@ -931,7 +949,6 @@ public class Isolate {
 		}
 	}
 	
-	@SuppressWarnings("restriction")
 	private int removeAppContexts() {
 		int n = 0;
 		Set<sun.awt.AppContext> contexts = sun.awt.AppContext.getAppContexts();
@@ -1565,6 +1582,146 @@ public class Isolate {
 		}
 	}
 	
+	private static class InstrumentationRule {
+		
+		private final CutPoint cutPoint;
+		private final Interceptor interceptor;
+		
+		public InstrumentationRule(CutPoint cutPoint, Interceptor interceptor) {
+			this.cutPoint = cutPoint;
+			this.interceptor = interceptor;
+		}
+	}
+
+	private static class SiteHook {
+		
+		String hostClass;
+		String hostMethod;
+		String methodSignature;
+		String targetClass;
+		String targetMethod;
+		String targetSignature;
+		
+		volatile List<InstrumentationRule> rules;
+		
+		public SiteHook(String hostClass, String hostMethod, String methodSignature, String targetClass, String targetMethod, String targetSignature) {
+			this.hostClass = hostClass;
+			this.hostMethod = hostMethod;
+			this.methodSignature = methodSignature;
+			this.targetClass = targetClass;
+			this.targetMethod = targetMethod;
+			this.targetSignature = targetSignature;
+		}
+
+		public synchronized void add(InstrumentationRule rule) {
+			InstrumentationRule[] nrules = new InstrumentationRule[rules == null ? 1 : rules.size() + 1];
+			for(int i = 0; i < nrules.length - 1; ++i) {
+				nrules[i] = rules.get(i);
+			}
+			nrules[nrules.length - 1] = rule;
+			rules = Arrays.asList(nrules);
+		}
+
+		public boolean matches(CutPoint cutPoint) {
+			return cutPoint.evaluateCallSite(hostClass, hostMethod, methodSignature, targetClass, targetMethod, targetSignature);
+		}
+	}
+	
+	/**
+	 * This is a callback method for byte code instrumenter.
+	 * @deprecated
+	 */
+	@Deprecated
+	public static void __intercept(int hookId, Interception hook) throws ExecutionException {
+		Class<?> caller = Reflection.getCallerClass(2);
+		InterceptorManager hookman;
+		try {
+			IsolatedClassloader cl = (IsolatedClassloader)caller.getClassLoader();
+			hookman = cl.getIsolate().hookman;
+			if (hookman == null) {
+				throw new NullPointerException("No nookman in for Isolate");
+			}
+		}
+		catch(Exception e) {
+			reportHookError(e);
+			return;
+		}
+		hookman.invoke(hookId, hook);
+	}
+	
+	private static void reportHookError(Object msg) {
+		System.out.println("Error calling instrumentation hook" + (msg == null ? "" : ": " + msg.toString()));
+	}
+	
+	private static class InterceptorManager implements HookManager {
+		
+		private List<InstrumentationRule> allRules = new ArrayList<Isolate.InstrumentationRule>();
+		private List<SiteHook> hookStacks = new ArrayList<SiteHook>();
+		private ClassRewriter rewriter = new ClassRewriter(this);
+		
+		
+		@Override
+		public String getInvocationTargetClass() {
+			return Isolate.class.getName().replace('.', '/');
+		}
+		
+		@Override
+		public String getInvocationTargetMethod() {
+			return "__intercept";
+		}
+		
+		public synchronized void addRule(InstrumentationRule rule) {
+			for(SiteHook hook: hookStacks) {
+				if (hook.matches(rule.cutPoint)) {
+					hook.add(rule);
+				}
+			}
+			allRules.add(rule);
+		}
+		
+		public byte[] rewriteClassData(byte[] classdata) {
+			return rewriter.rewrite(classdata);
+		}
+		
+		@Override
+		public synchronized int checkCallsite(String hostClass, String hostMethod, String methodSignature, String targetClass, String targetMethod, String targetSignature) {
+			SiteHook hook = null;
+			for(InstrumentationRule rule: allRules) {
+				if (rule.cutPoint.evaluateCallSite(hostClass, hostMethod, methodSignature, targetClass, targetMethod, targetSignature)) {
+					if (hook == null) {
+						hook = new SiteHook(hostClass, hostMethod, methodSignature, targetClass, targetMethod, targetSignature);
+					}
+					hook.add(rule);
+				}
+			}
+			
+			if (hook != null) {
+				hookStacks.add(hook);
+				return hookStacks.indexOf(hook);
+			}
+			else {
+				return -1;
+			}
+		}
+
+		public void invoke(int hookId, Interception call) {
+			try {
+				SiteHook stack = hookStacks.get(hookId);
+				for(InstrumentationRule rule: stack.rules) {
+					try {
+						rule.interceptor.handle(call);
+					}
+					catch(Exception e) {
+						reportHookError(e);
+					}
+				}
+			}
+			catch(Exception e) {
+				reportHookError(e);
+			}
+		}
+	}
+	
 	private class IsolatedClassloader extends ClassLoader {
 		
 		private ClassLoader baseClassloader;
@@ -1578,7 +1735,13 @@ public class Isolate {
 		private ProtectionDomain isolateDomain;
 		private Map<URL, ProtectionDomain> domainCache = new HashMap<URL, ProtectionDomain>();
 		
-		private boolean disableSourceDecoration = !("true".equals(System.getProperty("gridkit.isolate.class-source-decoration", "false")));
+		private boolean shouldDecorateURLs() {
+			return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.class-source-decoration"));
+		}
+
+		private boolean shouldTraceIsolation() {
+			return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.trace-classes"));
+		}
 		
 		IsolatedClassloader(ClassLoader base) {
 			super(null);			
@@ -1596,6 +1759,10 @@ public class Isolate {
 			this.isolateDomain = domain;
 		}
 
+		public Isolate getIsolate() {
+			return Isolate.this;
+		}
+		
 		public void addRule(IsolationRule rule) {
 			rules.addRule(rule);
 		}
@@ -1747,7 +1914,11 @@ public class Isolate {
 			else if (name.equals(Isolate.class.getName()) 
 					|| name.startsWith(Isolate.class.getName() + "$")
 					|| name.equals(ThreadKiller.class.getName())
-					|| name.equals(VoidCallable.class.getName())) {
+					|| name.equals(VoidCallable.class.getName())
+					// intsrumentation related interfaces
+					|| name.equals(CutPoint.class.getName())
+					|| name.equals(Interceptor.class.getName())
+					|| name.equals(Interception.class.getName())) {
 				return true;
 			}
 			else {
@@ -1820,6 +1991,12 @@ public class Isolate {
 		}
 
 		private Class<?> defineClass(URL url, String classname, byte[] cd) throws ClassFormatError {
+			if (shouldTraceIsolation()) {
+				stdOut.println("Isolated class: " + classname);
+			}
+			if (hookman != null) {
+				cd = hookman.rewriteClassData(cd);
+			}
 			Class<?> c = defineClass(classname, cd, 0, cd.length, getProtectionDomain(url));
 			ensurePackage(classname, url);
 			return c;
@@ -1922,11 +2099,11 @@ public class Isolate {
 					String jarPath = url.getPath();
 					jarPath = jarPath.substring(0, jarPath.lastIndexOf('!'));
 					URL jarUrl;
-					if (disableSourceDecoration) {
-						jarUrl = new URL(jarPath);
+					if (shouldDecorateURLs()) {
+						jarUrl = new URL(jarPath + "?isolate=" + name);
 					}
 					else {
-						jarUrl = new URL(jarPath + "?isolate=" + name);
+						jarUrl = new URL(jarPath);
 					}
 					ProtectionDomain domain = domainCache.get(jarUrl);
 					if (domain == null) {

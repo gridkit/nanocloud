@@ -15,6 +15,7 @@
  */
 package org.gridkit.lab.interceptor;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -26,6 +27,10 @@ public interface Interception {
 	
 	public Class<?> getHostClass();
 
+	/**
+	 * Currently only methods ({@link Method}) could be intercepted.
+	 * @return reflection object for this interception
+	 */
 	public Object getReflectionObject();
 	
 	/**

@@ -33,7 +33,7 @@ public interface HookManager {
 	 * @param targetSignature - target signature
 	 * @return positive hook ID or -1 if call site not to be instrumented
 	 */
-	public int checkCallsite(String hostClass, String hostMethod, String methdoSignature, String targetClass, String targetMethod, String targetSignature);
+	public int checkCallsite(String hostClass, String hostMethod, String methodSignature, String targetClass, String targetMethod, String targetSignature);
 	
 	
 }
