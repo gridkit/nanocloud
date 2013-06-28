@@ -1634,6 +1634,10 @@ public class Isolate {
 	@Deprecated
 	public static void __intercept(int hookId, Interception hook) throws ExecutionException {
 		Class<?> caller = Reflection.getCallerClass(2);
+		if (caller == Isolate.class) {
+			// since JDK 7u25 call stack has changed
+			caller = Reflection.getCallerClass(3);
+		}
 		InterceptorManager hookman;
 		try {
 			IsolatedClassloader cl = (IsolatedClassloader)caller.getClassLoader();

@@ -45,7 +45,7 @@ public class RemoteBlockingLatchTest {
 		manager = null;
 	}
 	
-	@Test(timeout = 10000)
+	@Test(timeout = 30000)
 	public void latch_barrier_ping_pong_test() throws InterruptedException, ExecutionException {
 		
 		LatchBarrier localBarrier = new LatchBarrier();
