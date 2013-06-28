@@ -60,7 +60,7 @@ public class TransparentRemotingTest {
 		Assert.assertEquals(null, ping.pingString("ABC"));
 	}
 
-	@Test(timeout = 2000)
+	@Test(timeout = 10000)
 	public void check_isolate_with_inverting_double_ping() {
 		ViNode node = getIsolateNode();
 		Ping ping = newInvertedServer(node);
@@ -69,7 +69,7 @@ public class TransparentRemotingTest {
 		Assert.assertEquals(-10d, ping.pingDouble(10d));
 	}
 
-	@Test(timeout = 2000)
+	@Test(timeout = 10000)
 	public void check_isolate_with_inverting_long_ping() {
 		ViNode node = getIsolateNode();
 		Ping ping = newInvertedServer(node);
@@ -78,7 +78,7 @@ public class TransparentRemotingTest {
 		Assert.assertEquals(-10l, ping.pingLong(10l));
 	}
 
-	@Test(timeout = 2000)
+	@Test(timeout = 10000)
 	public void check_isolate_with_inverting_int_ping() {
 		ViNode node = getIsolateNode();
 		Ping ping = newInvertedServer(node);
@@ -87,7 +87,7 @@ public class TransparentRemotingTest {
 		Assert.assertEquals(-10, ping.pingInt(10));
 	}
 
-	@Test(timeout = 2000)
+	@Test(timeout = 10000)
 	public void check_isolate_with_inverting_string_ping() {
 		ViNode node = getIsolateNode();
 		Ping ping = newInvertedServer(node);
