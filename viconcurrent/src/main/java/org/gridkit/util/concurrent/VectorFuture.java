@@ -46,6 +46,7 @@ public class VectorFuture<V> implements Future<List<V>> {
 	@SuppressWarnings("unchecked")
 	public VectorFuture(Collection<Future<V>> futures) {
 		vector = new Future[futures.size()];
+		results = new Object[vector.length];
 		int n = 0;
 		for(Future<V> f : futures) {
 			vector[n++] = f;
@@ -141,7 +142,7 @@ public class VectorFuture<V> implements Future<List<V>> {
 
 	@Override
 	public List<V> get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-		long deadline = System.nanoTime();
+		long deadline = System.nanoTime() + unit.toNanos(timeout);
 		long to;
 		while((to = deadline - System.nanoTime()) > 0) {
 			synchronized(this) {

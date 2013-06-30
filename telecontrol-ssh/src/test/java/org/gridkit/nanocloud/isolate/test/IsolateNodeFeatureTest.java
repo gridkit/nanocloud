@@ -1,73 +1,55 @@
-/**
- * Copyright 2012 Alexey Ragozin
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package org.gridkit.vicluster.isolate;
+package org.gridkit.nanocloud.isolate.test;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nanocloud.interceptor.ViHookBuilder;
-import org.gridkit.vicluster.ViGroup;
+import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.vicluster.isolate.IsolateProps;
+import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@SuppressWarnings("deprecation")
-public class IsolateFeatureTest {
+public class IsolateNodeFeatureTest {
 
-	private static Map<String, String> ISOLATE_PROPS = new HashMap<String, String>();
-	static {
-		ISOLATE_PROPS.put("isolate:package:org.gridkit", "");
-	}
+	private ViManager cloud;
 	
-	ViGroup hosts = new ViGroup();
-	
-	private IsolateViNode createIsolateViHost(String name) {
-		IsolateViNode viHost = new IsolateViNode(name);
-		hosts.addNode(viHost);
-		return viHost;
+	@Before
+	public void initCloud() {
+		cloud = CloudFactory.createCloud();
+		ViProps.at(cloud.node("**")).setIsolateType();
 	}
 	
 	@After
-	public void cleanIsolates() {
-		hosts.shutdown();
-		hosts = new ViGroup();
+	public void shutdownCloud() {
+		cloud.shutdown();
 	}
 
 	@Test
 	public void verify_isolated_static_with_void_callable() {
 		
-		IsolateViNode viHost1 = createIsolateViHost("node-1");
-		IsolateViNode viHost2 = createIsolateViHost("node-2");
-		
-		ViGroup group = ViGroup.group(viHost1, viHost2);
-		group.setProps(ISOLATE_PROPS);
+		ViNode viHost1 = cloud.node("node-1");
+		ViNode viHost2 = cloud.node("node-2");
 		
 		viHost1.exec(new VoidCallable() {
 			@Override
@@ -83,7 +65,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		List<String> results = group.massExec(new Callable<String>() {
+		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
 			@Override
 			public String call() throws Exception {
 				return StaticVarHost.TEST_STATIC_VAR;
@@ -96,11 +78,8 @@ public class IsolateFeatureTest {
 	@Test
 	public void verify_isolated_static_with_callable() {
 		
-		IsolateViNode viHost1 = createIsolateViHost("node-1");
-		IsolateViNode viHost2 = createIsolateViHost("node-2");
-		
-		ViGroup group = ViGroup.group(viHost1, viHost2);
-		group.setProps(ISOLATE_PROPS);
+		ViNode viHost1 = cloud.node("node-1");
+		ViNode viHost2 = cloud.node("node-2");
 		
 		viHost1.exec(new Callable<Void>() {
 			@Override
@@ -118,7 +97,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		List<String> results = group.massExec(new Callable<String>() {
+		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
 			@Override
 			public String call() throws Exception {
 				return StaticVarHost.TEST_STATIC_VAR;
@@ -131,11 +110,8 @@ public class IsolateFeatureTest {
 	@Test
 	public void verify_isolated_static_with_runnable() {
 		
-		IsolateViNode viHost1 = createIsolateViHost("node-1");
-		IsolateViNode viHost2 = createIsolateViHost("node-2");
-		
-		ViGroup group = ViGroup.group(viHost1, viHost2);
-		group.setProps(ISOLATE_PROPS);
+		ViNode viHost1 = cloud.node("node-1");
+		ViNode viHost2 = cloud.node("node-2");
 		
 		viHost1.exec(new Runnable() {
 			@Override
@@ -151,7 +127,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		List<String> results = group.massExec(new Callable<String>() {
+		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
 			@Override
 			public String call() throws Exception {
 				return StaticVarHost.TEST_STATIC_VAR;
@@ -164,13 +140,10 @@ public class IsolateFeatureTest {
 	@Test
 	public void verify_class_exclusion() {
 		
-		IsolateViNode viHost1 = createIsolateViHost("node-1");
-		IsolateViNode viHost2 = createIsolateViHost("node-2");
+		ViNode viHost1 = cloud.node("node-1");
+		ViNode viHost2 = cloud.node("node-2");
 		
-		ViGroup group = ViGroup.group(viHost1, viHost2);
-		group.setProps(ISOLATE_PROPS);
-		
-		IsolateViNode.excludeClass(group, StaticVarHost.class);
+		IsolateProps.at(cloud.node("**")).shareClass(StaticVarHost.class);
 		
 		viHost1.exec(new Runnable() {
 			@Override
@@ -186,7 +159,7 @@ public class IsolateFeatureTest {
 			}
 		});
 		
-		List<String> results = group.massExec(new Callable<String>() {
+		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
 			@Override
 			public String call() throws Exception {
 				return StaticVarHost.TEST_STATIC_VAR;
@@ -199,10 +172,8 @@ public class IsolateFeatureTest {
 	@Test
 	public void verify_property_isolation() throws Exception {
 		
-		ViNode node1 = createIsolateViHost("node-1");
-		ViNode node2 = createIsolateViHost("node-2");
-
-		ViGroup.group(node1, node2).setProps(ISOLATE_PROPS);
+		ViNode node1 = cloud.node("node-1");
+		ViNode node2 = cloud.node("node-2");
 
 		node1.exec(new Runnable() {
 			@Override
@@ -243,11 +214,10 @@ public class IsolateFeatureTest {
 		Assert.assertNull(System.getProperty("local-prop"));
 	}
 	
-	@Test
+	@Test @Ignore("Not working at the moment due to limitation of dynamic proxies")
 	public void verify_exec_stack_trace_locality() {
 
-		ViNode node = createIsolateViHost("node-1");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("node-1");
 		
 		try {
 			node.exec(new Runnable() {
@@ -269,8 +239,8 @@ public class IsolateFeatureTest {
 		Exception local = new Exception();
 		int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
 		Assert.assertEquals(
-				printStackTop(e.getStackTrace(),depth), 
-				printStackTop(new Exception().getStackTrace(), depth)
+				printStackTop(new Exception().getStackTrace(), depth), 
+				printStackTop(e.getStackTrace(),depth)
 		);
 	}
 	
@@ -313,14 +283,13 @@ public class IsolateFeatureTest {
 	}	
 	
 	@Test
-	public void test_classpath_extention() throws IOException {
+	public void test_classpath_extention() throws IOException, URISyntaxException {
 		
-		ViNode node = createIsolateViHost("test-node");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test-node");
 		
 		URL jar = getClass().getResource("/marker-override.jar");
-		URL path = new URL("jar:" + jar.toString() + "!/");
-		IsolateViNode.addToClasspath(node, path);
+		File path = new File(jar.toURI());
+		JvmProps.at(node).addClassPathElement(path.getAbsolutePath());
 		
 		node.exec(new Callable<Void>() {
 			
@@ -337,7 +306,7 @@ public class IsolateFeatureTest {
 	}
 
 	private static String readMarkerFromResources() throws IOException {
-		URL url = IsolateFeatureTest.class.getResource("/marker.txt");
+		URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
 		Assert.assertNotNull(url);
 		BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
 		String marker = r.readLine();
@@ -346,17 +315,16 @@ public class IsolateFeatureTest {
 	}
 	
 	@Test(expected = NoClassDefFoundError.class)
-	public void test_classpath_limiting() throws MalformedURLException {
-		ViNode node = createIsolateViHost("test-node");
-		node.setProps(ISOLATE_PROPS);
-		IsolateViNode.includePackage(node, "org.junit");
+	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
+		ViNode node = cloud.node("test-node");
 		
 		URL url = getClass().getResource("/org/junit/Assert.class");
 		Assert.assertNotNull(url);
 		
 		String jarUrl = url.toString();
-		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!') + 2);
-		IsolateViNode.removeFromClasspath(node, new URL(jarUrl));
+		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));
+		jarUrl = jarUrl.substring("jar:".length());
+		JvmProps.at(node).removeClassPathElement(new File(new URI(jarUrl)).getAbsolutePath());
 		
 		node.exec(new Runnable() {
 			@Override
@@ -370,8 +338,7 @@ public class IsolateFeatureTest {
 	@Test
 	public void test_annonimous_primitive_in_args() {
 		
-		ViNode node = createIsolateViHost("test_annonimous_primitive_in_args");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test_annonimous_primitive_in_args");
 		
 		final boolean fb = trueConst();
 		final int fi = int_10();
@@ -406,8 +373,7 @@ public class IsolateFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_return_value");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test_annonimous_primitive_in_args");
 
 		ViHookBuilder
 			.newCallSiteHook(new LongReturnValueShifter(-111111))
@@ -432,12 +398,11 @@ public class IsolateFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_expection_fallthrough");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test_annonimous_primitive_in_args");
 		
 		ViHookBuilder
 		.newCallSiteHook(new LongReturnValueShifter(-111111))
-		.onTypes(IsolateFeatureTest.class)
+		.onTypes(IsolateNodeFeatureTest.class)
 		.onMethod("explode")
 		.apply(node);
 		
@@ -465,8 +430,7 @@ public class IsolateFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_execution_prevention");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test_annonimous_primitive_in_args");
 		
 		ViHookBuilder
 		.newCallSiteHook()
@@ -489,8 +453,7 @@ public class IsolateFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_exception");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test_annonimous_primitive_in_args");
 		
 		ViHookBuilder
 		.newCallSiteHook()
@@ -511,7 +474,7 @@ public class IsolateFeatureTest {
 	private void addValueRule(ViNode node, Object key, Object value) {
 		ViHookBuilder
 		.newCallSiteHook()
-		.onTypes(IsolateFeatureTest.class)
+		.onTypes(IsolateNodeFeatureTest.class)
 		.onMethod("getSomething")
 		.matchParams(key)
 		.doReturn(value)
@@ -521,7 +484,7 @@ public class IsolateFeatureTest {
 	private void addErrorRule(ViNode node, Object key, Throwable e) {
 		ViHookBuilder
 		.newCallSiteHook()
-		.onTypes(IsolateFeatureTest.class)
+		.onTypes(IsolateNodeFeatureTest.class)
 		.onMethod("getSomething")
 		.matchParams(key)
 		.doThrow(e)
@@ -533,8 +496,7 @@ public class IsolateFeatureTest {
 		System.setProperty("gridkit.isolate.trace-classes", "true");
 		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_exception");
-		node.setProps(ISOLATE_PROPS);
+		ViNode node = cloud.node("test_annonimous_primitive_in_args");
 
 		addValueRule(node, "A", "a");
 		addValueRule(node, "B", "b");

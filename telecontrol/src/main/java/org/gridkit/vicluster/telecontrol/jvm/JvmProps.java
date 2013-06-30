@@ -111,6 +111,16 @@ public class JvmProps implements ViNodeProps {
 		return this;
 	}
 
+	public JvmProps addClassPathElement(String string) {
+		config.setProp(CP_ADD + string, string);
+		return this;
+	}
+
+	public JvmProps removeClassPathElement(String string) {
+		config.setProp(CP_REMOVE + string, string);
+		return this;
+	}
+
 	public JvmProps setWorkDir(String workDir) {
 		config.setProp(JVM_WORK_DIR, workDir);
 		return this;

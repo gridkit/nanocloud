@@ -81,7 +81,7 @@ public class IsolateNodeTest {
 			}
 		});
 	}
-	
+
 	private static void assertIsolated(Class<?> c) {
 		ClassLoader cl = c.getClassLoader();
 		Assert.assertTrue(cl.getClass().getName().startsWith(Isolate.class.getName()));

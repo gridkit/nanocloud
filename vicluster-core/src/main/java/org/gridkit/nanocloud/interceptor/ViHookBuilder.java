@@ -12,6 +12,8 @@ import java.util.Set;
 import org.gridkit.lab.interceptor.CutPoint;
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
+import org.gridkit.util.concurrent.BlockingBarrier;
+import org.gridkit.util.concurrent.zerormi.ExportableBarrier;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.isolate.Isolate;
 
@@ -100,6 +102,17 @@ public class ViHookBuilder {
 				filter = new ParamBasedCallFilter();
 			}
 			filter.addParamMatcher(n, new LiteralMatcher(value));
+			return this;
+		}
+		
+		public Builder doBarrier(BlockingBarrier barrier) {
+			if (interceptor != null) {
+				throw new IllegalArgumentException("Interceptor or interception action is already set");
+			}
+			if (!(barrier instanceof ExportableBarrier)) {
+				barrier = new ExportableBarrier(barrier);
+			}
+			interceptor = new BarrierStub(barrier);
 			return this;
 		}
 		
