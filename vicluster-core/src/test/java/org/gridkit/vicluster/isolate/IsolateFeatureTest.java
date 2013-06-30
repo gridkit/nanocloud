@@ -530,8 +530,8 @@ public class IsolateFeatureTest {
 	
 	@Test
 	public void test_instrumentation_handler_staking() {
-		System.setProperty("gridkit.isolate.trace-classes", "true");
-		System.setProperty("gridkit.interceptor.trace", "true");
+//		System.setProperty("gridkit.isolate.trace-classes", "true");
+//		System.setProperty("gridkit.interceptor.trace", "true");
 		
 		ViNode node = createIsolateViHost("test_instrumentation_exception");
 		node.setProps(ISOLATE_PROPS);
@@ -561,7 +561,7 @@ public class IsolateFeatureTest {
 			}
 		});
 	}
-	
+
 	private static Object getSomething(Object key) {
 		return null;
 	}

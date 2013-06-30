@@ -1,3 +1,18 @@
+/**
+ * Copyright 2013 Alexey Ragozin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.gridkit.nanocloud.isolate.test;
 
 import java.io.BufferedReader;
@@ -12,6 +27,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
@@ -527,6 +543,48 @@ public class IsolateNodeFeatureTest {
 	private static Object getSomething(Object key) {
 		return null;
 	}
+	
+	@Test
+	public void test_instrumentation_call_counter() {
+//		System.setProperty("gridkit.isolate.trace-classes", "true");
+//		System.setProperty("gridkit.interceptor.trace", "true");
+		
+		ViNode node = cloud.node("test_instrumentation_exception");
+
+		AtomicLong callA = new AtomicLong();
+		AtomicLong callB = new AtomicLong();
+		
+		ViHookBuilder.newCallSiteHook()
+		.onTypes(IsolateNodeFeatureTest.class)
+		.onMethod("callA", new Class<?>[0])
+		.doCount(callA)
+		.apply(node);
+
+		ViHookBuilder.newCallSiteHook()
+		.onTypes(IsolateNodeFeatureTest.class)
+		.onMethod("callB", new Class<?>[0])
+		.doCount(callB)
+		.apply(node);
+		
+		node.exec(new Callable<Void>() {
+			@Override
+			public Void call() throws Exception {
+				
+				callA();
+				callB();
+				callA();
+				
+				return null;
+			}
+		});
+		
+		Assert.assertEquals(2, callA.get());
+		Assert.assertEquals(1, callB.get());
+	}
+	
+	private static void callA() {};
+
+	private static void callB() {};
 	
 	@SuppressWarnings("serial")
 	public static class LongReturnValueShifter implements Interceptor, Serializable {

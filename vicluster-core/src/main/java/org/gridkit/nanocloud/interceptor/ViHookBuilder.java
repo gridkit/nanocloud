@@ -1,3 +1,18 @@
+/**
+ * Copyright 2013 Alexey Ragozin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.gridkit.nanocloud.interceptor;
 
 import java.io.Serializable;
@@ -8,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.lab.interceptor.CutPoint;
 import org.gridkit.lab.interceptor.Interception;
@@ -132,6 +148,14 @@ public class ViHookBuilder {
 			return this;
 		}
 		
+		public Builder doCount(AtomicLong counter) {
+			if (interceptor != null) {
+				throw new IllegalArgumentException("Interceptor or interception action is already set");
+			}
+			interceptor = new CounterStub(counter);
+			return this;
+		}
+
 		public void apply(ViConfigurable node) {
 			if (interceptor == null) {
 				throw new IllegalArgumentException("Interceptor or interception action is required");

@@ -15,10 +15,36 @@
  */
 package org.gridkit.nanocloud.interceptor;
 
+import java.io.Serializable;
+import java.rmi.Remote;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.gridkit.lab.interceptor.Interception;
+import org.gridkit.lab.interceptor.Interceptor;
 
-public interface CallFilter {
+class CounterStub implements Interceptor, Serializable {
 
-	public boolean matches(Interception call);
+	private static final long serialVersionUID = 20130621L;
 	
+	private RemoteCounter counter;
+
+	public CounterStub(final AtomicLong counter) {
+		this.counter = new RemoteCounter() {
+			@Override
+			public void count() {
+				counter.incrementAndGet();
+			}
+		};
+	}
+
+	@Override
+	public void handle(Interception call) {
+		counter.count();
+	}
+	
+	private static interface RemoteCounter extends Remote {
+		
+		public void count();
+		
+	}
 }
