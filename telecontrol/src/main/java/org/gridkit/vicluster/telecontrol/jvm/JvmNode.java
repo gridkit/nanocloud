@@ -19,10 +19,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -76,7 +76,7 @@ class JvmNode implements ViNode {
 
 	private void initPropperteis() throws IOException {
 
-		final Properties props = new Properties();
+		final Map<String, String> props = new HashMap<String, String>();
 		props.put("vinode.name", name);
 		ReplyProps replay = new ReplyProps() {
 			@Override
@@ -92,7 +92,15 @@ class JvmNode implements ViNode {
 			executor.submit(new Runnable() {
 				@Override
 				public void run() {
-					System.getProperties().putAll(props);
+					for(String key: props.keySet()) {
+						String val = props.get(key);
+						if (val == null) {
+							System.getProperties().remove(key);
+						}
+						else {
+							System.getProperties().put(key, val);
+						}
+					}
 				}
 			}).get();
 		}
