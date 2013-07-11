@@ -399,7 +399,7 @@ public class TunnellerProtocolTest {
 		@Override
 		public void run() {
 			try {
-				for(int i = 0; i != repeat; ++i); {
+				for(int i = 0; i != repeat; ++i) {
 					out.write("Tunneller test file\n".getBytes());
 				}
 				out.close();
