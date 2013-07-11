@@ -40,6 +40,7 @@ public class TunnellerConnection extends TunnellerIO {
 	private long nextProc = 0;
 	private long nextSocket = 0;
 	private long nextAccept = 0;
+	private long nextFile = 0;
 	
 	private DataOutputStream ctrlReq;
 	private DataInputStream ctrlRep;
@@ -47,6 +48,7 @@ public class TunnellerConnection extends TunnellerIO {
 	private Map<Long, ExecContext> execs = new HashMap<Long, ExecContext>();
 	private Map<Long, SocketContext> socks = new HashMap<Long, SocketContext>();
 	private Map<Long, AcceptContext> accepts = new HashMap<Long, AcceptContext>();
+	private Map<Long, FileContext> files = new HashMap<Long, FileContext>();
 	
 	private FutureBox<Void> magicReceived = new FutureBox<Void>();
 	private boolean terminated;
@@ -105,6 +107,20 @@ public class TunnellerConnection extends TunnellerIO {
 		socks.put(sockId, ctx);
 		try {
 			sendBind(sockId);
+		} catch (IOException e) {
+			shutdown();
+			throw new IOException("Broken tunnel");
+		}
+	}
+
+	public synchronized void pushFile(String path, FileHandler handler) throws IOException {
+		long fileId = nextFile++;
+		FileContext ctx = new FileContext();
+		ctx.chanId = newChannelId();
+		ctx.handler = handler;
+		files.put(fileId, ctx);
+		try {
+			sendPush(fileId, path, ctx.chanId);
 		} catch (IOException e) {
 			shutdown();
 			throw new IOException("Broken tunnel");
@@ -203,7 +219,7 @@ public class TunnellerConnection extends TunnellerIO {
 		sendAccept(ac.context.sockId, ac.cmdId,inId, outId);		
 	}
 	
-	private void sendExec(long procId, String wd, String[] command, String[] env, long stdIn, long stdOut, long stdErr) throws IOException {
+	private synchronized void sendExec(long procId, String wd, String[] command, String[] env, long stdIn, long stdOut, long stdErr) throws IOException {
 		ExecCmd cmd = new ExecCmd();
 		cmd.procId = procId;
 		cmd.workingDir = wd;
@@ -229,6 +245,15 @@ public class TunnellerConnection extends TunnellerIO {
 	private synchronized void sendBind(long sockId) throws IOException {
 		BindCmd cmd = new BindCmd();
 		cmd.sockId = sockId;
+		
+		cmd.write(ctrlReq);
+	}
+
+	private synchronized void sendPush(long fileId, String path, long outId) throws IOException {
+		FilePushCmd cmd = new FilePushCmd();
+		cmd.fileId = fileId;
+		cmd.path = path;
+		cmd.inId = outId;
 		
 		cmd.write(ctrlReq);
 	}
@@ -285,6 +310,14 @@ public class TunnellerConnection extends TunnellerIO {
 		InputStream soIn;
 		OutputStream soOut;
 	}
+
+	private static class FileContext {
+
+		String rpath;
+		FileHandler handler;
+		long chanId;
+		OutputStream channel;		
+	}
 	
 	private class Control extends Thread {
 		
@@ -303,6 +336,7 @@ public class TunnellerConnection extends TunnellerIO {
 							case ExitCodeCmd.ID: processExitCode(); break;
 							case BoundCmd.ID: processBound(); break;
 							case AcceptedCmd.ID: processAccepted(); break;
+							case FilePushResponseCmd.ID: processFileResponse(); break;
 							default:
 								System.out.println("ERROR: Unexpected command: " + cmd);
 								break;
@@ -333,6 +367,43 @@ public class TunnellerConnection extends TunnellerIO {
 				addAcceptor(ctx.context);
 			}			
 			ctx.context.handler.accepted(cmd.remoteHost, cmd.remotePort, ctx.soIn, ctx.soOut);
+		}
+
+		private void processFileResponse() throws IOException {
+			FilePushResponseCmd cmd = new FilePushResponseCmd();
+			cmd.read(ctrlRep);
+			
+			if (cmd.error.length() == 0 && cmd.size == -1) {
+				// request accepted
+				FileContext ctx;
+				synchronized(TunnellerConnection.this) {
+					ctx = files.get(cmd.fileId);
+					if (ctx == null) {
+						throw new RuntimeException("Unknown file ID: " + cmd.fileId);
+					}
+				}
+				ctx.rpath = cmd.path;
+				ctx.channel = newOutbound(ctx.chanId);
+				ctx.handler.accepted(ctx.channel);
+			}
+			else {
+				FileContext ctx;
+				synchronized(TunnellerConnection.this) {
+					ctx = files.remove(cmd.fileId);
+					if (ctx == null) {
+						throw new RuntimeException("Unknown file ID: " + cmd.fileId);
+					}
+				}
+				ctx.rpath = cmd.path;
+				close(ctx.channel);
+				
+				if (cmd.error.length() != 0) {
+					ctx.handler.failed(ctx.rpath, cmd.error);
+				}
+				else {
+					ctx.handler.confirmed(ctx.rpath, cmd.size);
+				}
+			}
 		}
 
 		private void processBound() throws IOException {
@@ -390,6 +461,16 @@ public class TunnellerConnection extends TunnellerIO {
 		public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr);
 
 		public void finished(int exitCode);
+		
+	}
+
+	public interface FileHandler {
+		
+		public void accepted(OutputStream out);
+		
+		public void confirmed(String path, long size);
+
+		public void failed(String path, String error);
 		
 	}
 

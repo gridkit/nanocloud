@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -91,6 +92,7 @@ public class Tunneller extends TunnellerIO {
 					case KillCmd.ID: processKill(); break;
 					case BindCmd.ID: processBind(); break;
 					case AcceptCmd.ID: processAccept(); break;
+					case FilePushCmd.ID: processPushFile(); break;
 					default:
 						System.out.println("ERROR: Unexpected command: " + cmd);
 						break;
@@ -151,7 +153,40 @@ public class Tunneller extends TunnellerIO {
 		addChannel(soIn);
 		addChannel(soOut);
 		
-		startAcceptor(cmd.cmdId, sockets.get(cmd.sockId), soIn.inbound, soOut.outbound);}
+		startAcceptor(cmd.cmdId, sockets.get(cmd.sockId), soIn.inbound, soOut.outbound);
+	}
+
+	private void processPushFile() throws IOException {
+		FilePushCmd cmd = new FilePushCmd();
+		cmd.read(ctrlReq);
+		
+		String error = "";
+		long size = -1;
+		
+		String path = cmd.path;
+		try {
+			path = transformPath(path);
+			File file = new File(path);
+			if (file.exists()) {
+				size = file.length();
+				if (file.isDirectory()) {
+					error = "Target path is directory";
+				}
+			}
+			else {
+				FileWriter writer = new FileWriter(cmd.fileId, path);
+				Channel soIn = new Channel(cmd.inId, Direction.INBOUND, 16 << 10); 
+				addChannel(soIn);
+				writer.in = soIn.inbound;
+				writer.start();			
+			}
+		}
+		catch(IOException e) {
+			error = e.toString();
+		}
+		
+		sendFileResponse(cmd.fileId, path, size, error);
+	}
 	
 	private void startProc(long procId, String workingDir, String command[],	String[] env, InputStream stdIn, OutputStream stdOut, OutputStream stdErr) {
 		try {
@@ -223,6 +258,20 @@ public class Tunneller extends TunnellerIO {
 		}		
 	}
 
+	synchronized void sendFileResponse(long fileId, String path, long size, String error) {
+		try {
+			FilePushResponseCmd cmd = new FilePushResponseCmd();
+			cmd.fileId = fileId;
+			cmd.path = path;
+			cmd.size = size;
+			cmd.error = error;
+			cmd.write(ctrlRep);
+			writePending();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}		
+	}
+
 	void close(Closeable c) {
 		try {
 			if (c != null) {
@@ -275,6 +324,23 @@ public class Tunneller extends TunnellerIO {
 		}
 	}
 
+	private static String transformPath(String path) throws IOException {
+		if (path.startsWith("~/")) {
+			String home = System.getProperty("user.home");
+			File fp = new File(new File(home), path.substring("~/".length()));
+			return fp.getCanonicalPath();
+		}
+		else if (path.startsWith("{tmp}/")) {
+			File tmp = File.createTempFile("mark", "").getAbsoluteFile();
+			tmp.delete();
+			File fp = new File(tmp.getParentFile(), path.substring("{tmp}/".length()));
+			return fp.getCanonicalPath();
+		}
+		else {
+			return new File(path).getAbsolutePath();
+		}
+	}
+	
 	private class ProcessHandler extends Thread {
 
 		final long procId;
@@ -402,5 +468,61 @@ public class Tunneller extends TunnellerIO {
 			writePending();
 		}				
 	}
-	
+
+	private class FileWriter extends Thread {
+		
+		final long fileId;
+		final File targetFile;
+		final File tempFile;
+		final FileOutputStream fos;
+		InputStream in;
+		
+		
+		public FileWriter(long fileId, String path) throws IOException {
+			this.fileId = fileId;
+			targetFile = new File(path);
+			if (targetFile.getParentFile() != null) {
+				targetFile.getParentFile().mkdirs();
+			}
+			
+			tempFile = File.createTempFile(targetFile.getName() + ".", "", targetFile.getParentFile());
+			fos = new FileOutputStream(tempFile);
+			
+			setDaemon(true);
+			setName("FILE[" + path + "]");
+		}
+		
+		@Override
+		public void run() {
+			byte[] buffer = new byte[8 << 10];
+			try {
+				while(true) {
+					int n = in.read(buffer);
+					if (n < 0) {
+						break;
+					}
+					else {
+						fos.write(buffer, 0, n);
+					}
+				}
+				close(fos);
+				close(in);
+				tempFile.renameTo(targetFile);
+				if (tempFile.exists()) {
+					tempFile.delete();
+				}
+			} catch (IOException e) {
+				close(fos);
+				close(in);
+				sendFileResponse(fileId, targetFile.getPath(), -1, e.toString());
+				return;
+			}
+			if (targetFile.exists() && !targetFile.isDirectory()) {
+				sendFileResponse(fileId, targetFile.getPath(), targetFile.length(), "");
+			}
+			else {
+				sendFileResponse(fileId, targetFile.getPath(), -1, "Failed to rename target file");
+			}
+		}				
+	}	
 }

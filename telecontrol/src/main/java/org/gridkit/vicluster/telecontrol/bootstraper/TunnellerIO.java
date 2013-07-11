@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Map.Entry;
 import java.util.Arrays;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
@@ -46,6 +46,8 @@ class TunnellerIO {
 	private static final int CMD_BOUND = 6;
 	private static final int CMD_ACCEPT = 7;
 	private static final int CMD_ACCEPTED = 8;
+	private static final int CMD_FILE_PUSH = 9;
+	private static final int CMD_FILE_PUSH_RESPONSE = 10;
 	
 	enum Direction {INBOUND, OUTBOUND}
 
@@ -220,7 +222,54 @@ class TunnellerIO {
 			dos.writeInt(remotePort);
 		}
 	}
-	
+
+	static class FilePushCmd {
+		
+		static final int ID = CMD_FILE_PUSH;
+		
+		long fileId;
+		String path;
+		long inId;
+		
+		public void read(DataInputStream dis) throws IOException {
+			fileId = dis.readLong();
+			path = dis.readUTF();
+			inId = dis.readLong();
+		}
+		
+		public void write(DataOutputStream dos) throws IOException {
+			dos.writeInt(ID);
+			dos.writeLong(fileId);
+			dos.writeUTF(path);
+			dos.writeLong(inId);
+		}
+	}
+
+	static class FilePushResponseCmd {
+		
+		static final int ID = CMD_FILE_PUSH_RESPONSE;
+		
+		long fileId;
+		String path;
+		long size;
+		String error;
+		
+		public void read(DataInputStream dis) throws IOException {
+			fileId = dis.readLong();
+			path = dis.readUTF();
+			size = dis.readLong();
+			error = dis.readUTF();
+		}
+		
+		public void write(DataOutputStream dos) throws IOException {
+			dos.writeInt(ID);
+			dos.writeLong(fileId);
+			dos.writeUTF(path);
+			dos.writeLong(size);
+			dos.writeUTF(error);
+		}
+	}
+
 	private static String[] readStringArray(DataInputStream dis) throws IOException {
 		int n = dis.readShort();
 		String[] command = new String[n];
