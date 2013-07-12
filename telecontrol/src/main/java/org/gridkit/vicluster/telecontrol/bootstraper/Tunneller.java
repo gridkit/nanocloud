@@ -507,7 +507,9 @@ public class Tunneller extends TunnellerIO {
 				}
 				close(fos);
 				close(in);
-				tempFile.renameTo(targetFile);
+				if (!targetFile.exists()) {
+					tempFile.renameTo(targetFile);
+				}
 				if (tempFile.exists()) {
 					tempFile.delete();
 				}
