@@ -60,8 +60,20 @@ public class ClasspathUtils {
 
 	public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
 		List<URL> result = new ArrayList<URL>();
-		for(URL url: classLoader.getURLs()) {
-			addEntriesFromManifest(result, url);
+		while(true) {
+			for(URL url: classLoader.getURLs()) {
+				addEntriesFromManifest(result, url);
+			}		
+			ClassLoader cls = classLoader.getParent();
+			if (cls instanceof URLClassLoader) {
+				if (cls.getClass().getName().endsWith("$ExtClassLoader")) {
+					break;
+				}
+				classLoader = (URLClassLoader) cls;
+			}
+			else {
+				break;
+			}
 		}
 		return result;
 	}

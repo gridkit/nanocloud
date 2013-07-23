@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -73,6 +74,7 @@ public class Classpath {
 	}
 	
 	private static void fillClasspath(List<ClasspathEntry> classpath, Collection<URL> urls) {
+		// TODO jars located under JDK/JRE folder should be excluded
 		for(URL url: urls) {
 			try {
 				ClasspathEntry entry = newEntry(url);
@@ -92,7 +94,7 @@ public class Classpath {
 	private static ClasspathEntry newEntry(URL url) throws IOException, URISyntaxException {
 		ClasspathEntry entry = new ClasspathEntry();
 		entry.url = url;
-		File file = new File(url.toURI());
+		File file = uriToFile(url.toURI());
 		if (file.isFile()) {
 			entry.file = file;
 			entry.filename = file.getName();
@@ -116,6 +118,24 @@ public class Classpath {
 		return entry;
 	}
 	
+	private static File uriToFile(URI uri) {
+		if ("file".equals(uri.getScheme())) {
+			if (uri.getAuthority() == null) {
+				return new File(uri);
+			}
+			else {
+				// try to fix broken windows network path
+				String path = "file:////" + uri.getAuthority() + "/" + uri.getPath();
+				try {
+					return new File(new URI(path));
+				} catch (URISyntaxException e) {
+					return new File(uri);
+				}
+			}
+		}
+		return new File(uri);
+	}
+
 	public static class ClasspathEntry implements FileBlob {
 		
 		private URL url;
