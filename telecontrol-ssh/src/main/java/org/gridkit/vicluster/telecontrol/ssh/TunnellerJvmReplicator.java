@@ -266,12 +266,12 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 				int excode = exec.getExitStatus();				
 				exec.disconnect();
 				if (excode != 0) {
-					throw new RuntimeException("Failed to execute \"" + cmd + "\" at " + rconfig.getAccount() + "@" + rconfig.getHost());
+					throw new RuntimeException("Failed to execute \"" + cmd + "\", host: " + rconfig.getAccount() + "@" + rconfig.getHost());
 				}
 				return;
 			}
 		}
-		throw new RuntimeException("Timedout executing \"" + cmd + "\" at " + rconfig.getAccount() + "@" + rconfig.getHost());
+		throw new RuntimeException("Timedout executing \"" + cmd + "\", host: " + rconfig.getAccount() + "@" + rconfig.getHost());
 	}
 	
 	private void startTunneler() throws JSchException, IOException {
