@@ -78,6 +78,21 @@ public class BackgroundStreamDumper implements Runnable {
 		}
 	}
 	
+	public static int pullStream(byte[] buffer, InputStream is, OutputStream os) throws IOException {
+		int s = is.read(buffer, 0, 0);
+		if (s < 0) {
+			return s;
+		}
+		else if (is.available() > 0) {
+			int n = is.read(buffer);
+			os.write(buffer, 0, n);
+			return n;
+		}
+		else {
+			return 0;
+		}
+	}
+	
 	@Override
 	public void run() {
 		byte[] buffer = new byte[1 << 14];

@@ -209,7 +209,74 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 //		}
 	}
 
+	private void verifyJavaVersion() throws JSchException, IOException {
+		ChannelExec exec = (ChannelExec) session.openChannel("exec");
+		
+		String cmd = rconfig.getJavaExec() + " -Xms32m -Xmx32m -version";
+		exec.setCommand(cmd);
+		
+		InputStream cin = exec.getInputStream();
+		InputStream cerr = exec.getErrStream();
+		OutputStream cout = exec.getOutputStream();
+		
+		PrintStream out = new LoggerPrintStream(createTunnellerOutputLogger(), Level.INFO);
+
+		// unfortunately Pty will merge out and err, so it should be disabled
+		exec.setPty(false);
+		exec.connect();
+		
+		cout.close();
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+		byte[] buf = new byte[4 << 10];
+		while(deadline > System.nanoTime()) {
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+			if (cout != null) {
+				cout.close();
+			}
+			if (cin != null) {
+				while(true) {
+					int n = BackgroundStreamDumper.pullStream(buf, cin, out);
+					if (n < 0) {
+						cin = null;
+						break;
+					}
+					if (n == 0) {
+						break;
+					}
+				}
+			}
+			if (cerr != null) {
+				while(true) {
+					int n = BackgroundStreamDumper.pullStream(buf, cerr, out);
+					if (n < 0) {
+						cerr = null;
+						break;
+					}
+					if (n == 0) {
+						break;
+					}
+				}
+			}
+			if (cin == null && cerr == null) {
+				// ok
+				int excode = exec.getExitStatus();				
+				exec.disconnect();
+				if (excode != 0) {
+					throw new RuntimeException("Failed to execute \"" + cmd + "\" at " + rconfig.getAccount() + "@" + rconfig.getHost());
+				}
+				return;
+			}
+		}
+		throw new RuntimeException("Timedout executing \"" + cmd + "\" at " + rconfig.getAccount() + "@" + rconfig.getHost());
+	}
+	
 	private void startTunneler() throws JSchException, IOException {
+		verifyJavaVersion();
+		
 		ChannelExec exec = (ChannelExec) session.openChannel("exec");
 		
 		String cmd = rconfig.getJavaExec() + " -Xms32m -Xmx32m -jar " + tunnellerJarPath;
