@@ -90,7 +90,9 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 	}
 	
 	public void apply(ViConfigurable target) {
-		target.setProps(props);
+		if (!props.isEmpty()) {
+			target.setProps(props);
+		}
 		for(HookInfo hi : startupHooks.values()) {
 			target.addStartupHook(hi.name, hi.hook, hi.override);
 		}
