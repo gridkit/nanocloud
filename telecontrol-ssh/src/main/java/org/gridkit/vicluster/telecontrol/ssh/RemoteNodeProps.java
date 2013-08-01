@@ -37,6 +37,8 @@ public class RemoteNodeProps implements ViNodeProps {
 
 	public static String PASSWORD = "remote:password";
 
+	public static String SSH_AUTH_METHODS = "remote:ssh-auth-methods";
+
 	public static String SSH_KEY_FILE = "remote:ssh-key-file";
 
 	public static String SSH_CREDENTIAL_FILE = "remote:ssh-credential-file";

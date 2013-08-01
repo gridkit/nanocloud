@@ -18,6 +18,8 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.gridkit.internal.com.jcraft.jsch.JSch;
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
@@ -37,6 +39,7 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 	private String user;
 	private String password;
 	private String passphrase;
+	private Map<String, String> config = new HashMap<String, String>();
 	
 	public SimpleSshSessionProvider() {
 		this(new JSch());
@@ -80,6 +83,10 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		}
 	}
 	
+	public void setConfig(String key, String value) {
+		config.put(key, value);
+	}
+	
 	@Override
 	public Session getSession(String host, String account) throws JSchException {
 		if (account != null && !user.equals(account)) {
@@ -97,6 +104,9 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 				
 		Session session = jsch.getSession(user, host, port);
 		session.setConfig("StrictHostKeyChecking", "no");
+		for(String key: config.keySet()) {
+			session.setConfig(key, config.get(key));
+		}
 		session.setDaemonThread(true);
 		session.setUserInfo(ui);		
 		session.connect();

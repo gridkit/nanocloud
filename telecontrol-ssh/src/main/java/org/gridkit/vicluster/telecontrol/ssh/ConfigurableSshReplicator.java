@@ -159,6 +159,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			s.account = overrideUser(s.account, nodeConfig.getProp(RemoteNodeProps.ACCOUNT));
 			s.password = sshconf.get(s.account + "@" + s.host + "!password");
 			s.keyFile = sshconf.get(s.account + "@" + s.host + "!private-key");
+			s.authMethods = sshconf.get(s.account + "@" + s.host + "!auth-methods");
 			String hostOverride = sshconf.get(s.account + "@" + s.host + "!hostname");
 			if (hostOverride != null) {
 				s.host = hostOverride;
@@ -324,6 +325,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		String account;
 		String password;
 		String keyFile;
+		String authMethods;
 		String javaExec;
 		String jarCachePath;
 		
@@ -333,6 +335,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			config.put(RemoteNodeProps.ACCOUNT, account);
 			config.put(RemoteNodeProps.PASSWORD, password);
 			config.put(RemoteNodeProps.SSH_KEY_FILE, keyFile);
+			config.put(RemoteNodeProps.SSH_AUTH_METHODS, authMethods);
 			config.put(RemoteNodeProps.JAVA_EXEC, javaExec);
 			config.put(RemoteNodeProps.JAR_CACHE_PATH, jarCachePath);
 			return config;

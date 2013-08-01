@@ -26,6 +26,7 @@ class SshRemotingConfig {
 	
 	private String password;
 	private String keyfile;
+	private String authMethods;
 	
 	public SshRemotingConfig() {		
 	}
@@ -48,6 +49,9 @@ class SshRemotingConfig {
 		}
 		if (props.containsKey(RemoteNodeProps.PASSWORD)) {
 			password = props.get(RemoteNodeProps.PASSWORD);
+		}
+		if (props.containsKey(RemoteNodeProps.SSH_AUTH_METHODS)) {
+			authMethods = props.get(RemoteNodeProps.SSH_AUTH_METHODS);
 		}
 	}
 	
@@ -139,5 +143,13 @@ class SshRemotingConfig {
 
 	public void setKeyFile(String keyfile) {
 		this.keyfile = keyfile;
+	}
+
+	public String getAuthMethods() {
+		return authMethods;
+	}
+
+	public void setAuthMethods(String authMethods) {
+		this.authMethods = authMethods;
 	}
 }
