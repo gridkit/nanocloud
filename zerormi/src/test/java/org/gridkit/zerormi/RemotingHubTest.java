@@ -26,6 +26,7 @@ import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class RemotingHubTest {
@@ -125,7 +126,7 @@ public class RemotingHubTest {
 		Assert.assertEquals("123", result);		
 	}
 	
-	@Test
+	@Test @Ignore
 	public void test_resource_leak() throws InterruptedException, ExecutionException {
 
 		SessionEventListener listener = new SessionEventLogger();		

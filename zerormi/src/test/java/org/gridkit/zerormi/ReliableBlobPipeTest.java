@@ -37,8 +37,8 @@ public class ReliableBlobPipeTest {
 		
 		syncSocketA.bind(syncSocketB);
 
-		sideA = new ReliableBlobPipe("sideA", new Superviser());
-		sideB = new ReliableBlobPipe("sideB", new Superviser());
+		sideA = new ReliableBlobPipe("sideA", new TestSuperviser());
+		sideB = new ReliableBlobPipe("sideB", new TestSuperviser());
 	
 		bufferA = new BlobBuffer();
 		bufferB = new BlobBuffer();
@@ -305,7 +305,7 @@ public class ReliableBlobPipeTest {
 		}
 	}
 	
-	private static class Superviser implements ReliableBlobPipe.PipeSuperviser {
+	private static class TestSuperviser implements Superviser, ReliableBlobPipe.PipeSuperviser {
 
 		@Override
 		public void onWarning(SuperviserEvent event) {

@@ -113,7 +113,7 @@ public class RmiSocketConnectionTest {
 		}
 		Thread.sleep(10);
 		if (taskService != null) {
-			((SimpleTaskService)taskService).shutdown();
+			((TaskService.Component)taskService).shutdown();
 		}
 	}
 	

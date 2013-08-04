@@ -18,6 +18,7 @@ import org.gridkit.bjtest.BetterParameterized;
 import org.gridkit.bjtest.BetterParameterized.Parameters;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.zerormi.ByteStream.Duplex;
+import org.gridkit.zerormi.RmiChannel2.RmiChannel2Superviser;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,8 +76,8 @@ public class RmiPipelineTest {
 		
 		syncSocketA.bind(syncSocketB);
 
-		pipeA = new ReliableBlobPipe("sideA", new Superviser());
-		pipeB = new ReliableBlobPipe("sideB", new Superviser());
+		pipeA = new ReliableBlobPipe("sideA", new TestSuperviser());
+		pipeB = new ReliableBlobPipe("sideB", new TestSuperviser());
 
 		pumpA = new PumpedWriteAdapter(4 << 10, syncSocketA);
 		pumpB = new PumpedWriteAdapter(4 << 10, syncSocketB);
@@ -95,9 +96,9 @@ public class RmiPipelineTest {
 			}
 		};
 		
-		sideA = new RmiChannel2("sideA", new Superviser(), cp, directExecutor);
+		sideA = new RmiChannel2("sideA", new TestSuperviser(), cp, directExecutor);
 
-		sideB = new RmiChannel2("sideB", new Superviser(), cp, Executors.newCachedThreadPool());
+		sideB = new RmiChannel2("sideB", new TestSuperviser(), cp, Executors.newCachedThreadPool());
 		
 		RmiMarshalStack rmsA = new RmiMarshalStack(new SmartRmiMarshaler(), sideA);
 		RmiMarshalStack rmsB = new RmiMarshalStack(new SmartRmiMarshaler(), sideB);
@@ -464,7 +465,7 @@ public class RmiPipelineTest {
 		new AnyThrow().<RuntimeException>throwAny(e);
 	}
 	
-	private static class Superviser implements ReliableBlobPipe.PipeSuperviser {
+	private static class TestSuperviser implements Superviser, ReliableBlobPipe.PipeSuperviser, RmiChannel2Superviser {
 
 		@Override
 		public void onWarning(SuperviserEvent event) {
@@ -485,6 +486,26 @@ public class RmiPipelineTest {
 		public void onStreamRejected(ReliableBlobPipe pipe, Duplex stream,	Exception e) {
 			System.out.println("Stream rejected: " + e);
 			e.printStackTrace();
+		}
+		
+		@Override
+		public void onFatalError(RmiChannel2 channel, Throwable e) {
+			onFatalError(SuperviserEvent.newUnexpectedError(channel, e));
+		}
+
+		@Override
+		public void onFatalError(RmiChannel2 channel, String message) {
+			onFatalError(SuperviserEvent.newUnexpectedError(channel, message));
+		}
+
+		@Override
+		public void onDestroyFinished(RmiChannel2 channel) {
+			onTermination(SuperviserEvent.newClosedEvent(channel));
+		}
+
+		@Override
+		public void onDestroyInitiated(RmiChannel2 channel) {
+			// ignore
 		}
 	}
 }

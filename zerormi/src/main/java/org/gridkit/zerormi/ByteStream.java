@@ -2,7 +2,6 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
 import java.nio.ByteBuffer;
 
 import org.gridkit.util.concurrent.Box;

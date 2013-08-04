@@ -633,9 +633,13 @@ public class ReliableBlobPipe implements DuplexBlobPipe, ByteStream.DuplexConsum
 		}
 	}
 
-	public interface PipeSuperviser extends Superviser {
+	public interface PipeSuperviser {
 		
 		public void onStreamRejected(ReliableBlobPipe pipe, ByteStream.Duplex stream, Exception e);
+
+		public void onFatalError(SuperviserEvent newUnexpectedError);
+
+		public void onTermination(SuperviserEvent newClosedEvent);
 		
 	}
 	

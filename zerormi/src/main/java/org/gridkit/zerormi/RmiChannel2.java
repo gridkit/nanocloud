@@ -33,11 +33,21 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.zerormi.Superviser.SuperviserEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
+ * {@link RmiChannel2} is responsible for handling
+ * low level RMI logic over reliable duplex binary
+ * channel.
+ * </p>
+ * <p>
+ * This includes:
+ * <li>exposing remote execution service</li>
+ * <li>managing pending call table</li>
+ * <li>manafing export table</li>
+ * </p>
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
@@ -50,7 +60,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     private static AtomicLong CALL_COUNTER = new AtomicLong(0L);
 
     private final String name;
-    private final Superviser superviser;
+    private final RmiChannel2Superviser superviser;
     private final ClassProvider classProvider;
     private final Executor defaultCallDispatcher;
 
@@ -68,7 +78,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 
     private volatile boolean terminated = false;
 
-    public RmiChannel2(String name, Superviser superviser, ClassProvider provider, Executor callDispatcher) {
+    public RmiChannel2(String name, RmiChannel2Superviser superviser, ClassProvider provider, Executor callDispatcher) {
         this.name = name;
         this.superviser = superviser;
     	this.classProvider = provider;
@@ -121,6 +131,11 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     }
 
     public void destroy() {
+    	if (terminated) {
+    		return;
+    	}
+    	
+    	superviser.onDestroyInitiated(this);
 
     	synchronized(this) {
 	    	if (terminated) {
@@ -135,7 +150,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 	        remoteInstanceProxys.clear();
 	        for (OutboundCallFuture context : remoteReturnWaiters.values()) {
 	        	try {
-	        		context.setError(newChannelClosedExceptions());
+	        		context.setError(newChannelClosedException());
 	        	}
 	        	catch(Exception e) {
 	        		// ignore
@@ -143,15 +158,15 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 	        }
 	        remoteReturnWaiters.clear();
     	}
-    	superviser.onTermination(SuperviserEvent.newClosedEvent(this));
+    	superviser.onDestroyFinished(this);
     }
 
-	private RemoteException newChannelClosedExceptions() {
+	private RemoteException newChannelClosedException() {
 		return new RemoteException("Channel [" + name + "] has been closed");
 	}
 
     private void handleFatalInternalError(Throwable e) {    	
-		superviser.onFatalError(SuperviserEvent.newUnexpectedError(this, e));
+		superviser.onFatalError(this, e);
         destroy();
 	}
 
@@ -170,7 +185,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 			}
 		}
 		FutureBox<Void> box = new FutureBox<Void>();
-		box.setError(newChannelClosedExceptions());
+		box.setError(newChannelClosedException());
 		return box;
     }
 
@@ -253,7 +268,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     		verifyMethod(target, m);
     	}
     	catch(Exception e) {
-    		return FutureBox.errorFuture(new NullPointerException());
+    		return FutureBox.errorFuture(e);
     	}
 //    	if (isRemoteProxy(target)) {
 //    		RemoteInstance ri = ((RemoteStub)Proxy.getInvocationHandler(target)).getRemoteInstance();
@@ -281,7 +296,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     	final long callId;
     	synchronized(this) {
 	    	if (terminated) {
-	    		future.setError(newChannelClosedExceptions());
+	    		future.setError(newChannelClosedException());
 	    		return;
 	    	}
 			callId = future.remoteCall.getCallId();
@@ -311,7 +326,7 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
     private synchronized void abortCall(long callId, Throwable e) {
     	OutboundCallFuture future = remoteReturnWaiters.remove(callId);
     	if (future == null) {
-    		superviser.onFatalError(SuperviserEvent.newUnexpectedError(this, "Call future is missing " + callId));
+    		superviser.onFatalError(this, "Call future is missing " + callId);
     	}
     	else {
     		future.setError(e);
@@ -518,5 +533,16 @@ public class RmiChannel2 implements RmiInvocationHandler, RmiMarshaler {
 				setData(remoteReturn.ret);
 			}			
 		}
+    }
+    
+    public interface RmiChannel2Superviser {
+
+		void onFatalError(RmiChannel2 source, Throwable e);
+
+		void onFatalError(RmiChannel2 source, String string);
+
+		void onDestroyInitiated(RmiChannel2 source);
+
+		void onDestroyFinished(RmiChannel2 source);
     }
 }

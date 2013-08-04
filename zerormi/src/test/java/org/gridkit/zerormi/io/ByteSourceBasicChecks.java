@@ -176,7 +176,12 @@ public abstract class ByteSourceBasicChecks extends Assert {
 	
 	private void readUntilEof(ByteBuffer wb) throws IOException {
 		while(source().available() >= 0) {
-			source().pull(wb);
+			try {
+				source().pull(wb);
+			}
+			catch(EOFException e) {
+				break;
+			}
 		}
 	}
 
@@ -184,7 +189,12 @@ public abstract class ByteSourceBasicChecks extends Assert {
 		StringBuilder sb = new StringBuilder();
 		while(source().available() >= 0) {
 			wb.clear();
-			source().pull(wb);
+			try {
+				source().pull(wb);
+			}
+			catch(EOFException e) {
+				break;
+			}
 			wb.flip();
 			if (wb.remaining() > 0) {
 				byte[] bb = new byte[wb.remaining()];

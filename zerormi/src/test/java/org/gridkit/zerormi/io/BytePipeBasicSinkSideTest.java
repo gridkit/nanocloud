@@ -52,6 +52,7 @@ public class BytePipeBasicSinkSideTest extends ByteSinkBasicChecks {
 	
 	@Test
 	public void async_sink_termination() throws IOException {
+		// TODO test is falling sporadically
 		super.async_sink_termination();
 	}
 

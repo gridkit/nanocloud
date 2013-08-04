@@ -60,7 +60,7 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 		}
 		if (!buffer.isDirect() && !buffer.isReadOnly()) {
 			int n = bufferRead(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-			if (n > 0) {
+			if (n >= 0) {
 				buffer.position(buffer.position() + n);
 			}
 			else {
@@ -261,15 +261,19 @@ public class ByteStreamPipe implements ByteStreamPinPair {
 		}
 
 		@Override
-		public synchronized void push(ByteBuffer data) throws IOException {
-			if (!active) {
-				throw new ClosedStreamException();
+		public void push(ByteBuffer data) throws IOException {
+			synchronized(this) {
+				if (!active) {
+					throw new ClosedStreamException();
+				}
 			}
 			try {
 				bufferWrite(data);
 			}
 			catch(IOException e) {
-				active = false;
+				synchronized(this) {
+					active = false;
+				}
 				throw e;
 			}
 		}

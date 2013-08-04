@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.gridkit.zerormi.ByteStream.Duplex;
+import org.gridkit.zerormi.RmiChannel2.RmiChannel2Superviser;
 import org.slf4j.LoggerFactory;
 
 
@@ -90,7 +91,7 @@ public class RmiFactory {
 		
 	}
 	
-	private static class StopAllSuperviser implements ReliableBlobPipe.PipeSuperviser {
+	private static class StopAllSuperviser implements Superviser, ReliableBlobPipe.PipeSuperviser, RmiChannel2Superviser {
 
 		private List<Object> components = new ArrayList<Object>();
 		private boolean terminated;
@@ -129,6 +130,26 @@ public class RmiFactory {
 				}
 			}
 			stopAll();
+		}
+
+		@Override
+		public void onFatalError(RmiChannel2 channel, Throwable e) {
+			onFatalError(SuperviserEvent.newUnexpectedError(channel, e));
+		}
+
+		@Override
+		public void onFatalError(RmiChannel2 channel, String message) {
+			onFatalError(SuperviserEvent.newUnexpectedError(channel, message));
+		}
+
+		@Override
+		public void onDestroyFinished(RmiChannel2 channel) {
+			onTermination(SuperviserEvent.newClosedEvent(channel));
+		}
+
+		@Override
+		public void onDestroyInitiated(RmiChannel2 channel) {
+			// ignore
 		}
 
 		private void logInfo(SuperviserEvent event) {
@@ -196,4 +217,6 @@ public class RmiFactory {
 			throw new RuntimeException("Cannot stop " + obj);
 		}
 	}
+	
+	
 }
