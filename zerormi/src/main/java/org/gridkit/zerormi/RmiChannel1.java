@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
@@ -254,12 +255,11 @@ public class RmiChannel1 implements RmiChannel {
         }
 
         while (true) {
-            synchronized (this) {
-                if (terminated) {
-                    throw new InterruptedException("Terminated");
-                }
+            if (terminated) {
+            	throw new RemoteException("Connection closed");
             }
-            LockSupport.park();
+            long period = TimeUnit.SECONDS.toNanos(5);
+            LockSupport.parkNanos(period);
             if (context.result != null) {
                 break;
             } else if (terminated) {

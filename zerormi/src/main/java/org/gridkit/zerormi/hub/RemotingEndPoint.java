@@ -21,8 +21,10 @@ import java.net.SocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
@@ -132,7 +134,22 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				
 				LOGGER.trace("Ping");
 				try {
-					gateway.getRemoteExecutorService().submit(new Ping()).get();
+					Future<?> f = gateway.getRemoteExecutorService().submit(new Ping());
+					while(true) {
+						try {
+							f.get(5, TimeUnit.SECONDS);
+							break;
+						}
+						catch(TimeoutException e) {
+							long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
+							if (stale > heartBeatTimeout) {
+								System.err.println("Terminating process due to heartbeat timeout");
+								System.err.flush();
+								break;
+							}
+							
+						}
+					}
 					lastHeartBeat = System.nanoTime();
 				}
 				catch(RejectedExecutionException e) {
