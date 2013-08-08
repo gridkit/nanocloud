@@ -49,6 +49,18 @@ public class SocketStream implements DuplexStream {
 
 	@Override
 	public void close() throws IOException {
+		try {
+			socket.shutdownInput();
+		}
+		catch(IOException e) {
+			// ignore
+		}
+		try {
+			socket.shutdownOutput();
+		}
+		catch(IOException e) {
+			// ignore
+		}
 		socket.close();
 	}
 

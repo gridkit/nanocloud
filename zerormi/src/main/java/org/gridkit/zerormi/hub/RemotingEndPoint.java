@@ -29,8 +29,10 @@ import java.util.concurrent.TimeoutException;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.SocketStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.zerormi.zlog.LogLevel;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogFactory;
+import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
  * This is an agent class initiating socket connection to RMI hub.
@@ -41,7 +43,16 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	public static final String HEARTBEAT_PERIOD = "org.gridkit.telecontrol.slave.heart-beat-period";
 	public static final String HEARTBEAT_TIMEOUT = "org.gridkit.telecontrol.slave.heart-beat-timeout";
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RemotingEndPoint.class);
+//	private static final Logger LOGGER = LoggerFactory.getLogger(RemotingEndPoint.class);
+	
+	private static ZLogger LROOT = ZLogFactory.getDefaultRootLogger().getLogger("RemotingEndPoint");
+	private static LogStream LTRACE = LROOT.get("", LogLevel.TRACE);
+	private static LogStream LVERBOSE = LROOT.get("", LogLevel.VERBOSE);
+	private static LogStream LINFO = LROOT.get("", LogLevel.INFO);
+	private static LogStream LWARN = LROOT.get("", LogLevel.WARN);
+	private static LogStream LERROR = LROOT.get("", LogLevel.CRITICAL);
+	private static LogStream LFATAL = LROOT.get("", LogLevel.FATAL);
+	
 	
 	private String uid;
 	private SocketAddress addr;
@@ -107,13 +118,13 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 			try {
 				if (!gateway.isConnected()) {
 				
-					LOGGER.info("Connecting to master socket");
+					LINFO.log("Connecting to master socket");
 					final Socket sock = new Socket();
 					
 					try {
 						sock.connect(addr);
 					} catch (IOException e) {
-						LOGGER.error("Connection has failed", addr);
+						LFATAL.log("Connection has failed", addr);
 						return;
 					}
 					
@@ -121,18 +132,18 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 					sock.getOutputStream().write(magic);
 					sock.getOutputStream().flush();
 
-					LOGGER.debug("Master socket connected");
+					LVERBOSE.log("Master socket connected");
 					DuplexStream ss = new SocketStream(sock);
 					
 					gateway.connect(ss);
-					LOGGER.debug("Gateway connected");
+					LVERBOSE.log("Gateway connected");
 				}
 				
 				synchronized(pingSingnal) {
 					pingSingnal.wait(pingInterval);
 				}
 				
-				LOGGER.trace("Ping");
+				LTRACE.log("Ping");
 				try {
 					Future<?> f = gateway.getRemoteExecutorService().submit(new Ping());
 					while(true) {
@@ -160,18 +171,18 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 					if (!gateway.isConnected()) {
 						break;
 					}
-					LOGGER.warn("Ping failed: " + e.getCause().toString());
+					LWARN.log("Ping failed: " + e.getCause().toString());
 				}
 			} catch (Exception e) {
-				LOGGER.error("Communication error", e);
+				LERROR.log("Communication error %s", e);
 			}
 		}
-		LOGGER.info("Slave has been discontinued");
+		LINFO.log("Slave is disconting");
 	}
 
 	@Override
 	public void streamError(DuplexStream socket, Object stream, Exception error) {
-		LOGGER.warn("Slave read error: " + error.toString());
+		LWARN.log("Slave read error: " + error.toString());
 		synchronized(pingSingnal) {
 			pingSingnal.notifyAll();
 		}
@@ -181,7 +192,7 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				socket.close();
 			}
 		} catch (IOException e) {
-			LOGGER.error("Stream error " + socket, e);
+			LERROR.log("Stream error " + socket, e);
 		}
 	}
 
@@ -196,7 +207,7 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				socket.close();
 			}
 		} catch (IOException e) {
-			LOGGER.error("Stream error " + socket, e);
+			LERROR.log("Stream error " + socket, e);
 		}		
 	}
 }

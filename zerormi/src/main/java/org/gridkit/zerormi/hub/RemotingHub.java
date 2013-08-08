@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class RemotingHub {
+public class RemotingHub implements MasterHub {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(RemotingHub.class);
 
@@ -53,7 +53,8 @@ public class RemotingHub {
 		}
 	}
 	
-	public String newSession(String name, SessionEventListener listener) {
+	@Override
+	public SlaveSpore allocateSession(String name, SessionEventListener listener) {
 		while(true) {
 			String uid = generateUID();
 			SessionContext ctx = new SessionContext();
@@ -65,10 +66,11 @@ public class RemotingHub {
 				ctx.gateway = new RmiGateway(name);
 				ctx.gateway.setStreamErrorHandler(ctx);
 			}
-			return uid;
+			return new LegacySpore(uid);
 		}		
 	}
 	
+	@Override
 	public ExecutorService getExecutionService(String sessionId) {
 		SessionContext ctx = connections.get(sessionId);
 		if (ctx != null) {
@@ -90,13 +92,15 @@ public class RemotingHub {
 		return sb.toString();
 	}
 
-	public void closeAllConnections() {
+	@Override
+	public void dropAllSessions() {
 		for(String id: connections.keySet()) {
-			closeConnection(id);
+			dropSession(id);
 		}
 	}
 	
-	public void closeConnection(String id) {
+	@Override
+	public void dropSession(String id) {
 		SessionContext ctx = connections.get(id);
 		if (ctx != null) {
 			synchronized(ctx) {
@@ -115,6 +119,7 @@ public class RemotingHub {
 		throw new IllegalArgumentException("Connection not found " + id);
 	}
 	
+	@Override
 	public void dispatch(DuplexStream stream) {
 		String id = readId(stream);
 		if (id != null) {

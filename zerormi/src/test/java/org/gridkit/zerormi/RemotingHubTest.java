@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
@@ -78,8 +79,8 @@ public class RemotingHubTest {
 			}
 		};
 		
-		String uid1 = hub.newSession("side1", sessionListener);
-		String uid2 = hub.newSession("side2", sessionListener);
+		String uid1 = LegacySpore.uidOf(hub.allocateSession("side1", sessionListener));
+		String uid2 = LegacySpore.uidOf(hub.allocateSession("side2", sessionListener));
 		
 		
 		acceptor = new SimpleSocketAcceptor();

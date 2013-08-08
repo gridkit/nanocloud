@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.SocketStream;
+import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.slf4j.Logger;
@@ -146,7 +147,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		synchronized(this) {
 			
 			session = new RemoteControlSession();
-			String sessionId = hub.newSession(caption, session);
+			String sessionId = LegacySpore.uidOf(hub.allocateSession(caption, session));
 			jvmCmd.addArg(sessionId).addArg("localhost").addArg(String.valueOf(socket.getLocalPort()));
 			session.setSessionId(sessionId);
 			

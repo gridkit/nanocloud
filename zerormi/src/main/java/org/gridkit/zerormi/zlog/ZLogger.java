@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Alexey Ragozin
+ * Copyright 2013 Alexey Ragozin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.zerormi;
+package org.gridkit.zerormi.zlog;
 
-/**
- * This listener can be used to monitor a ConnectionHandler.
- * (ie. to know when it finishes)
- * 
- * @date   07/10/2006 
- * @author lipe
+public interface ZLogger {
 
- * @see	   com.griddynamics.convergence.demo.utils.rmi.ConnectionHandler
- */
-
-public interface IConnectionHandlerListener {
-
-	void connectionClosed();
+	public ZLogger getLogger(String path);
+	
+	public LogStream get(String path, LogLevel level);
 	
 }

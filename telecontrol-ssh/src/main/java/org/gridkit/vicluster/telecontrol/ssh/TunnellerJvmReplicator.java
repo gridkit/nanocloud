@@ -52,6 +52,8 @@ import org.gridkit.zeroio.LoggerPrintStream;
 import org.gridkit.zeroio.LoggerPrintStream.Level;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.NamedStreamPair;
+import org.gridkit.zerormi.hub.LegacySpore;
+import org.gridkit.zerormi.hub.MasterHub;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.slf4j.Logger;
@@ -389,7 +391,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			.addArg(bootJarPath);
 		
 		RemoteControlSession session = new RemoteControlSession();
-		String sessionId = hub.newSession(caption, session);
+		String sessionId = LegacySpore.uidOf(hub.allocateSession(caption, session));
 		jvmCmd.addArg(sessionId).addArg(tunnelHost).addArg(String.valueOf(tunnelPort));
 		session.setSessionId(sessionId);
 
@@ -430,7 +432,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	public synchronized void dispose() {
 		if (!destroyed) {
 			destroyed = true;
-			hub.closeAllConnections();
+			hub.dropAllSessions();
 			session.disconnect();
 			
 			hub = null;
@@ -490,9 +492,9 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 
 		@Override
 		public void destroy() {
-			RemotingHub hub = TunnellerJvmReplicator.this.hub;
+			MasterHub hub = TunnellerJvmReplicator.this.hub;
 			if (hub != null) {
-				hub.closeConnection(sessionId);
+				hub.dropSession(sessionId);
 			}
 			kill();
 		}
