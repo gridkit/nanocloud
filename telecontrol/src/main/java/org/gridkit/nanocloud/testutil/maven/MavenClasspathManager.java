@@ -1,4 +1,19 @@
-package org.gridkit.coherence.chtest;
+/**
+ * Copyright 2013 Alexey Ragozin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.gridkit.nanocloud.testutil.maven;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,14 +39,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
-
 
 /**
  * Utility class to configure inclusion, exclusion and replacement
@@ -52,7 +66,11 @@ public class MavenClasspathManager {
 		findLocalMavenRepo();
 		return LOCAL_MAVEN_REPOPATH;
 	}
-	
+
+	/**
+	 * This method analyzes JVM classpath and try to deduce classpath version
+	 * of Maven dependency.
+	 */
 	public static String getArtifactVersion(String groupId, String artifactId) {
 		String cppath = "/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties";
 		InputStream is = ANCHOR.getResourceAsStream(cppath);
@@ -89,6 +107,10 @@ public class MavenClasspathManager {
 		}
 	}
 
+	/**
+	 * Detects local Maven repo (using JVM classpath) and enumerates
+	 * all available versions for artifact. 
+	 */
 	public static List<String> getAvailableVersions(String groupId, String artifactId) {
 		File localRepo = getLocalMavenRepoPath();
 		if (localRepo == null) {
@@ -112,11 +134,18 @@ public class MavenClasspathManager {
 		return version;
 	}
 	
+	/**
+	 * Do {@link #removeArtifactVersion(ViConfigurable, String, String)} then {@link #addArtifactVersion(ViConfigurable, String, String, String)}. 
+	 */
 	public static void replaceArtifactVersion(ViConfigurable node, String groupId, String artifactId, String version) {
 		removeArtifactVersion(node, groupId, artifactId);
 		addArtifactVersion(node, groupId, artifactId, version);
 	}
 
+	/**
+	 * Detects classpath element for corresponding Maven artifact in current JVM classpath
+	 * and exlude it from {@link ViNode}'s classpath. 
+	 */
 	public static void removeArtifactVersion(ViConfigurable node, String groupId, String artifactId) {
 		String version = getArtifactVersion(groupId, artifactId);
 		if (version == null) {
@@ -150,6 +179,10 @@ public class MavenClasspathManager {
 		}
 	}
 
+	/**
+	 * Resolve path to specific version of Maven artifact and excludes it from {@link ViNode}'s classpath.
+	 * Useful when artifact is not a part of current JVM classpath.  
+	 */
 	public static void removeArtifactVersion(ViConfigurable node, String groupId, String artifactId, String version) {
 		URL url = findJar(groupId, artifactId, version);
 		
@@ -173,6 +206,9 @@ public class MavenClasspathManager {
 		}
 	}
 
+	/**
+	 * Resolves path for Maven artifact with specific version and adds it to classpath.
+	 */
 	public static void addArtifactVersion(ViConfigurable node, String groupId, String artifactId, String version) {
 		URL url = findJar(groupId, artifactId, version);
 		if (url == null) {
@@ -209,6 +245,9 @@ public class MavenClasspathManager {
 		return null;
 	}
 
+	/**
+	 * Detects and returns root URL of specific Maven artifact for current JVM classpath.
+	 */
 	public static URL getArtifactClasspathUrl(String groupId, String artifactId) {
 		String cppath = "/META-INF/maven/" + groupId + "/" + artifactId;
 		URL url = ANCHOR.getResource(cppath);
@@ -253,6 +292,9 @@ public class MavenClasspathManager {
 		}
 	}
 
+	/**
+	 * Return jar path URL for specific artifact from detected Maven local repo.
+	 */
 	public static URL findJar(String groupId, String artifactId, String version) {
 		File localRepo = getLocalMavenRepoPath();
 		// TODO search in local classpath first, jar may be in reactor
@@ -277,7 +319,11 @@ public class MavenClasspathManager {
 		}
 		return null;
 	}
-	
+
+	/**
+	 * Dumps detected Maven artifact coordinates for current JVM classpath.
+	 * Useful for debuging.
+	 */
 	public static void dumpClasspathInfo() {
 		initClasspath();
 		for(SourceInfo si: CLASSPATH_JARS.values()) {
