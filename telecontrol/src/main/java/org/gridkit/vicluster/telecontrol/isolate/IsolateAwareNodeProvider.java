@@ -152,6 +152,11 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			node.resume();
 		}
 
+		@Override
+		public void kill() {
+			node.kill();
+		}
+
 		public void shutdown() {
 			node.shutdown();
 		}

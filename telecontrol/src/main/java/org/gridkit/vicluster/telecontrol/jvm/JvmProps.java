@@ -111,6 +111,23 @@ public class JvmProps implements ViNodeProps {
 		return this;
 	}
 
+	public JvmProps addJvmArgs(String... args) {
+		if (args.length == 0) {
+			return this;
+		}
+		else if (args.length == 1) {
+			addJvmArg(args[0]);
+		}
+		else {
+			StringBuilder sb = new StringBuilder();
+			for(String arg: args) {
+				sb.append('|').append(arg);
+			}
+			addJvmArg(sb.toString());
+		}
+		return this;
+	}
+
 	public JvmProps addClassPathElement(String string) {
 		config.setProp(CP_ADD + string, string);
 		return this;

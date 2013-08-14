@@ -274,11 +274,21 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
-	public synchronized void shutdown() {
-		// TODO call shutdown hooks
+	public void kill() {
+		terminate(false);
+	}
+
+	@Override
+	public void shutdown() {
+		terminate(true);
+	}
+
+	protected synchronized void terminate(boolean gracefully) {
 		if (active) {
 			try {
-				runShutdownHooks();
+				if (gracefully) { 
+					runShutdownHooks();
+				}
 			} catch (IOException e) {
 				e.printStackTrace(); // TODO logging
 			}
@@ -288,14 +298,7 @@ class JvmNode implements ViNode {
 			}
 			boolean destroyDelay = false;
 			try {
-				Future<Void> f = submit(new Runnable() {
-					@Override
-					public void run() {
-						if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
-							System.exit(0);
-						}
-					}
-				});
+				Future<Void> f = submit(poisonPill(gracefully));
 				try {
 					f.get(100, TimeUnit.MILLISECONDS);
 					destroyDelay = true;
@@ -319,6 +322,29 @@ class JvmNode implements ViNode {
 			
 			active = false;
 		}		
+	}
+
+	private Runnable poisonPill(boolean graceful) {
+		if (graceful) {
+			return new Runnable() {
+				@Override
+				public void run() {
+					if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
+						System.exit(0);
+					}
+				}
+			};
+		}
+		else {
+			return new Runnable() {
+				@Override
+				public void run() {
+					if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
+						Runtime.getRuntime().halt(0);
+					}
+				}
+			};			
+		}
 	}
 
 	// TODO make wrapper print stream shared utility class

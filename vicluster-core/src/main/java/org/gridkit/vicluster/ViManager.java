@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -54,6 +55,7 @@ public class ViManager implements ViNodeSet {
 	
 	private ViNodeProvider provider;
 	private ExecutorService asyncInitThreads;
+	private boolean terminated = false;
 	
 	private long ruleCounter = 0;
 	
@@ -86,8 +88,15 @@ public class ViManager implements ViNodeSet {
 		return provider;
 	}
 
+	private void ensureAlive() {
+		if (terminated) {
+			throw new IllegalStateException("Cloud has been terminated");
+		}
+	}
+
 	@Override
 	public synchronized ViNode node(String namePattern) {
+		ensureAlive();
 		if (liveNodes.containsKey(namePattern)) {
 			return liveNodes.get(namePattern);
 		}
@@ -112,6 +121,7 @@ public class ViManager implements ViNodeSet {
 	}
 
 	public ViNode nodes(String... patterns) {
+		ensureAlive();
 		Set<ViNode> nodes = new LinkedHashSet<ViNode>();
 		for(String pattern: patterns) {
 			nodes.add(node(pattern));
@@ -138,6 +148,7 @@ public class ViManager implements ViNodeSet {
 
 	@Override
 	public synchronized Collection<ViNode> listNodes(String namePattern) {
+		ensureAlive();
 		Set<ViNode> result = new LinkedHashSet<ViNode>();
 		Pattern regEx = GlobHelper.translate(namePattern, ".");
 		for(ManagedNode vinode: liveNodes.values()) {
@@ -171,18 +182,49 @@ public class ViManager implements ViNodeSet {
 	}
 
 	@Override
-	public synchronized void shutdown() {
-		// TODO flag terminated state
+	public void shutdown() {
+		// TODO concurrency design is rather poor for this class
+		List<Future<?>> epitaphs;
+		synchronized(this) {
+			if (terminated == true) {
+				return;
+			}
+			terminated = true;
+			epitaphs = new ArrayList<Future<?>>();
+			for(final ManagedNode node: liveNodes.values()) {
+				epitaphs.add(asyncInitThreads.submit(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							node.shutdown();
+						}
+						catch(Exception e) {
+							LOGGER.warn("Exception on shutdown for '" + node.name + "'", e);
+						}
+					}
+				}));
+			}
+		}
+		for(Future<?> e: epitaphs) {
+			try {
+				e.get();
+			} catch (InterruptedException ee) {
+				break;
+			} catch (ExecutionException ee) {
+				LOGGER.warn("Exception on shutdown", ee.getCause());
+			}
+		}
+		// there could be a race between initialization and shutdown here
 		asyncInitThreads.shutdown();
 		try {
 			asyncInitThreads.awaitTermination(10, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			LOGGER.warn("ViManager shutdown: Defered task threads are still active");
-		}
-		ViGroup.group(liveNodes.values()).shutdown();
+		}		
 	}
 	
 	public synchronized void resetDeadNode() {
+		ensureAlive();
 		deadNodes.clear();
 	}
 	
@@ -378,6 +420,22 @@ public class ViManager implements ViNodeSet {
 			if (!terminated) {
 				if (realNode != null) {
 					realNode.shutdown();
+					realNode = null;
+				}
+				if (nodeExecutor != null) {
+					nodeExecutor = null;
+				}
+				
+				terminated = true;
+				ViManager.this.markAsDead(this);
+			}
+		}
+
+		@Override
+		public synchronized void kill() {
+			if (!terminated) {
+				if (realNode != null) {
+					realNode.kill();
 					realNode = null;
 				}
 				if (nodeExecutor != null) {
@@ -730,6 +788,11 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void kill() {
+			select().kill();
+		}
+
+		@Override
 		public void shutdown() {
 			select().shutdown();
 		}
@@ -840,12 +903,17 @@ public class ViManager implements ViNodeSet {
 		
 		@Override
 		public void suspend() {
-			// ignore
+			// ignore TODO ?!
 		}
 		
 		@Override
 		public void resume() {
 			// ignore
+		}
+		
+		@Override
+		public void kill() {
+			// do nothing
 		}
 		
 		@Override

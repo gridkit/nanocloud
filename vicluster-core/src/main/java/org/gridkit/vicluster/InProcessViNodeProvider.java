@@ -81,6 +81,11 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 		}
 
 		@Override
+		public void kill() {
+			isolate.stop();
+		}
+
+		@Override
 		public void shutdown() {
 			isolate.stop();
 		}

@@ -30,10 +30,25 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 
 	public String getProp(String propName);
 	
+	/** 
+	 * Freezes all thread associated with node. Supported only for embeded nodes.
+	 */
 	public void suspend();
 	
+	/** 
+	 * Resumes node freezes with {@link #suspend()}.
+	 */
 	public void resume();
 	
+	/** 
+	 * Ungracefully terminates remote process (or thread group in embeded node). Unlike {@link #shutdown()} no shutdown hooks will be executed in remote VM.
+	 * This method may be useful for fault tolerance testing.
+	 */
+	public void kill();
+	
+	/** 
+	 * Gracefully terminates remote process (or thread group in embeded node).
+	 */
 	public void shutdown();
 	
 	public static class Delegate implements ViNode {
@@ -76,6 +91,11 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 		@Override
 		public void resume() {
 			delegate.resume();
+		}
+
+		@Override
+		public void kill() {
+			delegate.kill();			
 		}
 
 		@Override

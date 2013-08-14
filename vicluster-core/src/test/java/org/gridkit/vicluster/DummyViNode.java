@@ -63,6 +63,10 @@ public class DummyViNode implements ViNode {
 	}
 
 	@Override
+	public void kill() {
+	}
+
+	@Override
 	public void shutdown() {
 	}
 

@@ -128,6 +128,16 @@ public class ViGroup implements ViNode {
 	}
 
 	@Override
+	public void kill() {
+		if (!shutdown) {
+			for(ViNode host: hosts) {
+				host.kill();
+			}			
+			shutdown = true;
+		}		
+	}
+
+	@Override
 	public synchronized void shutdown() {
 		if (!shutdown) {
 			for(ViNode host: hosts) {

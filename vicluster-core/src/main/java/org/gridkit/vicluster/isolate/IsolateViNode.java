@@ -115,6 +115,11 @@ public class IsolateViNode implements ViNode {
 	}
 
 	@Override
+	public void kill() {
+		shutdown();		
+	}
+
+	@Override
 	public synchronized void shutdown() {
 		if (isolate != null && !destroyed) {
 			destroy();
