@@ -78,12 +78,24 @@ public class RemoteExporter {
 
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			try {
-				MethodInfo mi = new MethodInfo(method);
-				return handler.invoke(mi, args);
+			if (method.getDeclaringClass() == Object.class) {
+				try {
+					Object result = method.invoke(this, args);
+					return result;
+				}
+				catch(InvocationTargetException e) {
+					throw e.getCause();
+				}
 			}
-			catch(InvocationTargetException e) {
-				throw e.getCause();
+			else {
+				try {
+					MethodInfo mi = new MethodInfo(method);
+					Object result = handler.invoke(mi, args); 
+					return result;
+				}
+				catch(InvocationTargetException e) {
+					throw e.getCause();
+				}
 			}
 		}
 	}
