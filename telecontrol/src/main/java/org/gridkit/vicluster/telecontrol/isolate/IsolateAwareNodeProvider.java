@@ -129,6 +129,14 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			return node.getProp(propName);
 		}
 
+		public void setConfigElement(String key, Object value) {
+			node.setConfigElement(key, value);
+		}
+
+		public void setConfigElements(Map<String, Object> config) {
+			node.setConfigElements(config);
+		}
+
 		public void suspend() {
 			node.suspend();
 		}

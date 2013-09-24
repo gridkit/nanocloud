@@ -16,6 +16,8 @@
 package org.gridkit.util.concurrent;
 
 /**
+ * Interface to receive execution result.
+ * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public interface Box<V> {

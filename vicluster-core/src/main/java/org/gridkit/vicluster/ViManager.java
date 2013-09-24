@@ -300,6 +300,18 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void setConfigElement(String key, Object value) {
+			// TODO implement setConfigElement
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void setConfigElements(Map<String, Object> config) {
+			// TODO implement setConfigElements
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			ensureAlive();
 			config.addStartupHook(name, hook, override);
@@ -702,6 +714,22 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void setConfigElement(String key, Object value) {
+			synchronized(ViManager.this) {
+				rule().setConfigElement(key, value);
+				select().setConfigElement(key, value);
+			}
+		}
+
+		@Override
+		public void setConfigElements(Map<String, Object> config) {
+			synchronized(ViManager.this) {
+				rule().setConfigElements(config);
+				select().setConfigElements(config);
+			}
+		}
+
+		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
 				rule().addStartupHook(name, hook, override);
@@ -884,6 +912,15 @@ public class ViManager implements ViNodeSet {
 		@Override
 		public void setProps(Map<String, String> props) {
 			node.setProps(props);			
+		}
+
+
+		public void setConfigElement(String key, Object value) {
+			node.setConfigElement(key, value);
+		}
+
+		public void setConfigElements(Map<String, Object> config) {
+			node.setConfigElements(config);
 		}
 
 		@Override

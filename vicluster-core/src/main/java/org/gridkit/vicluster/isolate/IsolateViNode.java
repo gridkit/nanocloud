@@ -85,6 +85,18 @@ public class IsolateViNode implements ViNode {
 	}
 	
 	@Override
+	public void setConfigElement(String key, Object value) {
+		// TODO
+		throw new Error("Not implemented");
+	}
+
+	@Override
+	public void setConfigElements(Map<String, Object> config) {
+		// TODO
+		throw new Error("Not implemented");
+	}
+
+	@Override
 	public synchronized void addStartupHook(String name, Runnable hook, boolean override) {
 		ensureNotDestroyed();
 		if (isolate != null) {
@@ -235,22 +247,7 @@ public class IsolateViNode implements ViNode {
 	}
 	
 	private synchronized void destroy() {
-		config.apply(new ViConfigurable() {
-			
-			@Override
-			public void setProps(Map<String, String> props) {
-				// ignore
-			}
-			
-			@Override
-			public void setProp(String propName, String value) {
-				// ignore
-			}
-			
-			@Override
-			public void addStartupHook(String name, Runnable hook, boolean override) {
-				// ignore
-			}
+		config.apply(new ViNodeConfig.ReplyShutdownHooks() {
 			
 			@Override
 			public void addShutdownHook(String name, Runnable hook, boolean override) {
@@ -318,6 +315,18 @@ public class IsolateViNode implements ViNode {
 			}
 		}
 	
+		@Override
+		public void setConfigElement(String key, Object value) {
+			// TODO
+			throw new Error("Not implemented");
+		}
+
+		@Override
+		public void setConfigElements(Map<String, Object> config) {
+			// TODO
+			throw new Error("Not implemented");
+		}
+
 		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			isolate.exec(hook); 

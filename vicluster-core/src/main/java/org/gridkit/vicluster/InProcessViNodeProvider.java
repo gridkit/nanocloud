@@ -62,6 +62,18 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 			isolate.setProp(props);
 		}
 
+		@Override
+		public void setConfigElement(String key, Object value) {
+			// TODO
+			throw new Error("Not implemented");
+		}
+
+		@Override
+		public void setConfigElements(Map<String, Object> config) {
+			// TODO
+			throw new Error("Not implemented");
+		}
+
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			throw new IllegalStateException("Node " + name + " is started already");
 		}

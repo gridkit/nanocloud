@@ -27,6 +27,10 @@ public interface ViConfigurable {
 	
 	public void setProps(Map<String, String> props);
 	
+	public void setConfigElement(String key, Object value);
+
+	public void setConfigElements(Map<String, Object> config);
+	
 	public void addStartupHook(String name, Runnable hook, boolean override);
 
 	public void addShutdownHook(String name, Runnable hook, boolean override);

@@ -17,6 +17,8 @@ package org.gridkit.vicluster.telecontrol;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -256,6 +258,49 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		@Override
 		public void reconnected(DuplexStream stream) {
 			LOGGER.info("Reconnected: " + stream);
+		}
+
+		@Override
+		public void bindStdIn(InputStream is) {
+			if (is != null) {
+				BackgroundStreamDumper.link(is, process.getOutputStream());
+			}
+			else {
+				try {
+					process.getOutputStream().close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+
+		@Override
+		public void bindStdOut(OutputStream os) {
+			if (os != null) {
+				BackgroundStreamDumper.link(process.getInputStream(), os);
+			}
+			else {
+				try {
+					process.getInputStream().close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			
+		}
+
+		@Override
+		public void bindStdErr(OutputStream os) {
+			if (os != null) {
+				BackgroundStreamDumper.link(process.getErrorStream(), os);
+			}
+			else {
+				try {
+					process.getErrorStream().close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
 		}
 
 		@Override

@@ -62,12 +62,12 @@ class JvmNode implements ViNode {
 		
 		config.apply(this.config);
 		
-		stdOut = new WrapperPrintStream("[" + name + "] ", System.out);
-		stdErr = new WrapperPrintStream("[" + name + "] ", System.err);
-		
-		process.getOutputStream().close();
-		BackgroundStreamDumper.link(process.getInputStream(), stdOut, false);
-		BackgroundStreamDumper.link(process.getErrorStream(), stdErr, false);
+		stdOut = new WrapperPrintStream("[" + name + "] ", System.out, true);
+		stdErr = new WrapperPrintStream("[" + name + "] ", System.err, true);
+
+		cp.bindStdIn(null);
+		cp.bindStdOut(stdOut);
+		cp.bindStdErr(stdErr);
 		
 		initPropperteis();
 		runStartupHooks();
@@ -239,6 +239,18 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
+	public void setConfigElement(String key, Object value) {
+		// TODO implement setConfigElement
+		throw new Error("Not implemented");		
+	}
+
+	@Override
+	public void setConfigElements(Map<String, Object> config) {
+	    // TODO implement setConfigElement
+	    throw new Error("Not implemented");   
+	}
+
+	@Override
 	public void addStartupHook(String name, Runnable hook, boolean override) {
 		throw new IllegalStateException("Node " + name + " is started already");
 	}
@@ -353,13 +365,15 @@ class JvmNode implements ViNode {
 		private String prefix;
 		private PrintStream printStream;
 		private ByteArrayOutputStream buffer;
+		private boolean ignoreClose;
 		private boolean silence;
 		
-		public WrapperPrintStream(String prefix, PrintStream printStream) {
+		public WrapperPrintStream(String prefix, PrintStream printStream, boolean ignoreClose) {
 			super(printStream);
 			this.prefix = prefix;
 			this.printStream = printStream;
 			this.buffer = new ByteArrayOutputStream();
+			this.ignoreClose = ignoreClose;
 		}
 		
 		public synchronized void silence() {
@@ -414,7 +428,10 @@ class JvmNode implements ViNode {
 		@Override
 		public void close() throws IOException {
 			super.flush();
-			dumpBuffer();			
+			dumpBuffer();	
+			if (!ignoreClose) {
+				printStream.close();
+			}
 		}
 	}	
 }

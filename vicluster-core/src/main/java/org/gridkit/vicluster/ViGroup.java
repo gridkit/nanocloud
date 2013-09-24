@@ -98,6 +98,25 @@ public class ViGroup implements ViNode {
 	}
 
 	@Override
+	public void setConfigElement(String key, Object value) {
+		checkActive();
+		config.setConfigElement(key, value);
+		for(ViNode vh: hosts) {
+			vh.setConfigElement(key, value);
+		}
+	}
+
+	@Override
+	public void setConfigElements(Map<String, Object> config) {
+		checkActive();
+		this.config.setConfigElements(config);
+		for(ViNode vh: hosts) {
+			vh.setConfigElements(config);
+		}
+	}
+
+	
+	@Override
 	public synchronized void addStartupHook(String name, Runnable hook, boolean override) {
 		checkActive();
 		config.addStartupHook(name, hook, override);

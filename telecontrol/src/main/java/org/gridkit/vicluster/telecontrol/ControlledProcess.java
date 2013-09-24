@@ -15,6 +15,8 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -26,5 +28,11 @@ public interface ControlledProcess {
 	public Process getProcess();
 	
 	public ExecutorService getExecutionService();
+	
+	public void bindStdIn(InputStream is);
+	
+	public void bindStdOut(OutputStream os);
+	
+	public void bindStdErr(OutputStream os);
 	
 }

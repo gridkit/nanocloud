@@ -486,6 +486,49 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 
 		@Override
+		public void bindStdIn(InputStream is) {
+			if (is != null) {
+				BackgroundStreamDumper.link(is, getOutputStream());
+			}
+			else {
+				try {
+					getOutputStream().close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		
+		@Override
+		public void bindStdOut(OutputStream os) {
+			if (os != null) {
+				BackgroundStreamDumper.link(getInputStream(), os);
+			}
+			else {
+				try {
+					getInputStream().close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			
+		}
+
+		@Override
+		public void bindStdErr(OutputStream os) {
+			if (os != null) {
+				BackgroundStreamDumper.link(getErrorStream(), os);
+			}
+			else {
+				try {
+					getErrorStream().close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		
+		@Override
 		public void closed() {
 			kill();
 		}

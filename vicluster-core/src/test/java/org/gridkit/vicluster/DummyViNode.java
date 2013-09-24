@@ -46,6 +46,14 @@ public class DummyViNode implements ViNode {
 		config.setProps(props);
 	}
 
+	public void setConfigElement(String key, Object value) {
+		config.setConfigElement(key, value);
+	}
+
+	public void setConfigElements(Map<String, Object> config) {
+		this.config.setConfigElements(config);
+	}
+
 	public void addStartupHook(String name, Runnable hook, boolean override) {
 		config.addStartupHook(name, hook, override);
 	}

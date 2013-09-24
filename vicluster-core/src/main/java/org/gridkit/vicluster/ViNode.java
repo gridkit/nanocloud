@@ -73,6 +73,14 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 			return delegate.getProp(propName);
 		}
 
+		public void setConfigElement(String key, Object value) {
+			delegate.setConfigElement(key, value);
+		}
+
+		public void setConfigElements(Map<String, Object> config) {
+			delegate.setConfigElements(config);
+		}
+
 		@Override
 		public void suspend() {
 			delegate.suspend();
