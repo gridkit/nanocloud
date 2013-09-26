@@ -24,11 +24,11 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.RemotingHub;
@@ -47,8 +47,8 @@ public class RemotingHubTest {
 	private RemotingEndPoint endPoint1;
 	private RemotingEndPoint endPoint2;
 	private SimpleSocketAcceptor acceptor;
-	private ExecutorService remoteExecutor1;
-	private ExecutorService remoteExecutor2;
+	private AdvancedExecutor remoteExecutor1;
+	private AdvancedExecutor remoteExecutor2;
 	
 	@Before
 	public void initHub() throws InterruptedException, BrokenBarrierException, TimeoutException {

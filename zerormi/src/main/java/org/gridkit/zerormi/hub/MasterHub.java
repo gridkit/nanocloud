@@ -15,8 +15,7 @@
  */
 package org.gridkit.zerormi.hub;
 
-import java.util.concurrent.ExecutorService;
-
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 
@@ -38,7 +37,7 @@ public interface MasterHub {
 
 	public SlaveSpore allocateSession(String sessionId, SessionEventListener listener);
 
-	public ExecutorService getExecutionService(String sessionId);
+	public AdvancedExecutor getExecutionService(String sessionId);
 
 	public void dispatch(DuplexStream stream);
 

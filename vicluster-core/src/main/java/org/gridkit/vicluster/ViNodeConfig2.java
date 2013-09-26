@@ -15,7 +15,10 @@
  */
 package org.gridkit.vicluster;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -58,6 +61,10 @@ public class ViNodeConfig2 implements ViConfigurable, Serializable {
 			}			
 		}
 		return result;
+	}
+	
+	public Map<String, Object> getInternalConfigMap() {
+		return Collections.unmodifiableMap(config);
 	}
 	
 	@Override
@@ -106,6 +113,35 @@ public class ViNodeConfig2 implements ViConfigurable, Serializable {
 	
 	public void apply(ViConfigurable target) {
 		target.setConfigElements(config);
+	}
+	
+	private boolean getBoolean(String propName, boolean def) {
+		String val = (String) config.get(propName);
+		return val == null ? def : Boolean.valueOf(propName);
+	}
+	
+	public InputStream getConsoleStdIn() {
+		return (InputStream)config.get("console:stdIn");
+	}
+
+	public boolean getConsoleStdOutEcho() {
+		return getBoolean("console:stdOut.echo", true);
+	}
+
+	public OutputStream getConsoleStdOut() {
+		return (OutputStream)config.get("console:stdOut");
+	}
+
+	public boolean getConsoleStdErrEcho() {
+		return getBoolean("console:stdErr.echo", true);
+	}
+	
+	public OutputStream getConsoleStdErr() {
+		return (OutputStream)config.get("console:stdErr");
+	}
+	
+	public boolean getSilenceOutputOnShutdown() {
+		return getBoolean("console:silent-shutdown", true);
 	}
 	
 	public static void applyProps(ViConfigurable vc, Map<String, String> props) {

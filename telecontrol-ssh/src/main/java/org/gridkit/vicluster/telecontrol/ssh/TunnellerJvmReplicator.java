@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.jar.Attributes;
@@ -35,6 +34,7 @@ import java.util.jar.Manifest;
 import org.gridkit.internal.com.jcraft.jsch.ChannelExec;
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.Classpath;
@@ -444,7 +444,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		
 		long execId;
 		String sessionId;
-		ExecutorService remoteExecutorService;
+		AdvancedExecutor remoteExecutorService;
 		FutureBox<Void> connected = new FutureBox<Void>();
 		
 		@Override
@@ -453,7 +453,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 
 		@Override
-		public ExecutorService getExecutionService() {
+		public AdvancedExecutor getExecutionService() {
 			try {
 				connected.get();
 			} catch (InterruptedException e) {

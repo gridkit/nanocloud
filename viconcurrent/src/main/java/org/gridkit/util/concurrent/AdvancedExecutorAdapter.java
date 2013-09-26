@@ -34,7 +34,7 @@ public class AdvancedExecutorAdapter implements AdvancedExecutor {
 	@Override
 	public FutureEx<Void> submit(final Runnable task) {
 		final FutureBox<Void> fb = new FutureBox<Void>();
-		executor.execute(new Runnable() {
+		execute(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -52,7 +52,7 @@ public class AdvancedExecutorAdapter implements AdvancedExecutor {
 	@Override
 	public <V> FutureEx<V> submit(final Callable<V> task) {
 		final FutureBox<V> fb = new FutureBox<V>();
-		executor.execute(new Runnable() {
+		execute(new Runnable() {
 			@Override
 			public void run() {
 				try {

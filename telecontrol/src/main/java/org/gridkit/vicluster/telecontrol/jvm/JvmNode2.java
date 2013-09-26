@@ -18,60 +18,108 @@ package org.gridkit.vicluster.telecontrol.jvm;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
-import org.gridkit.vicluster.MassExec;
+import org.gridkit.util.concurrent.Box;
+import org.gridkit.vicluster.AdvExecutor2ViExecutor;
+import org.gridkit.vicluster.ViExecutor;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
-import org.gridkit.vicluster.ViProps;
+import org.gridkit.vicluster.ViNodeConfig2;
+import org.gridkit.vicluster.ViNodeLifeCycleHelper;
+import org.gridkit.vicluster.ViNodeLifeCycleHelper.Phase;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-class JvmNode implements ViNode {
+class ProcessNode implements ViNode {
 
 	private String name;
-	private Process process;
+	private ManagedProcess process;
 	private AdvancedExecutor executor;
 	
-	private WrapperPrintStream stdOut;
-	private WrapperPrintStream stdErr;
+	private ViNodeConfig2 config;
 	
-	private ViNodeConfig config = new ViNodeConfig();
+	private SplittingOutputStream outplex;
+	private SplittingOutputStream errplex;
+
+	private ViExecutor execProxy;
 	
 	private boolean active;
 	
-	public JvmNode(String name, ViNodeConfig config, ControlledProcess cp) throws IOException {
+	public ProcessNode(String name, Map<String, Object> config, ManagedProcess process) throws IOException {
 		this.name = name;
-		this.process = cp.getProcess();
-		this.executor = cp.getExecutionService();
+		this.process = process;
+		this.executor = process.getExecutionService();
 		
-		config.apply(this.config);
+		this.config.setConfigElements(config);
 		
-		stdOut = new WrapperPrintStream("[" + name + "] ", System.out, true);
-		stdErr = new WrapperPrintStream("[" + name + "] ", System.err, true);
+		OutputStream stdOut = this.config.getConsoleStdOutEcho() ? new WrapperPrintStream("[" + name + "] ", System.out, true) : null;
+		OutputStream stdErr = this.config.getConsoleStdErrEcho() ? new WrapperPrintStream("[" + name + "] ", System.err, true) : null;
 
-		cp.bindStdIn(null);
-		cp.bindStdOut(stdOut);
-		cp.bindStdErr(stdErr);
+		OutputStream outSink = this.config.getConsoleStdOut();
+		OutputStream errSink = this.config.getConsoleStdErr();
 		
+		List<OutputStream> outs = new ArrayList<OutputStream>(2);
+		if (stdOut != null) {
+			outs.add(stdOut);
+		}
+		if (outSink != null) {
+			outs.add(outSink);
+		}
+		
+		outplex = new SplittingOutputStream(outs.toArray(new OutputStream[0]));
+
+		List<OutputStream> errs = new ArrayList<OutputStream>(2);
+		if (stdErr != null) {
+			errs.add(stdErr);
+		}
+		if (outSink != null) {
+			errs.add(errSink);
+		}
+		
+		errplex = new SplittingOutputStream(errs.toArray(new OutputStream[0]));
+		
+		process.bindStdIn(this.config.getConsoleStdIn());
+		process.bindStdOut(outplex);
+		process.bindStdErr(errplex);
+		
+		execProxy = new ExecProxy(executor);
+		
+		ViNodeLifeCycleHelper helper = new ViNodeLifeCycleHelper();
+		Map<String, Object> postInit = helper.processPhase(Phase.POST_INIT, this.config.getInternalConfigMap());
+
 		initPropperteis();
-		runStartupHooks();
+		
 		active = true;
+		helper.executeHooks(execProxy, postInit, false);
+		
+		this.process.getExitCodeFuture().addListener(new Box<Integer>() {
+
+			@Override
+			public void setData(Integer data) {
+				ProcessNode.this.config.setProp("runtime:exitCode", data.toString());
+			}
+
+			@Override
+			public void setError(Throwable e) {
+				// ignore
+			}
+		});
 	}
 
 	private void initPropperteis() throws IOException {
@@ -109,26 +157,16 @@ class JvmNode implements ViNode {
 		}
 	}
 
-	private void runStartupHooks() throws IOException {
-		try {
-			config.runStartupHooks(executor);
-		}
-		catch(Exception e) {
-			throw new IOException("Node '" + name + "' has failed to initialize", e);
-		}
-	}
-	
-	private void runShutdownHooks() throws IOException {
-		try {
-			config.runShutdownHooks(executor);
-		}
-		catch(Exception e) {
-			throw new IOException("Node '" + name + "' has failed to initialize", e);
-		}
+	private void processPreShutdown() {
+		ViNodeLifeCycleHelper helper = new ViNodeLifeCycleHelper();
+		Map<String, Object> phaseConfig = helper.processPhase(Phase.PRE_SHUTDOWN, this.config.getInternalConfigMap());
+		helper.executeHooks(execProxy, phaseConfig, true);
 	}
 
-	public Process getProcess() {
-		return process;
+	private void processPostShutdown() {
+		ViNodeLifeCycleHelper helper = new ViNodeLifeCycleHelper();
+		Map<String, Object> phaseConfig = helper.processPhase(Phase.POST_SHUTDOWN, this.config.getInternalConfigMap());
+		helper.executeHooks(execProxy, phaseConfig, true);		
 	}
 	
 	@Override
@@ -136,82 +174,52 @@ class JvmNode implements ViNode {
 		ensureStarted();
 	}
 
-	@Override
-	public void exec(Runnable task) {
-		try {
-			submit(task).get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			ExceptionHelper.throwUnchecked(e);
-		}
-	}
-
-	@Override
-	public void exec(VoidCallable task) {
-		try {
-			submit(task).get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			ExceptionHelper.throwUnchecked(e);
-		}
-	}
-
-	@Override
-	public <T> T exec(Callable<T> task) {
-		try {
-			return submit(task).get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			ExceptionHelper.throwUnchecked(e);
-			throw new Error("Unreachable");			
-		}
-	}
-
-	@Override
-	public Future<Void> submit(Runnable task) {
-		ensureStarted();
-		return executor.submit(task);
-	}
-
-	@Override
-	public Future<Void> submit(VoidCallable task) {
-		ensureStarted();
-		return executor.submit(new VoidCallable.VoidCallableWrapper(task));
-	}
-
-	@Override
-	public <T> Future<T> submit(Callable<T> task) {
-		ensureStarted();
-		return executor.submit(task);
-	}
-
-	@Override
-	public <T> List<T> massExec(Callable<? extends T> task) {
-		return MassExec.singleNodeMassExec(this, task);
-	}
-
-	@Override
-	public List<Future<Void>> massSubmit(Runnable task) {
-		return MassExec.singleNodeMassSubmit(this, task);
-	}
-
-	@Override
-	public List<Future<Void>> massSubmit(VoidCallable task) {
-		return MassExec.singleNodeMassSubmit(this, task);
-	}
-
-	@Override
-	public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-		return MassExec.singleNodeMassSubmit(this, task);
-	}
-
 	private synchronized void ensureStarted() {
 		if (!active) {
 			throw new IllegalStateException("Node '" + name + "' is not active");
 		}
+	}
+
+	
+	
+	public void exec(Runnable task) {
+		execProxy.exec(task);
+	}
+
+	public void exec(VoidCallable task) {
+		execProxy.exec(task);
+	}
+
+	public <T> T exec(Callable<T> task) {
+		return execProxy.exec(task);
+	}
+
+	public Future<Void> submit(Runnable task) {
+		return execProxy.submit(task);
+	}
+
+	public Future<Void> submit(VoidCallable task) {
+		return execProxy.submit(task);
+	}
+
+	public <T> Future<T> submit(Callable<T> task) {
+		return execProxy.submit(task);
+	}
+
+	public <T> List<T> massExec(Callable<? extends T> task) {
+		return execProxy.massExec(task);
+	}
+
+	public List<Future<Void>> massSubmit(Runnable task) {
+		return execProxy.massSubmit(task);
+	}
+
+	public List<Future<Void>> massSubmit(VoidCallable task) {
+		return execProxy.massSubmit(task);
+	}
+
+	public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
+		return execProxy.massSubmit(task);
 	}
 
 	@Override
@@ -274,14 +282,12 @@ class JvmNode implements ViNode {
 
 	@Override
 	public void suspend() {
-		// TODO
-		
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void resume() {
-		// TODO
-		
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -298,14 +304,14 @@ class JvmNode implements ViNode {
 		if (active) {
 			try {
 				if (gracefully) { 
-					runShutdownHooks();
+					processPreShutdown();
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace(); // TODO logging
 			}
-			if ("TRUE".equals(config.getProp(ViProps.NODE_SILENT_SHUTDOWN, "false").toUpperCase())) {
-				stdOut.silence();
-				stdErr.silence();
+			if (config.getSilenceOutputOnShutdown()) {
+				outplex.silence();
+				errplex.silence();
 			}
 			boolean destroyDelay = false;
 			try {
@@ -329,8 +335,8 @@ class JvmNode implements ViNode {
 				}
 			}
 			process.destroy();
-			
 			active = false;
+			processPostShutdown();
 		}		
 	}
 
@@ -357,6 +363,24 @@ class JvmNode implements ViNode {
 		}
 	}
 
+	private class ExecProxy extends AdvExecutor2ViExecutor {
+
+		public ExecProxy(AdvancedExecutor advExec) {
+			super(advExec);
+		}
+
+		@Override
+		public void touch() {
+			ensureStarted();
+		}
+
+		@Override
+		protected AdvancedExecutor getExecutor() {
+			ensureStarted();
+			return super.getExecutor();
+		}
+	}
+	
 	// TODO make wrapper print stream shared utility class
 	private static class WrapperPrintStream extends FilterOutputStream {
 
@@ -372,17 +396,6 @@ class JvmNode implements ViNode {
 			this.printStream = printStream;
 			this.buffer = new ByteArrayOutputStream();
 			this.ignoreClose = ignoreClose;
-		}
-		
-		public synchronized void silence() {
-			try {
-				if (buffer.size() > 0) {
-					dumpBuffer();
-				}
-			} catch (IOException e) {
-				// ignore
-			}
-			silence = true;
 		}
 		
 		private void dumpBuffer() throws IOException {

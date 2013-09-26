@@ -26,9 +26,11 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.SocketStream;
@@ -163,7 +165,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		}
 		
 		while(true) {
-			ExecutorService exec = session.ensureRemoteExecutor(100);
+			AdvancedExecutor exec = session.ensureRemoteExecutor(100);
 			if (exec != null) {
 				break;
 			}
@@ -199,11 +201,11 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		processes.remove(p);
 	}
 
-	private class RemoteControlSession implements SessionEventListener, ControlledProcess {
+	private class RemoteControlSession implements SessionEventListener, ControlledProcess, ManagedProcess {
 		
 		String sessionId;
 		Process process;
-		ExecutorService executor;
+		AdvancedExecutor executor;
 		CountDownLatch connected = new CountDownLatch(1);
 		
 		@Override
@@ -212,7 +214,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		}
 		
 		@Override
-		public ExecutorService getExecutionService() {
+		public AdvancedExecutor getExecutionService() {
 			return ensureRemoteExecutor(-1);
 		}
 
@@ -229,7 +231,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 			return connected.getCount() == 0;
 		}
 		
-		private ExecutorService ensureRemoteExecutor(long timeout) {
+		private AdvancedExecutor ensureRemoteExecutor(long timeout) {
 			try {
 				if (timeout < 0) {
 					connected.await();
@@ -301,6 +303,29 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 					throw new RuntimeException(e);
 				}
 			}
+		}
+		
+		@Override
+		public void suspend() {
+			throw new UnsupportedOperationException();
+			
+		}
+
+		@Override
+		public void resume() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void destroy() {
+			closed();
+		}
+
+		@Override
+		public FutureEx<Integer> getExitCodeFuture() {
+			// FIXME getExitCodeFuture() not implemented
+			FutureBox<Integer> fb = new FutureBox<Integer>();
+			return fb;
 		}
 
 		@Override

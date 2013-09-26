@@ -34,6 +34,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.util.concurrent.AdvancedExecutorAdapter;
+import org.gridkit.util.concurrent.FutureEx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +59,7 @@ public class RmiGateway {
 	private RmiObjectInputStream in;
 	private RmiObjectOutputStream out;
 
-	private ExecutorService service;
+	private RemoteExecutionService service;
 	private CounterAgent remote;
 	private Thread readerThread;
 	
@@ -100,7 +103,7 @@ public class RmiGateway {
 		this.name = name;
 	}
 	
-	public ExecutorService getRemoteExecutorService() {
+	public AdvancedExecutor getRemoteExecutorService() {
 		return service;
 	}
 	
@@ -410,9 +413,10 @@ public class RmiGateway {
 		
 	}
 
-	private class RemoteExecutionService extends AbstractExecutorService {
+	private class RemoteExecutionService extends AbstractExecutorService implements AdvancedExecutor {
 		
 		private final ExecutorService threadPool = executor;
+		private final AdvancedExecutorAdapter adapter = new AdvancedExecutorAdapter(threadPool);
 		
 		@Override
 		public <T> Future<T> submit(Runnable task, T result) {
@@ -420,14 +424,14 @@ public class RmiGateway {
 		}
 
 		@Override
-		public Future<?> submit(Runnable task) {
-			return submit(new CallableRunnableWrapper<Object>(task, null));
+		public FutureEx<Void> submit(Runnable task) {
+			return submit(new CallableRunnableWrapper<Void>(task, null));
 		}
 
 		@Override
-		public <T> Future<T> submit(Callable<T> task) {
+		public <T> FutureEx<T> submit(Callable<T> task) {
 			task = wrap(task);
-			return threadPool.submit(task);
+			return adapter.submit(task);
 		}
 
 		public void execute(Runnable command) {

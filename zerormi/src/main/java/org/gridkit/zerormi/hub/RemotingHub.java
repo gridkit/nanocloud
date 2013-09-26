@@ -21,8 +21,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.RmiGateway.StreamErrorHandler;
@@ -71,7 +71,7 @@ public class RemotingHub implements MasterHub {
 	}
 	
 	@Override
-	public ExecutorService getExecutionService(String sessionId) {
+	public AdvancedExecutor getExecutionService(String sessionId) {
 		SessionContext ctx = connections.get(sessionId);
 		if (ctx != null) {
 			return ctx.gateway.getRemoteExecutorService();
