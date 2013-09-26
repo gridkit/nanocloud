@@ -86,14 +86,20 @@ public class IsolateViNode implements ViNode {
 	
 	@Override
 	public void setConfigElement(String key, Object value) {
-		// TODO
-		throw new Error("Not implemented");
+		ensureNotDestroyed();
+		config.setConfigElement(key, value);
+		if (isolate != null) {
+			if (value == null || value instanceof String) {
+				configProxy.setProp(key, (String)value);
+			}
+		}
 	}
 
 	@Override
 	public void setConfigElements(Map<String, Object> config) {
-		// TODO
-		throw new Error("Not implemented");
+		for(String key: config.keySet()) {
+			setConfigElement(key, config.get(key));
+		}
 	}
 
 	@Override
@@ -335,14 +341,16 @@ public class IsolateViNode implements ViNode {
 	
 		@Override
 		public void setConfigElement(String key, Object value) {
-			// TODO
-			throw new Error("Not implemented");
+			if (value == null || value instanceof String) {
+				setProp(key, (String)value);
+			}
 		}
 
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
-			// TODO
-			throw new Error("Not implemented");
+			for(Map.Entry<String, Object> e: config.entrySet()) {
+				setConfigElement(e.getKey(), e.getValue());
+			}
 		}
 
 		@Override

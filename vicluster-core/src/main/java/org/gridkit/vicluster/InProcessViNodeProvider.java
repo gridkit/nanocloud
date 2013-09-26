@@ -64,14 +64,16 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 
 		@Override
 		public void setConfigElement(String key, Object value) {
-			// FIXME setConfigElement
-			throw new Error("Not implemented");
+			if (value == null || value instanceof String) {
+				setProp(key, (String)value);
+			}
 		}
 
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
-			// FIXME setConfigElements
-			throw new Error("Not implemented");
+			for(String key: config.keySet()) {
+				setConfigElement(key, config.get(key));
+			}
 		}
 		
 		public void addStartupHook(String name, Runnable hook) {

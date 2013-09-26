@@ -301,14 +301,20 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void setConfigElement(String key, Object value) {
-			// TODO implement setConfigElement
-			throw new UnsupportedOperationException();
+			ensureAlive();
+			this.config.setConfigElement(key, value);
+			if (realNode != null) {
+				realNode.setConfigElement(key, value);
+			}
 		}
 
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
-			// TODO implement setConfigElements
-			throw new UnsupportedOperationException();
+			ensureAlive();
+			this.config.setConfigElements(config);
+			if (realNode != null) {
+				realNode.setConfigElements(config);
+			}
 		}
 
 		@Override

@@ -35,8 +35,8 @@ import org.gridkit.util.concurrent.Box;
 import org.gridkit.vicluster.AdvExecutor2ViExecutor;
 import org.gridkit.vicluster.ViExecutor;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
-import org.gridkit.vicluster.ViNodeConfig2;
 import org.gridkit.vicluster.ViNodeLifeCycleHelper;
 import org.gridkit.vicluster.ViNodeLifeCycleHelper.Phase;
 import org.gridkit.vicluster.VoidCallable;
@@ -52,7 +52,7 @@ class ProcessNode implements ViNode {
 	private ManagedProcess process;
 	private AdvancedExecutor executor;
 	
-	private ViNodeConfig2 config = new ViNodeConfig2();
+	private ViNodeConfig config = new ViNodeConfig();
 	
 	private SplittingOutputStream outplex;
 	private SplittingOutputStream errplex;
@@ -275,9 +275,10 @@ class ProcessNode implements ViNode {
 	}
 
 	@Override
+	@Deprecated
 	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
 		if (active) {
-			config.addShutdownHook(name, hook, override);
+			config.addShutdownHook(name, hook);
 		}
 	}
 

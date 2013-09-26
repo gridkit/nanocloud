@@ -16,36 +16,35 @@
 package org.gridkit.vicluster;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.gridkit.util.concurrent.AdvancedExecutor;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 @SuppressWarnings("serial")
-public class ViNodeConfig implements ViConfigurable, Serializable {
+public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable {
 
-	private Map<String, String> props = new LinkedHashMap<String, String>();
-	private Map<String, HookInfo> startupHooks = new LinkedHashMap<String, HookInfo>();
-	private Map<String, HookInfo> shutdownHooks = new LinkedHashMap<String, HookInfo>();
-	
+	public ViNodeConfig() {
+		super(new LinkedHashMap<String, Object>());
+	}
+
 	public String getProp(String propName) {
-		return props.get(propName);
+		return (String)config.get(propName);
 	}
 
 	public String getProp(String propName, String def) {
-		String val = props.get(propName);
+		String val = (String)(config.get(propName));
 		return val == null ? def : val;
 	}
 
 	public Map<String, String> getAllProps(String prefix) {
 		Map<String, String> result = new LinkedHashMap<String, String>();
-		for(String key: props.keySet()) {
+		for(String key: config.keySet()) {
 			if (key.startsWith(prefix)) {
-				result.put(key, props.get(key));
+				result.put(key, (String)config.get(key));
 			}			
 		}
 		return result;
@@ -56,140 +55,78 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 	 */
 	public Map<String, String> getAllVanilaProps() {
 		Map<String, String> result = new LinkedHashMap<String, String>();
-		for(String key: props.keySet()) {
+		for(String key: config.keySet()) {
 			if (key.indexOf(':') < 0) {
-				result.put(key, props.get(key));
+				result.put(key, (String)config.get(key));
 			}			
 		}
 		return result;
 	}
 	
+	public Map<String, Object> getInternalConfigMap() {
+		return Collections.unmodifiableMap(config);
+	}
+	
 	@Override
 	public void setProp(String propName, String value) {
-		props.put(propName, value);
+		setConfigElement(propName, value);
 	}
 
 	@Override
 	public void setProps(Map<String, String> props) {
-		this.props.putAll(props);
+		for(String key: props.keySet()) {
+			setConfigElement(key, props.get(key));
+		}
 	}
 
 	@Override
 	public void setConfigElement(String key, Object value) {
-		throw new IllegalArgumentException();
+		if (key.indexOf(':') < 0) {
+			// vanila properties should be strings
+			String pv = (String) value;
+			config.put(key, pv);
+		}
+		else {
+			// TODO opportunistic type validation
+			config.put(key, value);
+		}
 	}
 
 	@Override
 	public void setConfigElements(Map<String, Object> config) {
-		throw new IllegalArgumentException();
+		for(String key: config.keySet()) {
+			setConfigElement(key, config.get(key));
+		}
 	}
 
 	@Override
-	public void addStartupHook(String id, Runnable hook) {
-		addStartupHook(id, hook, true);
+	public void addStartupHook(String name, Runnable hook) {
+		String hn = HOOK + name;
+		setConfigElement(hn, new Hooks.StratupHook(hook));
 	}
-
+	
 	@Override
-	public void addShutdownHook(String id, Runnable hook) {
-		addShutdownHook(id, hook, true);
+	public void addShutdownHook(String name, Runnable hook) {
+		String hn = HOOK + name;
+		setConfigElement(hn, new Hooks.ShutdownHook(hook));
 	}
 
 	@Override
 	@Deprecated
 	public void addStartupHook(String name, Runnable hook, boolean override) {
-		if (startupHooks.containsKey(name) && !override) {
-			throw new IllegalArgumentException("Startup hook '" + name + "' is already present");
-		}
-		startupHooks.put(name, new HookInfo(name, hook, override));
+		addStartupHook(name, hook);
 	}
 	
 	@Override
 	@Deprecated
 	public void addShutdownHook(String name, Runnable hook, boolean override) {
-		if (shutdownHooks.containsKey(name) && !override) {
-			throw new IllegalArgumentException("Shutdown hook '" + name + "' is already present");
-		}
-		shutdownHooks.put(name, new HookInfo(name, hook, override));
+		addShutdownHook(name, hook);
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void apply(ViConfigurable target) {
-		if (!props.isEmpty()) {
-			target.setProps(props);
-		}
-		for(HookInfo hi : startupHooks.values()) {
-			target.addStartupHook(hi.name, hi.hook, hi.override);
-		}
-		for(HookInfo hi : shutdownHooks.values()) {
-			target.addShutdownHook(hi.name, hi.hook, hi.override);
-		}	
-	}
+		target.setConfigElements(config);
+	}	
 	
-	public void runStartupHooks(ViNode node) {
-		for(HookInfo hi : startupHooks.values()) {
-			if (hi.hook instanceof HostSideHook) {
-				((HostSideHook)hi.hook).hostRun(false);				
-			}
-			else {
-				node.exec(hi.hook);
-			}
-		}
-	}
-
-	public void runShutdownHooks(ViNode node) {
-		for(HookInfo hi : shutdownHooks.values()) {
-			if (hi.hook instanceof HostSideHook) {
-				((HostSideHook)hi.hook).hostRun(true);				
-			}
-			else {
-				node.exec(hi.hook);
-			}
-		}
-	}
-
-	public void runStartupHooks(AdvancedExecutor executor) {
-		for(HookInfo hi : startupHooks.values()) {
-			if (hi.hook instanceof HostSideHook) {
-				((HostSideHook)hi.hook).hostRun(false);				
-			}
-			else {
-				try {
-					executor.submit(hi.hook).get();
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
-	}
-
-	public void runShutdownHooks(AdvancedExecutor executor) {
-		for(HookInfo hi : shutdownHooks.values()) {
-			if (hi.hook instanceof HostSideHook) {
-				((HostSideHook)hi.hook).hostRun(true);				
-			}
-			else {
-				try {
-					executor.submit(hi.hook).get();
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
-	}
-	
-	private static class HookInfo {
-		
-		public String name;
-		public Runnable hook;
-		public boolean override;
-		
-		public HookInfo(String name, Runnable hook, boolean override) {
-			this.name = name;
-			this.hook = hook;
-			this.override = override;
-		}
-	}
-
 	public static void applyProps(ViConfigurable vc, Map<String, String> props) {
 		for(Map.Entry<String, String> e : props.entrySet()) {
 			vc.setProp(e.getKey(), e.getValue());
@@ -215,16 +152,6 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		@Override
 		public void setProps(Map<String, String> props) {
 			// ignore
-		}
-
-		@Override
-		public void setConfigElement(String key, Object value) {
-			// ignore			
-		}
-
-		@Override
-		public void setConfigElements(Map<String, Object> config) {
-			// ignore			
 		}
 
 		@Override
@@ -264,7 +191,7 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 				setProp(key, props.get(key));
 			}
 		}
-		
+
 		@Override
 		public void setConfigElement(String key, Object value) {
 			// ignore			
@@ -274,7 +201,7 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		public void setConfigElements(Map<String, Object> config) {
 			// ignore			
 		}
-		
+
 		@Override
 		public void addStartupHook(String name, Runnable hook) {
 			// ignore			
@@ -307,21 +234,21 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		public void setProps(Map<String, String> props) {
 			// ignore
 		}
-		
+
 		@Override
 		public void setConfigElement(String key, Object value) {
-			// ignore			
+			// ignore
 		}
 
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
-			// ignore			
+			// ignore
 		}
 
 		@Override
 		public void addStartupHook(String name, Runnable hook) {
 			// ignore			
-		}		
+		}
 
 		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {

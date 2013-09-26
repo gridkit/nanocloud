@@ -24,6 +24,7 @@ import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
 /**
  * 
@@ -68,7 +69,7 @@ public class JvmNodeProvider implements ViNodeProvider {
 	}
 
 	protected ViNode createViNode(String name, ViNodeConfig config, ControlledProcess process) throws IOException {
-		return new JvmNode(name, config, process);
+		return new ProcessNode(name, config.getInternalConfigMap(), (ManagedProcess)process);
 	}
 	
 	private static class JvmOptionsInitializer extends ViNodeConfig.ReplyProps {

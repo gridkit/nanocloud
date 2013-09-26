@@ -110,21 +110,21 @@ class JvmNode implements ViNode {
 	}
 
 	private void runStartupHooks() throws IOException {
-		try {
-			config.runStartupHooks(executor);
-		}
-		catch(Exception e) {
-			throw new IOException("Node '" + name + "' has failed to initialize", e);
-		}
+//		try {
+//			config.runStartupHooks(executor);
+//		}
+//		catch(Exception e) {
+//			throw new IOException("Node '" + name + "' has failed to initialize", e);
+//		}
 	}
 	
 	private void runShutdownHooks() throws IOException {
-		try {
-			config.runShutdownHooks(executor);
-		}
-		catch(Exception e) {
-			throw new IOException("Node '" + name + "' has failed to initialize", e);
-		}
+//		try {
+//			config.runShutdownHooks(executor);
+//		}
+//		catch(Exception e) {
+//			throw new IOException("Node '" + name + "' has failed to initialize", e);
+//		}
 	}
 
 	public Process getProcess() {
@@ -288,13 +288,11 @@ class JvmNode implements ViNode {
 	@Override
 	public void suspend() {
 		// TODO
-		
 	}
 
 	@Override
 	public void resume() {
 		// TODO
-		
 	}
 
 	@Override
