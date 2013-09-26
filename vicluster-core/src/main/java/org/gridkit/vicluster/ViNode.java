@@ -111,12 +111,22 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 			delegate.shutdown();
 		}
 
+		public void addStartupHook(String id, Runnable hook) {
+			delegate.addStartupHook(id, hook);
+		}
+
+		public void addShutdownHook(String id, Runnable hook) {
+			delegate.addShutdownHook(id, hook);
+		}
+
 		@Override
+		@SuppressWarnings("deprecation")
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			delegate.addStartupHook(name, hook, override);
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			delegate.addShutdownHook(name, hook, override);
 		}

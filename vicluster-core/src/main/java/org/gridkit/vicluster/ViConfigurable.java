@@ -31,8 +31,18 @@ public interface ViConfigurable {
 
 	public void setConfigElements(Map<String, Object> config);
 	
-	public void addStartupHook(String name, Runnable hook, boolean override);
+	public void addStartupHook(String id, Runnable hook);
 
-	public void addShutdownHook(String name, Runnable hook, boolean override);
+	public void addShutdownHook(String id, Runnable hook);
+
+	/**
+	 * @deprecated Override protection is to be remove 
+	 */
+	public void addStartupHook(String id, Runnable hook, boolean override);
+
+	/**
+	 * @deprecated Override protection is to be remove 
+	 */
+	public void addShutdownHook(String id, Runnable hook, boolean override);
 	
 }

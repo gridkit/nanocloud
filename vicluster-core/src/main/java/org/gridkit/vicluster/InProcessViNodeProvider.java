@@ -64,20 +64,29 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 
 		@Override
 		public void setConfigElement(String key, Object value) {
-			// TODO
+			// FIXME setConfigElement
 			throw new Error("Not implemented");
 		}
 
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
-			// TODO
+			// FIXME setConfigElements
 			throw new Error("Not implemented");
+		}
+		
+		public void addStartupHook(String name, Runnable hook) {
+			throw new IllegalStateException("Node " + name + " is started already");
 		}
 
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			throw new IllegalStateException("Node " + name + " is started already");
 		}
 
+		public void addShutdownHook(String name, Runnable hook) {
+			config.addShutdownHook(name, hook);
+		}
+
+		@SuppressWarnings("deprecation")
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			config.addShutdownHook(name, hook, override);
 		}

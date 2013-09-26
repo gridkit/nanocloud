@@ -85,7 +85,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 		Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
 		// add Isolate init hook first
 		ViNodeConfig cc = new ViNodeConfig();
-		cc.addStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps), false);
+		cc.addStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
 		config.apply(cc);
 		
 		return new WrapperNode(super.createViNode(name, cc, process));
@@ -169,10 +169,20 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			node.shutdown();
 		}
 
+		public void addStartupHook(String name, Runnable hook) {
+			node.addStartupHook(name, hook);
+		}
+
+		@SuppressWarnings("deprecation")
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			node.addStartupHook(name, hook, override);
 		}
 
+		public void addShutdownHook(String name, Runnable hook) {
+			node.addShutdownHook(name, hook);
+		}
+
+		@SuppressWarnings("deprecation")
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			node.addShutdownHook(name, hook, override);
 		}

@@ -250,11 +250,24 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
+	public void addStartupHook(String name, Runnable hook) {
+		throw new IllegalStateException("Node " + name + " is started already");
+	}
+
+	@Override
 	public void addStartupHook(String name, Runnable hook, boolean override) {
 		throw new IllegalStateException("Node " + name + " is started already");
 	}
 
 	@Override
+	public synchronized void addShutdownHook(String name, Runnable hook) {
+		if (active) {
+			config.addShutdownHook(name, hook);
+		}
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
 	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
 		if (active) {
 			config.addShutdownHook(name, hook, override);

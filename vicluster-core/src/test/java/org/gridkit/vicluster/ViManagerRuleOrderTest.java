@@ -38,9 +38,9 @@ public class ViManagerRuleOrderTest {
 		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
 		
 		ViNode node = cloud.node("node");
-		node.addStartupHook("A", initProp("test-prop", "A"), false);
-		node.addStartupHook("B", initProp("test-prop", "B"), false);
-		node.addStartupHook("C", initProp("test-prop", "C"), false);
+		node.addStartupHook("A", initProp("test-prop", "A"));
+		node.addStartupHook("B", initProp("test-prop", "B"));
+		node.addStartupHook("C", initProp("test-prop", "C"));
 		
 		node.touch();
 		
@@ -53,9 +53,9 @@ public class ViManagerRuleOrderTest {
 		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
 		
 		ViNode node = cloud.node("node*");
-		node.addStartupHook("A", initProp("test-prop", "A"), false);
-		node.addStartupHook("B", initProp("test-prop", "B"), false);
-		node.addStartupHook("C", initProp("test-prop", "C"), false);
+		node.addStartupHook("A", initProp("test-prop", "A"));
+		node.addStartupHook("B", initProp("test-prop", "B"));
+		node.addStartupHook("C", initProp("test-prop", "C"));
 		
 		cloud.node("node").touch();
 		
@@ -72,12 +72,12 @@ public class ViManagerRuleOrderTest {
 		ViNode r3 = cloud.node("*d*");
 		ViNode r4 = cloud.node("*e");
 		
-		r4.addStartupHook("A", initProp("test-prop", "A"), false);
-		r3.addStartupHook("B", initProp("test-prop", "B"), false);
-		r2.addStartupHook("C", initProp("test-prop", "C"), false);
-		r1.addStartupHook("D", initProp("test-prop", "D"), false);
-		r2.addStartupHook("E", initProp("test-prop", "E"), false);
-		r3.addStartupHook("F", initProp("test-prop", "F"), false);
+		r4.addStartupHook("A", initProp("test-prop", "A"));
+		r3.addStartupHook("B", initProp("test-prop", "B"));
+		r2.addStartupHook("C", initProp("test-prop", "C"));
+		r1.addStartupHook("D", initProp("test-prop", "D"));
+		r2.addStartupHook("E", initProp("test-prop", "E"));
+		r3.addStartupHook("F", initProp("test-prop", "F"));
 		
 		cloud.node("node").touch();
 		
@@ -96,12 +96,12 @@ public class ViManagerRuleOrderTest {
 		ViNode r3 = cloud.node("*d*");
 		ViNode r4 = cloud.node("*e");
 		
-		r4.addStartupHook("A", initProp("test-prop", "A"), false);
-		r3.addStartupHook("B", initProp("test-prop", "B"), false);
-		r2.addStartupHook("C", initProp("test-prop", "C"), false);
-		r1.addStartupHook("D", initProp("test-prop", "D"), false);
-		r2.addStartupHook("E", initProp("test-prop", "E"), false);
-		r3.addStartupHook("F", initProp("test-prop", "F"), false);
+		r4.addStartupHook("A", initProp("test-prop", "A"));
+		r3.addStartupHook("B", initProp("test-prop", "B"));
+		r2.addStartupHook("C", initProp("test-prop", "C"));
+		r1.addStartupHook("D", initProp("test-prop", "D"));
+		r2.addStartupHook("E", initProp("test-prop", "E"));
+		r3.addStartupHook("F", initProp("test-prop", "F"));
 		
 		cloud.node("node").touch();
 		

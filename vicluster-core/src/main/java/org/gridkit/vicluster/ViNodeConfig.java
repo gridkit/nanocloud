@@ -85,6 +85,17 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 	}
 
 	@Override
+	public void addStartupHook(String id, Runnable hook) {
+		addStartupHook(id, hook, true);
+	}
+
+	@Override
+	public void addShutdownHook(String id, Runnable hook) {
+		addShutdownHook(id, hook, true);
+	}
+
+	@Override
+	@Deprecated
 	public void addStartupHook(String name, Runnable hook, boolean override) {
 		if (startupHooks.containsKey(name) && !override) {
 			throw new IllegalArgumentException("Startup hook '" + name + "' is already present");
@@ -93,6 +104,7 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 	}
 	
 	@Override
+	@Deprecated
 	public void addShutdownHook(String name, Runnable hook, boolean override) {
 		if (shutdownHooks.containsKey(name) && !override) {
 			throw new IllegalArgumentException("Shutdown hook '" + name + "' is already present");
@@ -100,6 +112,7 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		shutdownHooks.put(name, new HookInfo(name, hook, override));
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void apply(ViConfigurable target) {
 		if (!props.isEmpty()) {
 			target.setProps(props);
@@ -263,9 +276,19 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		}
 		
 		@Override
+		public void addStartupHook(String name, Runnable hook) {
+			// ignore			
+		}		
+
+		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			// ignore			
 		}		
+
+		@Override
+		public void addShutdownHook(String name, Runnable hook) {
+			// ignore
+		}
 
 		@Override
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
@@ -296,8 +319,19 @@ public class ViNodeConfig implements ViConfigurable, Serializable {
 		}
 
 		@Override
-		public void addStartupHook(String name, Runnable hook, boolean override) {
+		public void addStartupHook(String name, Runnable hook) {
 			// ignore			
 		}		
+
+		@Override
+		public void addStartupHook(String name, Runnable hook, boolean override) {
+			// ignore			
+		}
+
+		@Override
+		@SuppressWarnings("deprecation")
+		public void addShutdownHook(String id, Runnable hook) {
+			addShutdownHook(id, hook, true);
+		}
 	}
 }

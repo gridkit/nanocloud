@@ -117,6 +117,7 @@ public class ViGroup implements ViNode {
 
 	
 	@Override
+	@SuppressWarnings("deprecation")
 	public synchronized void addStartupHook(String name, Runnable hook, boolean override) {
 		checkActive();
 		config.addStartupHook(name, hook, override);
@@ -126,11 +127,30 @@ public class ViGroup implements ViNode {
 	}
 	
 	@Override
+	@SuppressWarnings("deprecation")
 	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
 		checkActive();
 		config.addShutdownHook(name, hook, override);
 		for(ViNode vh: hosts) {
 			vh.addShutdownHook(name, hook, override);
+		}
+	}
+	
+	@Override
+	public synchronized void addStartupHook(String name, Runnable hook) {
+		checkActive();
+		config.addStartupHook(name, hook);
+		for(ViNode vh: hosts) {
+			vh.addStartupHook(name, hook);
+		}
+	}
+	
+	@Override
+	public synchronized void addShutdownHook(String name, Runnable hook) {
+		checkActive();
+		config.addShutdownHook(name, hook);
+		for(ViNode vh: hosts) {
+			vh.addShutdownHook(name, hook);
 		}
 	}
 	
@@ -262,13 +282,13 @@ public class ViGroup implements ViNode {
 
 		@Override
 		public boolean isCancelled() {
-			// TODO implement
+			// TODO implement isCancelled
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
 		public boolean isDone() {
-			// TODO implement
+			// TODO implement isDone
 			throw new UnsupportedOperationException();
 		}
 
@@ -280,7 +300,7 @@ public class ViGroup implements ViNode {
 
 		@Override
 		public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-			// TODO implement
+			// TODO implement get() with timeout
 			throw new UnsupportedOperationException();
 		}
 	}

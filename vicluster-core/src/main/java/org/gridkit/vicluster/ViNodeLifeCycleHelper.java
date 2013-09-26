@@ -20,14 +20,14 @@ public class ViNodeLifeCycleHelper {
 		POST_SHUTDOWN
 	}
 	
-	public static String HOOK = "hook:";
-	public static String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
-	public static String ACTIVATED_HOST_HOOK = "#host-hook:";
+	public static String HOOK = ViConf.HOOK;
+	public static String ACTIVATED_REMOTE_HOOK = ViConf.ACTIVATED_REMOTE_HOOK;
+	public static String ACTIVATED_HOST_HOOK = ViConf.ACTIVATED_HOST_HOOK;
 	
 	public Map<String, Object> processPhase(Phase phase, Map<String, Object> config) {
 		Game game = new Game(config);
 		game.play(phase);
-		return game.config;
+		return game.exportConfig();
 	}
 
 	public void executeHooks(ViExecutor target, Map<String, Object> config, boolean reverseOrder) {
@@ -40,8 +40,8 @@ public class ViNodeLifeCycleHelper {
 		
 		for(String key: keySet) {
 			if (key.startsWith(ACTIVATED_REMOTE_HOOK)) {
-				config.remove(key);
 				Object hook = config.get(key);
+				config.remove(key);
 				if (hook != null) {
 					if (hook instanceof Runnable) {
 						target.exec((Runnable)hook);
@@ -52,8 +52,8 @@ public class ViNodeLifeCycleHelper {
 				}
 			}
 			else if (key.startsWith(ACTIVATED_HOST_HOOK)) {
-				config.remove(key);
 				Object hook = config.get(key);
+				config.remove(key);
 				if (hook != null) {
 					if (hook instanceof Runnable) {
 						((Runnable)hook).run();
@@ -156,6 +156,7 @@ public class ViNodeLifeCycleHelper {
 						continue quorum;
 					}
 				}
+				break;
 			}
 		}
 		
@@ -226,7 +227,10 @@ public class ViNodeLifeCycleHelper {
 				int n = 1;
 				while(config.containsKey(propName + "." + (++n)));
 				setProp(propName + "." + n, value);
-			}			
+			}		
+			else {
+				setProp(propName, value);
+			}
 		}
 
 		@Override
@@ -297,6 +301,14 @@ public class ViNodeLifeCycleHelper {
 			quorumRerunQueue.add(new RerunContext(rerun));
 		}
 
+		public Map<String, Object> exportConfig() {
+			HashMap<String, Object> map = new LinkedHashMap<String, Object>(keyOrder.size());
+			for(String key: keyOrder) {
+				map.put(key, config.get(key));
+			}
+			return map;
+		}
+		
 		private class RerunContext {
 			
 			Map<String, Object> changes = new LinkedHashMap<String, Object>();

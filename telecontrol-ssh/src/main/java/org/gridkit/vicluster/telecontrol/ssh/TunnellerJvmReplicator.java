@@ -36,6 +36,7 @@ import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
@@ -43,6 +44,7 @@ import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
@@ -440,7 +442,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 	}
 	
-	private class RemoteControlSession extends ProcessProxy implements SessionEventListener, ControlledProcess, ExecHandler {
+	private class RemoteControlSession extends ProcessProxy implements SessionEventListener, ControlledProcess, ManagedProcess, ExecHandler {
 		
 		long execId;
 		String sessionId;
@@ -483,6 +485,22 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		@Override
 		public void reconnected(DuplexStream stream) {
 			logger.info("Reconnected: " + stream);
+		}
+
+		@Override
+		public void suspend() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void resume() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public FutureEx<Integer> getExitCodeFuture() {
+			// FIXME getExitCodeFuture for remote process
+			return new FutureBox<Integer>();
 		}
 
 		@Override

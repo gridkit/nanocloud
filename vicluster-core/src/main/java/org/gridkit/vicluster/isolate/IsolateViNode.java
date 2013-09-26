@@ -97,12 +97,30 @@ public class IsolateViNode implements ViNode {
 	}
 
 	@Override
+	public synchronized void addStartupHook(String name, Runnable hook) {
+		ensureNotDestroyed();
+		if (isolate != null) {
+			throw new IllegalStateException("already started");
+		}
+		config.addStartupHook(name, hook);
+	}
+
+	@Override
 	public synchronized void addStartupHook(String name, Runnable hook, boolean override) {
 		ensureNotDestroyed();
 		if (isolate != null) {
 			throw new IllegalStateException("already started");
 		}
 		config.addStartupHook(name, hook, override);
+	}
+
+	@Override
+	public synchronized void addShutdownHook(String name, Runnable hook) {
+		ensureNotDestroyed();
+		config.addShutdownHook(name, hook);
+		if (isolate != null) {
+			throw new IllegalStateException("already started");
+		}
 	}
 
 	@Override
@@ -328,10 +346,20 @@ public class IsolateViNode implements ViNode {
 		}
 
 		@Override
+		public void addStartupHook(String name, Runnable hook) {
+			isolate.exec(hook); 
+		}
+
+		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			isolate.exec(hook); 
 		}
 	
+		@Override
+		public void addShutdownHook(String name, Runnable hook) {
+			// do nothing
+		}	
+
 		@Override
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			// do nothing

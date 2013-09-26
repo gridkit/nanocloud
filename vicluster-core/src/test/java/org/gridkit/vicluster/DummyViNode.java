@@ -54,10 +54,20 @@ public class DummyViNode implements ViNode {
 		this.config.setConfigElements(config);
 	}
 
+	public void addStartupHook(String name, Runnable hook) {
+		config.addStartupHook(name, hook);
+	}
+
+	@SuppressWarnings("deprecation")
 	public void addStartupHook(String name, Runnable hook, boolean override) {
 		config.addStartupHook(name, hook, override);
 	}
 
+	public void addShutdownHook(String name, Runnable hook) {
+		config.addShutdownHook(name, hook);
+	}
+
+	@SuppressWarnings("deprecation")
 	public void addShutdownHook(String name, Runnable hook, boolean override) {
 		config.addShutdownHook(name, hook, override);
 	}

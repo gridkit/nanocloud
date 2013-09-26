@@ -166,7 +166,7 @@ public class ViHookBuilder {
 			else {
 				CallSiteCutPoint cp = new CallSiteCutPoint(makeClassNames(), methodName, makeSignature());
 				InstrumentationHookRule rule = new InstrumentationHookRule(cp, makeInterceptor());
-				node.addStartupHook(rule.toString(), rule, false);
+				node.addStartupHook(rule.toString(), rule);
 			}
 		}
 		

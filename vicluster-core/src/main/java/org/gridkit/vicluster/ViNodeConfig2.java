@@ -15,8 +15,6 @@
  */
 package org.gridkit.vicluster;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -27,10 +25,12 @@ import java.util.Map;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 @SuppressWarnings("serial")
-public class ViNodeConfig2 implements ViConfigurable, Serializable {
+public class ViNodeConfig2 extends ViConf implements ViConfigurable, Serializable {
 
-	private Map<String, Object> config = new LinkedHashMap<String, Object>();
-	
+	public ViNodeConfig2() {
+		super(new LinkedHashMap<String, Object>());
+	}
+
 	public String getProp(String propName) {
 		return (String)config.get(propName);
 	}
@@ -100,49 +100,30 @@ public class ViNodeConfig2 implements ViConfigurable, Serializable {
 	}
 
 	@Override
-	public void addStartupHook(String name, Runnable hook, boolean override) {
-		String hn = ViNodeLifeCycleHelper.HOOK + name;
+	public void addStartupHook(String name, Runnable hook) {
+		String hn = HOOK + name;
 		setConfigElement(hn, new Hooks.StratupHook(hook));
 	}
 	
 	@Override
-	public void addShutdownHook(String name, Runnable hook, boolean override) {
-		String hn = ViNodeLifeCycleHelper.HOOK + name;
+	public void addShutdownHook(String name, Runnable hook) {
+		String hn = HOOK + name;
 		setConfigElement(hn, new Hooks.ShutdownHook(hook));
+	}
+
+	@Override
+	public void addStartupHook(String name, Runnable hook, boolean override) {
+		addStartupHook(name, hook);
+	}
+	
+	@Override
+	public void addShutdownHook(String name, Runnable hook, boolean override) {
+		addShutdownHook(name, hook);
 	}
 	
 	public void apply(ViConfigurable target) {
 		target.setConfigElements(config);
-	}
-	
-	private boolean getBoolean(String propName, boolean def) {
-		String val = (String) config.get(propName);
-		return val == null ? def : Boolean.valueOf(propName);
-	}
-	
-	public InputStream getConsoleStdIn() {
-		return (InputStream)config.get("console:stdIn");
-	}
-
-	public boolean getConsoleStdOutEcho() {
-		return getBoolean("console:stdOut.echo", true);
-	}
-
-	public OutputStream getConsoleStdOut() {
-		return (OutputStream)config.get("console:stdOut");
-	}
-
-	public boolean getConsoleStdErrEcho() {
-		return getBoolean("console:stdErr.echo", true);
-	}
-	
-	public OutputStream getConsoleStdErr() {
-		return (OutputStream)config.get("console:stdErr");
-	}
-	
-	public boolean getSilenceOutputOnShutdown() {
-		return getBoolean("console:silent-shutdown", true);
-	}
+	}	
 	
 	public static void applyProps(ViConfigurable vc, Map<String, String> props) {
 		for(Map.Entry<String, String> e : props.entrySet()) {

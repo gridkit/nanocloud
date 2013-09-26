@@ -312,6 +312,7 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			ensureAlive();
 			config.addStartupHook(name, hook, override);
@@ -321,6 +322,25 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void addStartupHook(String name, Runnable hook) {
+			ensureAlive();
+			config.addStartupHook(name, hook);
+			if (realNode != null) {
+				realNode.addStartupHook(name, hook);
+			}			
+		}
+
+		@Override
+		public synchronized void addShutdownHook(String name, Runnable hook) {
+			ensureAlive();
+			config.addShutdownHook(name, hook);
+			if (realNode != null) {
+				realNode.addShutdownHook(name, hook);
+			}			
+		}
+
+		@Override
+		@SuppressWarnings("deprecation")
 		public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
 			ensureAlive();
 			config.addShutdownHook(name, hook, override);
@@ -730,6 +750,15 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void addStartupHook(String name, Runnable hook) {
+			synchronized(ViManager.this) { 
+				rule().addStartupHook(name, hook);
+				select().addStartupHook(name, hook);
+			}
+		}
+
+		@Override
+		@SuppressWarnings("deprecation")
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
 				rule().addStartupHook(name, hook, override);
@@ -738,6 +767,15 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void addShutdownHook(String name, Runnable hook) {
+			synchronized(ViManager.this) { 
+				rule().addShutdownHook(name, hook);
+				select().addShutdownHook(name, hook);
+			}
+		}
+
+		@Override
+		@SuppressWarnings("deprecation")
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
 				rule().addShutdownHook(name, hook, override);
@@ -924,10 +962,20 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public void addStartupHook(String name, Runnable hook) {
+			throw new UnsupportedOperationException();			
+		}
+
+		@Override
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			throw new UnsupportedOperationException();			
 		}
 		
+		@Override
+		public void addShutdownHook(String name, Runnable hook) {
+			throw new UnsupportedOperationException();			
+		}
+
 		@Override
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			throw new UnsupportedOperationException();			

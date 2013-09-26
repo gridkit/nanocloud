@@ -52,7 +52,7 @@ class ProcessNode implements ViNode {
 	private ManagedProcess process;
 	private AdvancedExecutor executor;
 	
-	private ViNodeConfig2 config;
+	private ViNodeConfig2 config = new ViNodeConfig2();
 	
 	private SplittingOutputStream outplex;
 	private SplittingOutputStream errplex;
@@ -88,7 +88,7 @@ class ProcessNode implements ViNode {
 		if (stdErr != null) {
 			errs.add(stdErr);
 		}
-		if (outSink != null) {
+		if (errSink != null) {
 			errs.add(errSink);
 		}
 		
@@ -258,8 +258,20 @@ class ProcessNode implements ViNode {
 	}
 
 	@Override
+	public void addStartupHook(String name, Runnable hook) {
+		throw new IllegalStateException("Node " + name + " is started already");
+	}
+
+	@Override
 	public void addStartupHook(String name, Runnable hook, boolean override) {
 		throw new IllegalStateException("Node " + name + " is started already");
+	}
+
+	@Override
+	public synchronized void addShutdownHook(String name, Runnable hook) {
+		if (active) {
+			config.addShutdownHook(name, hook);
+		}
 	}
 
 	@Override
@@ -306,6 +318,7 @@ class ProcessNode implements ViNode {
 				if (gracefully) { 
 					processPreShutdown();
 				}
+				flushOutput();
 			} catch (Exception e) {
 				e.printStackTrace(); // TODO logging
 			}
@@ -340,11 +353,23 @@ class ProcessNode implements ViNode {
 		}		
 	}
 
+	private void flushOutput() {
+		execProxy.exec(new Runnable() {
+			@Override
+			public void run() {
+		          System.out.flush();
+		          System.err.flush();
+			}
+		});
+	}
+
 	private Runnable poisonPill(boolean graceful) {
 		if (graceful) {
 			return new Runnable() {
 				@Override
 				public void run() {
+					System.out.flush();
+					System.err.flush();
 					if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
 						System.exit(0);
 					}
@@ -355,11 +380,13 @@ class ProcessNode implements ViNode {
 			return new Runnable() {
 				@Override
 				public void run() {
+					System.out.flush();
+					System.err.flush();
 					if (System.getProperty("org.gridkit.suppress-system-exit") == null) {
 						Runtime.getRuntime().halt(0);
 					}
 				}
-			};			
+			};
 		}
 	}
 
@@ -439,7 +466,9 @@ class ProcessNode implements ViNode {
 		@Override
 		public void close() throws IOException {
 			super.flush();
-			dumpBuffer();	
+			if (buffer.size() > 0) {
+				dumpBuffer();
+			}
 			if (!ignoreClose) {
 				printStream.close();
 			}

@@ -116,7 +116,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 						releaseConnection(context, node);
 					}
 				}
-			}, false);
+			});
 			session.processes.add(node);
 			
 			return node;			
