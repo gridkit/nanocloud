@@ -18,9 +18,8 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.junit.Test;
 
 public class TunnellerCheck {
@@ -42,9 +41,9 @@ public class TunnellerCheck {
 		per.configure(config());
 		per.init();
 		
-		ControlledProcess cp = per.createProcess("test", new JvmConfig());
-		BackgroundStreamDumper.link(cp.getProcess().getInputStream(), System.out);
-		BackgroundStreamDumper.link(cp.getProcess().getErrorStream(), System.err);
+		ManagedProcess cp = per.createProcess("test", new JvmConfig());
+		cp.bindStdOut(System.out);
+		cp.bindStdOut(System.err);
 		cp.getExecutionService().submit(new Runnable() {
 			
 			@Override

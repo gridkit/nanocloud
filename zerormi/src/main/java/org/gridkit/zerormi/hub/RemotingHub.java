@@ -26,8 +26,9 @@ import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.RmiGateway.StreamErrorHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.zerormi.zlog.LogLevel;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
  * This is a hub managing multiple RMI channel connection.
@@ -37,16 +38,19 @@ import org.slf4j.LoggerFactory;
  */
 public class RemotingHub implements MasterHub {
 	
-	private final static Logger LOGGER = LoggerFactory.getLogger(RemotingHub.class);
-
 	private final static int UID_LENGTH = 32;
 	
-	private SecureRandom srnd ;
-	
+	private LogStream logInfo;
+	private LogStream logWarn;
+	private LogStream logError;
+	private SecureRandom srnd ;	
 	private ConcurrentMap<String, SessionContext> connections = new ConcurrentHashMap<String, SessionContext>();
 	
-	public RemotingHub() {
+	public RemotingHub(ZLogger logger) {
 		try {
+			this.logInfo = logger.get(getClass().getSimpleName(), LogLevel.INFO);
+			this.logWarn = logger.get(getClass().getSimpleName(), LogLevel.WARN);
+			this.logError = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
 			srnd = SecureRandom.getInstance("SHA1PRNG");
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
@@ -129,8 +133,8 @@ public class RemotingHub implements MasterHub {
 					ctx = connections.get(id);
 					if (ctx != null) {
 						if (ctx.stream != null) {
-							LOGGER.warn("New stream for " + id + " " + stream);
-							LOGGER.warn("Old stream for " + id + " would be disposed " + ctx.stream);
+							logWarn.log("New stream for " + id + " " + stream);
+							logWarn.log("Old stream for " + id + " would be disposed " + ctx.stream);
 							silentClose(ctx.stream);
 							ctx.gateway.disconnect();
 							if (ctx.stream != null) {
@@ -143,15 +147,15 @@ public class RemotingHub implements MasterHub {
 							ctx.stream = stream;
 							ctx.listener.connected(stream);
 						} catch (IOException e) {
-							LOGGER.error("Stream connection failed " + stream);
+							logError.log("Stream connection failed " + stream);
 						}
-						LOGGER.info("Stream connected at end point " + id + " - " + stream);
+						logInfo.log("Stream connected at end point " + id + " - " + stream);
 						return;
 					}
 				}
 			}
 		}
-		LOGGER.warn("Stream were not connected " + stream);
+		logWarn.log("Stream were not connected " + stream);
 		silentClose(stream);
 	}
 	
@@ -195,7 +199,7 @@ public class RemotingHub implements MasterHub {
 		public void streamClosed(DuplexStream socket, Object stream) {
 			gateway.disconnect();
 			this.stream = null;
-			LOGGER.info("Closed: " + stream);
+			logInfo.log("Closed: " + stream);
 		}
 	}
 	

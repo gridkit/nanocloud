@@ -37,8 +37,10 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.AdvancedExecutorAdapter;
 import org.gridkit.util.concurrent.FutureEx;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.zerormi.zlog.LogLevel;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogFactory;
+import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
  * 
@@ -46,8 +48,6 @@ import org.slf4j.LoggerFactory;
  */
 public class RmiGateway {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RmiGateway.class);
-	
 	private final RmiChannel channel;
 	private final ExecutorService executor;
 	
@@ -63,6 +63,10 @@ public class RmiGateway {
 	private CounterAgent remote;
 	private Thread readerThread;
 	
+	private final LogStream logVerbose;
+	private final LogStream logInfo;
+	private final LogStream logCritical;
+	
 	private StreamErrorHandler streamErrorHandler = new StreamErrorHandler() {
 		@Override
 		public void streamError(DuplexStream socket, Object stream, Exception error) {
@@ -76,7 +80,11 @@ public class RmiGateway {
 	};
 	
 	public RmiGateway(String name) {
-		this(name, new SmartRmiMarshaler());
+		this(name, ZLogFactory.getDefaultRootLogger().getLogger(RmiGateway.class.getPackage().getName()));
+	}
+
+	public RmiGateway(String name, ZLogger logger) {
+		this(name, new SmartRmiMarshaler(), logger);
 	}
 
 	private ExecutorService createRmiExecutor() {
@@ -95,12 +103,15 @@ public class RmiGateway {
 				});
 	}
 
-	public RmiGateway(String name, RmiMarshaler marshaler) {
+	public RmiGateway(String name, RmiMarshaler marshaler, ZLogger logger) {
 		// TODO should include counter agent
 		this.executor = createRmiExecutor();
-		this.channel = new RmiChannel1(new MessageOut(), executor, marshaler);
+		this.channel = new RmiChannel1(new MessageOut(), executor, marshaler, logger);
 		this.service = new RemoteExecutionService();
 		this.name = name;
+		this.logVerbose = logger.get(getClass().getSimpleName(), LogLevel.VERBOSE);
+		this.logInfo = logger.get(getClass().getSimpleName(), LogLevel.INFO);
+		this.logCritical = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
 	}
 	
 	public AdvancedExecutor getRemoteExecutorService() {
@@ -116,7 +127,7 @@ public class RmiGateway {
 		synchronized(this) {
 			if (connected) {
 				
-				LOGGER.info("RMI gateway [" + name +"] disconneted.");
+				logInfo.log("RMI gateway [" + name +"] disconneted.");
 				
 				readerThread = this.readerThread;
 				
@@ -170,7 +181,7 @@ public class RmiGateway {
 		if (terminated) {
 			return;
 		}
-		LOGGER.info("RMI gateway [" + name +"] terminated.");
+		logInfo.log("RMI gateway [" + name +"] terminated.");
 		terminated = true;
 		
 		try {
@@ -256,7 +267,7 @@ public class RmiGateway {
 					Object message = chin.readObject();
 					if (message != null) {
 						if ("close".equals(message)) {
-							LOGGER.info("RMI gateway [" + name + "], remote side has requested termination");
+							logInfo.log("RMI gateway [" + name + "], remote side has requested termination");
 							shutdown();
 						}
 						else {
@@ -267,15 +278,15 @@ public class RmiGateway {
 			}
 			catch(Exception e) {
 				if (IOHelper.isSocketTerminationException(e)) {
-					LOGGER.debug("RMI stream, socket has been discontinued [" + socket + "] - " + e.toString());
+					logVerbose.log("RMI stream, socket has been discontinued [" + socket + "] - " + e.toString());
 				}
 				else {
-					LOGGER.error("RMI stream read exception [" + socket + "]", e);
+					logCritical.log("RMI stream read exception [" + socket + "]", e);
 				}
 				DuplexStream socket = RmiGateway.this.socket;
 				InputStream in = RmiGateway.this.in;
 				readerThread = null;
-				LOGGER.debug("disconnecting");
+				logVerbose.log("disconnecting");
 				disconnect();
 				if (IOHelper.isSocketTerminationException(e)) {
 					streamErrorHandler.streamClosed(socket, in);

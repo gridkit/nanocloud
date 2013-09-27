@@ -36,7 +36,7 @@ import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
 /**
  * 
@@ -45,7 +45,7 @@ import org.gridkit.vicluster.telecontrol.ControlledProcess;
 class JvmNode implements ViNode {
 
 	private String name;
-	private Process process;
+	private ManagedProcess process;
 	private AdvancedExecutor executor;
 	
 	private WrapperPrintStream stdOut;
@@ -55,9 +55,9 @@ class JvmNode implements ViNode {
 	
 	private boolean active;
 	
-	public JvmNode(String name, ViNodeConfig config, ControlledProcess cp) throws IOException {
+	public JvmNode(String name, ViNodeConfig config, ManagedProcess cp) throws IOException {
 		this.name = name;
-		this.process = cp.getProcess();
+		this.process = cp;
 		this.executor = cp.getExecutionService();
 		
 		config.apply(this.config);
@@ -127,10 +127,6 @@ class JvmNode implements ViNode {
 //		}
 	}
 
-	public Process getProcess() {
-		return process;
-	}
-	
 	@Override
 	public void touch() {
 		ensureStarted();

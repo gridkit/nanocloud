@@ -57,6 +57,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>zerormi</artifactId>
+        </dependency>
+
+        <dependency>
         	<groupId>org.slf4j</groupId>
         	<artifactId>slf4j-api</artifactId>
         </dependency>

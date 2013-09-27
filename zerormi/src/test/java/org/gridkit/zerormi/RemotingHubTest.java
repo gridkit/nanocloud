@@ -34,6 +34,7 @@ import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
+import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,7 +53,7 @@ public class RemotingHubTest {
 	
 	@Before
 	public void initHub() throws InterruptedException, BrokenBarrierException, TimeoutException {
-		hub = new RemotingHub();
+		hub = new RemotingHub(ZLogFactory.getDefaultRootLogger());
 		
 		final CountDownLatch latch = new CountDownLatch(2);
 		

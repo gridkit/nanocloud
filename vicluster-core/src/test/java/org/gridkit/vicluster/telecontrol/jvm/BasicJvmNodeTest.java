@@ -17,28 +17,31 @@ package org.gridkit.vicluster.telecontrol.jvm;
 
 import junit.framework.Assert;
 
+import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
-import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
-import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class BasicJvmNodeTest {
 
-	LocalJvmProcessFactory lpf = new LocalJvmProcessFactory();
-	JvmNodeProvider nfactory = new JvmNodeProvider(lpf);
-
+	ViManager cloud;
+	
+	@Before
+	public void init() {
+		cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory()));
+	}
+	
 	@After
 	public void cleanup() {
-		lpf.stop();
+		cloud.shutdown();
 	}
 	
 	@Test
 	public void hallo_world_test() {
 		
-		ViNode node = nfactory.createNode("HalloWelt", new ViNodeConfig());
+		ViNode node = cloud.node("HalloWelt");
 		
 		node.exec(new Runnable() {
 			@Override
@@ -53,11 +56,8 @@ public class BasicJvmNodeTest {
 	@Test
 	public void test_single_VM_option() {
 		
-		ViNodeConfig config = new ViNodeConfig();
-		
-		JvmProps.addJvmArg(config, "-Dtest-property=Y-a-a-hoo");
-		
-		ViNode node = nfactory.createNode("HalloWelt", config);
+		ViNode node = cloud.node("HalloWelt");
+		JvmProps.addJvmArg(node, "-Dtest-property=Y-a-a-hoo");
 		
 		node.exec(new Runnable() {
 			@Override
@@ -74,11 +74,8 @@ public class BasicJvmNodeTest {
 	@Test
 	public void test_multiple_VM_options() {
 		
-		ViNodeConfig config = new ViNodeConfig();
-		
-		JvmProps.addJvmArg(config, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
-		
-		ViNode node = nfactory.createNode("HalloWelt", config);
+		ViNode node = cloud.node("HalloWelt");
+		JvmProps.addJvmArg(node, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
 		
 		node.exec(new Runnable() {
 			@Override
@@ -97,11 +94,8 @@ public class BasicJvmNodeTest {
 	@Test(expected=RuntimeException.class)
 	public void test_invalid_VM_options() {
 		
-		ViNodeConfig config = new ViNodeConfig();
-		
-		JvmProps.addJvmArg(config, "-XX:+InvalidOption");
-		
-		ViNode node = nfactory.createNode("HalloWelt", config);
+		ViNode node = cloud.node("HalloWelt");
+		JvmProps.addJvmArg(node, "-XX:+InvalidOption");
 		
 		node.exec(new Runnable() {
 			@Override

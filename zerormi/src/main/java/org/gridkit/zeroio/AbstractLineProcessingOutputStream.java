@@ -22,7 +22,7 @@ import java.io.OutputStream;
 /**
  * @author Alexey Ragozin
  */
-abstract class AbstractLineProcessingOutputStream extends OutputStream {
+public abstract class AbstractLineProcessingOutputStream extends OutputStream {
 
 	private ByteArrayOutputStream buffer;
 	

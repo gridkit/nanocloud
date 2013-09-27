@@ -142,25 +142,45 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 		}
 	}
 	
-	public static abstract class ReplyStartupHooks implements ViConfigurable {
+	public static abstract class ConfigurationDispatcher implements ViConfigurable {
 
 		@Override
-		public void setProp(String propName, String value) {
-			// ignore
+		public void setConfigElement(String key, Object value) {
+			// TODO full refactoring of configuration mechanics
+			if (ViConf.isVanilaProp(key)) {
+				setProp(key, (String)value);
+			}
+			else if (ViConf.isHook(key)) {
+				// ignore
+			}
+			else {
+				setProp(key, (String)value);
+			}
 		}
 
 		@Override
-		public void setProps(Map<String, String> props) {
-			// ignore
+		public void setConfigElements(Map<String, Object> config) {
+			for(String key: config.keySet()) {
+				setConfigElement(key, config.get(key));
+			}
+		}
+	}
+	
+	public static abstract class ReplyVanilaProps extends ReplyProps {
+
+		public ReplyVanilaProps(String... filter) {
+			super(filter);
 		}
 
 		@Override
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			// ignore
+		public void setConfigElement(String key, Object value) {
+			if (ViConf.isVanilaProp(key)) {
+				super.setConfigElement(key, value);
+			}
 		}
 	}
 
-	public static abstract class ReplyProps implements ViConfigurable {
+	public static abstract class ReplyProps extends ConfigurationDispatcher implements ViConfigurable {
 		
 		private String[] filter;
 
@@ -190,16 +210,6 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 			for(String key: props.keySet()) {
 				setProp(key, props.get(key));
 			}
-		}
-
-		@Override
-		public void setConfigElement(String key, Object value) {
-			// ignore			
-		}
-
-		@Override
-		public void setConfigElements(Map<String, Object> config) {
-			// ignore			
 		}
 
 		@Override

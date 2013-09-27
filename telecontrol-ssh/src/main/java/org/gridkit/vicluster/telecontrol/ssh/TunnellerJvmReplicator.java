@@ -40,7 +40,6 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
@@ -50,14 +49,14 @@ import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.SocketHandler;
-import org.gridkit.zeroio.LoggerPrintStream;
-import org.gridkit.zeroio.LoggerPrintStream.Level;
+import org.gridkit.vicluster.telecontrol.ssh.LoggerPrintStream.Level;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.NamedStreamPair;
 import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.MasterHub;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
+import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +118,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			jarCache = new SftFileCache(session, rconfig.getJarCachePath(), 4);
 			initRemoteClasspath();
 			startTunneler();
-			hub = new RemotingHub();
+			hub = new RemotingHub(ZLogFactory.getDefaultRootLogger());
 			initPortForwarding();
 		}
 		catch(Exception e) {
@@ -382,7 +381,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	}
 	
 	@Override
-	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
+	public ManagedProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 		ensureActive();
 		
 		String bootJarPath = createBootJar(caption, jvmArgs);
@@ -442,18 +441,13 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 	}
 	
-	private class RemoteControlSession extends ProcessProxy implements SessionEventListener, ControlledProcess, ManagedProcess, ExecHandler {
+	private class RemoteControlSession extends ProcessProxy implements SessionEventListener, ManagedProcess, ExecHandler {
 		
 		long execId;
 		String sessionId;
 		AdvancedExecutor remoteExecutorService;
 		FutureBox<Void> connected = new FutureBox<Void>();
 		
-		@Override
-		public Process getProcess() {
-			return this;
-		}
-
 		@Override
 		public AdvancedExecutor getExecutionService() {
 			try {

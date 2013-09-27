@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,11 +34,13 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.vicluster.AdvExecutor2ViExecutor;
+import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViExecutor;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
-import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
+import org.gridkit.vicluster.ViNodeConfig.ReplyVanilaProps;
 import org.gridkit.vicluster.ViNodeLifeCycleHelper;
+import org.gridkit.vicluster.ViNodeLifeCycleHelper.Interceptor;
 import org.gridkit.vicluster.ViNodeLifeCycleHelper.Phase;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -126,7 +129,7 @@ class ProcessNode implements ViNode {
 
 		final Map<String, String> props = new HashMap<String, String>();
 		props.put("vinode.name", name);
-		ReplyProps replay = new ReplyProps() {
+		ReplyVanilaProps replay = new ReplyVanilaProps() {
 			@Override
 			protected void setPropInternal(String propName, String value) {
 				if (propName.indexOf(':') < 0) {
@@ -224,16 +227,16 @@ class ProcessNode implements ViNode {
 
 	@Override
 	public void setProp(final String propName, final String value) {
-		exec(new Runnable(){
-			@Override
-			public void run() {
-				System.setProperty(propName, value);
-			}
-		});
+		setProps(Collections.singletonMap(propName, value));
 	}
 
 	@Override
 	public void setProps(Map<String, String> props) {
+		for(String p: props.keySet()) {
+			if (!ViConf.isVanilaProp(p)) {
+				throw new IllegalArgumentException("[" + p + "] is not 'vanila' prop");
+			}
+		}
 		final Map<String, String> copy = new LinkedHashMap<String, String>(props);
 		exec(new Runnable() {
 			@Override
@@ -247,14 +250,38 @@ class ProcessNode implements ViNode {
 
 	@Override
 	public void setConfigElement(String key, Object value) {
-		// TODO implement setConfigElement
-		throw new Error("Not implemented");		
+		if (ViConf.isTemporary(key)) {
+			throw new IllegalArgumentException("Shapd keys could be produced only by quorum games");
+		}
+		if (ViConf.isHook(key)) {
+			ViNodeLifeCycleHelper.Interceptor interceptor = (Interceptor) value;
+			if (value != null) {
+				interceptor.processAddHoc(key, this);
+			}
+			config.setConfigElement(key, value);
+			return;
+		}
+		if (ViConf.isRuntime(key)) {
+			throw new IllegalArgumentException("Runtime keys are read only");
+		}
+		if (ViConf.isNode(key)) {
+			throw new IllegalArgumentException("Node properties cannot be modified after activation");
+		}
+		if (ViConf.isConsole(key)) {
+			throw new IllegalArgumentException("Console keys cannot be modified after activation");
+		}
+		if (ViConf.isVanilaProp(key)) {
+			setProps(Collections.singletonMap(key, (String)value));
+			return;
+		}
+		throw new IllegalArgumentException("Unknown config element [" + key + "]");
 	}
 
 	@Override
 	public void setConfigElements(Map<String, Object> config) {
-	    // TODO implement setConfigElement
-	    throw new Error("Not implemented");   
+		for(String key: config.keySet()) {
+			setConfigElement(key, config);
+		}
 	}
 
 	@Override

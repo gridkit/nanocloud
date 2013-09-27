@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.gridkit.vicluster.HostSideHook;
+import org.gridkit.vicluster.Hooks;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
@@ -103,20 +103,12 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			
 			final SessionInfo context = session;
 			final ViNode node = new JvmNodeProvider(session.replicator).createNode(name, effectiveConfig);			
-			node.addShutdownHook("release-ssh", new HostSideHook() {
-				
+			node.setConfigElement("hook:release-ssh", new Hooks.PostShutdownHook(new Runnable() {
 				@Override
 				public void run() {
-					throw new UnsupportedOperationException();
+					releaseConnection(context, node);
 				}
-				
-				@Override
-				public void hostRun(boolean shutdown) {
-					if (shutdown) {
-						releaseConnection(context, node);
-					}
-				}
-			});
+			}));
 			session.processes.add(node);
 			
 			return node;			

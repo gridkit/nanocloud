@@ -15,25 +15,14 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.gridkit.util.concurrent.AdvancedExecutor;
+import java.io.IOException;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ControlledProcess {
+public interface JvmProcessFactory {
+	
+	public ManagedProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException;
 
-	public Process getProcess();
-	
-	public AdvancedExecutor getExecutionService();
-	
-	public void bindStdIn(InputStream is);
-	
-	public void bindStdOut(OutputStream os);
-	
-	public void bindStdErr(OutputStream os);
-	
 }

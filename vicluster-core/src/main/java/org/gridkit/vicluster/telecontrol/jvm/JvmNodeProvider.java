@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.JvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -48,7 +47,7 @@ public class JvmNodeProvider implements ViNodeProvider {
 	public ViNode createNode(String name, ViNodeConfig config) {
 		try {		
 			JvmConfig jvmConfig = prepareJvmConfig(config);
-			ControlledProcess process = factory.createProcess(name, jvmConfig);
+			ManagedProcess process = factory.createProcess(name, jvmConfig);
 			return createViNode(name, config, process);
 		} catch (IOException e) {
 			// TODO special exception for node creation failure
@@ -68,8 +67,8 @@ public class JvmNodeProvider implements ViNodeProvider {
 		return jvmConfig;
 	}
 
-	protected ViNode createViNode(String name, ViNodeConfig config, ControlledProcess process) throws IOException {
-		return new ProcessNode(name, config.getInternalConfigMap(), (ManagedProcess)process);
+	protected ViNode createViNode(String name, ViNodeConfig config, ManagedProcess process) throws IOException {
+		return new ProcessNode(name, config.getInternalConfigMap(), process);
 	}
 	
 	private static class JvmOptionsInitializer extends ViNodeConfig.ReplyProps {

@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.zeroio;
+package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.gridkit.zeroio.AbstractLineProcessingOutputStream;
 import org.slf4j.Logger;
 
-public class LoggerPrintStream extends PrintStream {
+class LoggerPrintStream extends PrintStream {
 
 	public enum Level {
 		ERROR,

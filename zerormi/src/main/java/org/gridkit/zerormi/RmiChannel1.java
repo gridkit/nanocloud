@@ -29,16 +29,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.zerormi.zlog.LogLevel;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class RmiChannel1 implements RmiChannel {
-
-    private static final Logger logger = LoggerFactory.getLogger(RmiChannel1.class);
 
     private static AtomicLong callId = new AtomicLong(0L);
 
@@ -57,13 +56,16 @@ public class RmiChannel1 implements RmiChannel {
 
     private final Map<String, Object> name2bean = new ConcurrentHashMap<String, Object>();
     private final Map<Object, String> bean2name = new ConcurrentHashMap<Object, String>();
+    
+    private final LogStream logCritical;
 
     private volatile boolean terminated = false;
 
-    public RmiChannel1(OutputChannel output, Executor callDispatcher, RmiMarshaler marshaler) {
+    public RmiChannel1(OutputChannel output, Executor callDispatcher, RmiMarshaler marshaler, ZLogger logger) {
         this.messageOut = output;
         this.callDispatcher = callDispatcher;
         this.marshaler = marshaler;
+        this.logCritical = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
     }
 
     public void registerNamedBean(String name, Object obj) {
@@ -324,7 +326,7 @@ public class RmiChannel1 implements RmiChannel {
             BeanRef ref = (BeanRef) obj;
             Object bean = name2bean.get(ref.getBeanName());
             if (bean == null) {
-                logger.warn("Cannot resolve bean named '" + ref + "'");
+                logCritical.log("Cannot resolve bean named '" + ref + "'");
             }
             return bean;
         }

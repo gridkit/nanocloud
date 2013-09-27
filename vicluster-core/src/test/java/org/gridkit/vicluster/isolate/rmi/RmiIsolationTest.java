@@ -25,22 +25,28 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import org.gridkit.vicluster.ViGroup;
+import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.isolate.IsolateViNode;
+import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
+import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
+import org.junit.After;
 import org.junit.Test;
 
-@SuppressWarnings("deprecation")
 public class RmiIsolationTest {
 
-	ViGroup hosts = new ViGroup();
+	ViManager cloud = new ViManager(new IsolateAwareNodeProvider());
 	
-	private IsolateViNode createIsolateViHost(String name) {
-		IsolateViNode viHost = new IsolateViNode(name);
-		hosts.addNode(viHost);
-		return viHost;
+	private ViNode createIsolateViHost(String name) {
+		return cloud.node(name);
 	}
+	
+	@After
+	public void cleanIsolates() {
+		cloud.shutdown();
+		cloud = new ViManager(new IsolateViNodeProvider());
+	}
+	
 
 	/**
 	 * Verifies that RMI will use correct context class loader for deserializing requests.
@@ -50,9 +56,6 @@ public class RmiIsolationTest {
 		
 		ViNode node1 = createIsolateViHost("node1");
 		ViNode node2 = createIsolateViHost("node2");
-		
-		ViGroup nodes = ViGroup.group(node1, node2);
-		IsolateViNode.includePackage(nodes, "org.gridkit");
 		
 		node1.exec(new VoidCallable() {
 			@Override

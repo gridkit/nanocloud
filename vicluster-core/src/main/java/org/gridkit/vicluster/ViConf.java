@@ -27,6 +27,30 @@ public class ViConf extends GenericConfig {
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";
 
 	
+	public static boolean isVanilaProp(String key) {
+		return key.indexOf(':') < 0 && key.indexOf('#') < 0;
+	}
+
+	public static boolean isHook(String key) {
+		return key.startsWith(HOOK);
+	}
+
+	public static boolean isRuntime(String key) {
+		return key.startsWith("runtime:");
+	}
+
+	public static boolean isNode(String key) {
+		return key.startsWith("node:");
+	}
+
+	public static boolean isConsole(String key) {
+		return key.startsWith("console:");
+	}
+
+	public static boolean isTemporary(String key) {
+		return key.startsWith("#");
+	}
+	
 	protected Map<String, Object> config;
 	
 	public ViConf(Map<String, Object> config) {

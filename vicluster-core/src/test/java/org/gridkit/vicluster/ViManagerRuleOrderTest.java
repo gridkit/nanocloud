@@ -19,14 +19,20 @@ import java.io.Serializable;
 
 import junit.framework.Assert;
 
-import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
+import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ViManagerRuleOrderTest {
 
-	ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
+	ViNodeSet cloud;
 
+	@Before
+	public void createCloud() {
+		cloud = new ViManager(new IsolateAwareNodeProvider());
+	}
+	
 	@After
 	public void shutdownCloud() {
 		cloud.shutdown();
@@ -34,8 +40,6 @@ public class ViManagerRuleOrderTest {
 	
 	@Test
 	public void verify_init_order_specific() {
-		
-		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
 		
 		ViNode node = cloud.node("node");
 		node.addStartupHook("A", initProp("test-prop", "A"));
@@ -50,8 +54,6 @@ public class ViManagerRuleOrderTest {
 	@Test
 	public void verify_init_order_rule() {
 		
-		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
-		
 		ViNode node = cloud.node("node*");
 		node.addStartupHook("A", initProp("test-prop", "A"));
 		node.addStartupHook("B", initProp("test-prop", "B"));
@@ -64,8 +66,6 @@ public class ViManagerRuleOrderTest {
 
 	@Test
 	public void verify_init_order_mixed_rules() {
-		
-		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
 		
 		ViNode r1 = cloud.node("n*");
 		ViNode r2 = cloud.node("*o*");
@@ -87,8 +87,6 @@ public class ViManagerRuleOrderTest {
 	@Test
 	public void verify_init_order_mixed_rules_with_pre_declared_node() {
 		
-		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
-
 		cloud.node("node");
 		
 		ViNode r1 = cloud.node("n*");
@@ -111,8 +109,6 @@ public class ViManagerRuleOrderTest {
 	@Test
 	public void verify_init_prop_override_order_with_lazy_node() {
 		
-		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
-		
 		ViNode r1 = cloud.node("n*");
 		ViNode r2 = cloud.node("*o*");
 		ViNode r3 = cloud.node("*d*");
@@ -132,8 +128,6 @@ public class ViManagerRuleOrderTest {
 	@Test
 	public void verify_init_prop_override_order_with_eager_node() {
 		
-		ViNodeSet cloud = new ViManager(new IsolateViNodeProvider());
-
 		cloud.node("node");
 		
 		ViNode r1 = cloud.node("n*");

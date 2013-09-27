@@ -604,7 +604,17 @@ public class ViManager implements ViNodeSet {
 				public Void call() throws Exception {
 					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
 					try {
-						barrier.get();
+						try {
+							barrier.get();
+						}
+						catch(ExecutionException e) {
+							if (e.getCause() instanceof Exception) {
+								throw ((Exception)e.getCause());
+							}
+							else {
+								throw e;
+							}
+						}
 						target.exec(task);
 						return null;
 					}

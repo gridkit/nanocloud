@@ -24,10 +24,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,19 +37,18 @@ public class LocalJvmProcessFactoryTest {
 		
 		LocalJvmProcessFactory factory = new LocalJvmProcessFactory();
 		
-		ControlledProcess process = factory.createProcess("test", new JvmConfig());
+		ManagedProcess process = factory.createProcess("test", new JvmConfig());
 		
-		Process p = process.getProcess();
-		p.getOutputStream().close();
-		BackgroundStreamDumper.link(p.getInputStream(), System.out, false);
-		BackgroundStreamDumper.link(p.getErrorStream(), System.err, false);
+		process.bindStdIn(null);
+		process.bindStdOut(System.out);
+		process.bindStdOut(System.err);
 
 		String name = ManagementFactory.getRuntimeMXBean().getName();
 		Future<String> f = process.getExecutionService().submit(new GetJvmName());
 		String rname = f.get();
 		System.out.println("VM names: " + name + " / " + rname);
 		Assert.assertThat(rname, not(name));
-		process.getProcess().destroy();
+		process.destroy();
 	}	
 
 	@Test
@@ -58,7 +56,7 @@ public class LocalJvmProcessFactoryTest {
 		
 		LocalJvmProcessFactory factory = new LocalJvmProcessFactory();
 		
-		ControlledProcess process = factory.createProcess("test", new JvmConfig());
+		ManagedProcess process = factory.createProcess("test", new JvmConfig());
 		
 		String name = ManagementFactory.getRuntimeMXBean().getName();
 		Future<String> f = process.getExecutionService().submit(new Callable<String>() {
@@ -71,7 +69,7 @@ public class LocalJvmProcessFactoryTest {
 		String rname = f.get();
 		System.out.println("VM names: " + name + " / " + rname);
 		Assert.assertThat(rname, not(name));
-		process.getProcess().destroy();
+		process.destroy();
 	}	
 
 

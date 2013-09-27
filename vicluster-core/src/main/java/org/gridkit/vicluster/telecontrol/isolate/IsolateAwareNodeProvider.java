@@ -29,10 +29,10 @@ import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
-import org.gridkit.vicluster.telecontrol.ControlledProcess;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 
@@ -72,7 +72,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			
 			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps, config.getAllVanilaProps());
 			JvmConfig jvmConfig = prepareJvmConfig(config);
-			ControlledProcess process = factory.createProcess(name, jvmConfig);
+			ManagedProcess process = factory.createProcess(name, jvmConfig);
 			return createViNode(name, config, process);
 		} catch (IOException e) {
 			// TODO special exception for node creation failure
@@ -81,7 +81,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 	}
 	
 	@Override
-	protected ViNode createViNode(String name, ViNodeConfig config, ControlledProcess process) throws IOException {
+	protected ViNode createViNode(String name, ViNodeConfig config, ManagedProcess process) throws IOException {
 		Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
 		// add Isolate init hook first
 		ViNodeConfig cc = new ViNodeConfig();

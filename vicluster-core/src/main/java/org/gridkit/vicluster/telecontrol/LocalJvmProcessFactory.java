@@ -37,6 +37,7 @@ import org.gridkit.zerormi.SocketStream;
 import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
+import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +51,9 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	
 	private String javaHome;
 	private String defaultClasspath;
-	
-	private RemotingHub hub = new RemotingHub();
+
+	// TODO configure ZLog
+	private RemotingHub hub = new RemotingHub(ZLogFactory.getDefaultRootLogger());
 	private ServerSocket socket;
 	private Thread accepter;
 	private List<Process> processes = new ArrayList<Process>();
@@ -138,7 +140,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	}
 	
 	@Override
-	public ControlledProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
+	public ManagedProcess createProcess(String caption, JvmConfig jvmArgs) throws IOException {
 
 		RemoteControlSession session;
 
@@ -201,17 +203,12 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		processes.remove(p);
 	}
 
-	private class RemoteControlSession implements SessionEventListener, ControlledProcess, ManagedProcess {
+	private class RemoteControlSession implements SessionEventListener, ManagedProcess {
 		
 		String sessionId;
 		Process process;
 		AdvancedExecutor executor;
 		CountDownLatch connected = new CountDownLatch(1);
-		
-		@Override
-		public Process getProcess() {
-			return process;
-		}
 		
 		@Override
 		public AdvancedExecutor getExecutionService() {
