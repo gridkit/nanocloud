@@ -22,109 +22,105 @@
 
     <parent>
         <groupId>org.gridkit.lab</groupId>
-        <artifactId>grid-lab-parent</artifactId>
-        <version>0.9</version>        
+        <artifactId>grid-lab-pom</artifactId>
+        <version>2</version>        
     </parent>
 
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.8-SNAPSHOT</version>
+    <version>0.7.24-SNAPSHOT</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
+    <licenses>
+      <license>
+        <name>The Apache Software License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+
+    <developers>
+      <developer>
+        <id>alexey.ragozin</id>
+        <name>Alexey Ragozin</name>
+        <email>alexey.ragozin@gmail.com</email>
+      </developer>
+    </developers>
+    
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/trunk/vicluster</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/trunk/vicluster</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/trunk/vicluster</url>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.8</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.8</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.8</url>
     </scm>
 
     <properties>
         <javaVersion>1.6</javaVersion>
-        <vicontrolVersion>${project.version}</vicontrolVersion>
     </properties>
 
     <modules>
-        <module>conc-util</module>
+        <module>viconcurrent</module>
         <module>vicluster-core</module>
-        <module>vicluster-coherence</module>
-        <module>vicluster-isolate</module>
         <module>zerormi</module>
         <module>telecontrol</module>
         <module>telecontrol-ssh</module>
-        <module>nanocloud</module>
     </modules>
 
     <dependencyManagement>
-	    <dependencies>
-	    	<dependency>
-	    		<groupId>org.gridkit.lab</groupId>
-	    		<artifactId>vicluster-core</artifactId>
-	    		<version>${project.version}</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>org.gridkit.lab</groupId>
-	    		<artifactId>vicluster-coherence</artifactId>
-	    		<version>${project.version}</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>org.gridkit.lab</groupId>
-	    		<artifactId>zerormi</artifactId>
-	    		<version>${project.version}</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>org.gridkit.lab</groupId>
-	    		<artifactId>vicluster-isolate</artifactId>
-	    		<version>${project.version}</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>org.gridkit.lab</groupId>
-	    		<artifactId>telecontrol</artifactId>
-	    		<version>${project.version}</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>org.gridkit.lab</groupId>
-	    		<artifactId>telecontrol-ssh</artifactId>
-	    		<version>${project.version}</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>junit</groupId>
-	    		<artifactId>junit</artifactId>
-	    		<version>4.10</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>org.slf4j</groupId>
-	    		<artifactId>slf4j-api</artifactId>
-	    		<version>1.6.6</version>
-	    	</dependency>
-	    	<dependency>
-	    		<groupId>ch.qos.logback</groupId>
-	    		<artifactId>logback-classic</artifactId>
-	    		<version>1.0.6</version>
-	    	</dependency>
-	    </dependencies>
+        <dependencies>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>vicluster-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>viconcurrent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>vicluster-coherence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>zerormi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>telecontrol</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>telecontrol-ssh</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.10</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.6.6</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.0.6</version>
+            </dependency>
+        </dependencies>
     </dependencyManagement>
-
-    <repositories>
-        <!-- GridKit maven2 repository -->
-        <!-- required to fetch parent POM -->
-        <repository>
-            <id>gridkit-releases</id>
-            <name>gridkit-repo.googlecode.com</name>
-            <url>http://gridkit.googlecode.com/svn/repo/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
+                <version>2.4</version>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <remoteTagging>false</remoteTagging>
@@ -134,12 +130,51 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.0</version>
                 <configuration>
                     <source>${javaVersion}</source>
                     <target>${javaVersion}</target>
-                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.14.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadoc</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-source</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration> 
+            </plugin>                
         </plugins>
     </build>
 </project>

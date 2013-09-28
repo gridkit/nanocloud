@@ -19,7 +19,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.concurrent.ExecutionException;
 
 /**
  * 
@@ -27,14 +26,10 @@ import java.util.concurrent.ExecutionException;
  */
 public class RemoteStub implements InvocationHandler  {
 
-	public static RmiInvocationHandler getRmiChannel(Object proxy) {
-		return ((RemoteStub)Proxy.getInvocationHandler(proxy)).getRmiChannel();
-	}
-	
 	private RemoteInstance identity;
-	private RmiInvocationHandler channel;
+	private RmiChannel channel;
 	
-	public RemoteStub(RemoteInstance identity, RmiInvocationHandler channel) {
+	public RemoteStub(RemoteInstance identity, RmiChannel channel) {
 		this.identity = identity;
 		this.channel = channel;
 	}
@@ -43,7 +38,7 @@ public class RemoteStub implements InvocationHandler  {
 		return identity;
 	}
 
-	public RmiInvocationHandler getRmiChannel() {
+	public RmiChannel getRmiChannel() {
 		return channel;
 	}
 	
@@ -57,13 +52,19 @@ public class RemoteStub implements InvocationHandler  {
 			}
 		}
 		else {
-			try {
-				return channel.invokeRemotely(proxy, method, args).get();
-			}
-			catch(ExecutionException e) {
-				throw e.getCause();
-			}
+			return channel.remoteInvocation(this, proxy, method, args);
 		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static Object buildProxy(RemoteInstance remoteInstance, RmiChannel channel) throws ClassNotFoundException {
+		String[] classNames = remoteInstance.interfaces;
+		Class[] classes = new Class[classNames.length];
+		for(int i = 0; i != classNames.length; ++i) {
+			classes[i] = channel.classForName(classNames[i]);
+		}
+		
+		return Proxy.newProxyInstance(channel.getClassLoader(), classes, new RemoteStub(remoteInstance, channel));
 	}
 	
 	public String toString() {

@@ -19,28 +19,16 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
 
-import org.gridkit.util.concurrent.SensibleTaskService;
-import org.gridkit.util.concurrent.SimpleTaskService;
-import org.gridkit.util.concurrent.TaskService;
-import org.gridkit.util.concurrent.TaskService.Task;
-import org.gridkit.zerormi.AbstractSuperviser;
-import org.gridkit.zerormi.ByteStream.Duplex;
-import org.gridkit.zerormi.ClassProvider;
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.zerormi.DuplexStream;
-import org.gridkit.zerormi.ReliableBlobPipe;
-import org.gridkit.zerormi.ReliableBlobPipe.PipeSuperviser;
-import org.gridkit.zerormi.RmiFactory;
 import org.gridkit.zerormi.RmiGateway;
-import org.gridkit.zerormi.SimpleClassProvider;
-import org.gridkit.zerormi.SmartRmiMarshaler;
-import org.gridkit.zerormi.Streams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.zerormi.RmiGateway.StreamErrorHandler;
+import org.gridkit.zerormi.zlog.LogLevel;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
  * This is a hub managing multiple RMI channel connection.
@@ -48,53 +36,49 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class RemotingHub {
+public class RemotingHub implements MasterHub {
 	
-	private final static Logger LOGGER = LoggerFactory.getLogger(RemotingHub.class);
-
 	private final static int UID_LENGTH = 32;
 	
-	private SecureRandom srnd ;
-	private TaskService taskService;
+	private LogStream logInfo;
+	private LogStream logWarn;
+	private LogStream logError;
+	private SecureRandom srnd ;	
 	private ConcurrentMap<String, SessionContext> connections = new ConcurrentHashMap<String, SessionContext>();
 	
-	public RemotingHub() {
-		this(SensibleTaskService.getShareInstance());
-	}
-	
-	public RemotingHub(TaskService taskService) {
-		this.taskService = taskService;
+	public RemotingHub(ZLogger logger) {
 		try {
+			this.logInfo = logger.get(getClass().getSimpleName(), LogLevel.INFO);
+			this.logWarn = logger.get(getClass().getSimpleName(), LogLevel.WARN);
+			this.logError = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
 			srnd = SecureRandom.getInstance("SHA1PRNG");
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public String newSession(String name, SessionEventListener listener) {
+	@Override
+	public SlaveSpore allocateSession(String name, SessionEventListener listener) {
 		while(true) {
 			String uid = generateUID();
-			SessionContext ctx = new SessionContext(name);
+			SessionContext ctx = new SessionContext();
 			ctx.listener = listener;			
 			synchronized(ctx) {
 				if (connections.putIfAbsent(uid, ctx) != null) {
 					continue;
 				}
-				ctx.pipe = new ReliableBlobPipe("pipe:" + name, ctx);
-				ClassProvider cp = new SimpleClassProvider(Thread.currentThread().getContextClassLoader());
-				ctx.gateway = RmiFactory.createEndPoint(name, cp, ctx.pipe, ctx, new SmartRmiMarshaler());				
-				ctx.addComponent(ctx.pipe);
-				ctx.addComponent(ctx.gateway);
-				
+				ctx.gateway = new RmiGateway(name);
+				ctx.gateway.setStreamErrorHandler(ctx);
 			}
-			return uid;
+			return new LegacySpore(uid);
 		}		
 	}
 	
-	public RmiGateway getGateway(String sessionId) {
+	@Override
+	public AdvancedExecutor getExecutionService(String sessionId) {
 		SessionContext ctx = connections.get(sessionId);
 		if (ctx != null) {
-			return ctx.gateway;
+			return ctx.gateway.getRemoteExecutorService();
 		}
 		else {
 			return null;
@@ -112,27 +96,23 @@ public class RemotingHub {
 		return sb.toString();
 	}
 
-	public void closeAllConnections() {
-		try {
-			while(true) {
-				String id = connections.keySet().iterator().next();
-				closeConnection(id);
-			}
-		}
-		catch(NoSuchElementException e) {
-			// done
+	@Override
+	public void dropAllSessions() {
+		for(String id: connections.keySet()) {
+			dropSession(id);
 		}
 	}
 	
-	public void closeConnection(String id) {
+	@Override
+	public void dropSession(String id) {
 		SessionContext ctx = connections.get(id);
 		if (ctx != null) {
 			synchronized(ctx) {
 				ctx = connections.get(id);
 				if (ctx != null) {
 					ctx.listener.closed();
+					silentClose(ctx.stream);
 					ctx.gateway.shutdown();
-					ctx.shutdown();
 					connections.remove(id);
 					
 					// done
@@ -143,6 +123,7 @@ public class RemotingHub {
 		throw new IllegalArgumentException("Connection not found " + id);
 	}
 	
+	@Override
 	public void dispatch(DuplexStream stream) {
 		String id = readId(stream);
 		if (id != null) {
@@ -151,27 +132,30 @@ public class RemotingHub {
 				synchronized(ctx) {
 					ctx = connections.get(id);
 					if (ctx != null) {
-						if (ctx.socket != null) {
-							LOGGER.warn("[" + ctx.getName() + "] New stream for " + id + " " + stream);
-							LOGGER.warn("[" + ctx.getName() + "] Old stream for " + id + " would be disposed " + ctx.socket);
-							ctx.pipe.setStream(null);
-							ctx.disposeSocket();
+						if (ctx.stream != null) {
+							logWarn.log("New stream for " + id + " " + stream);
+							logWarn.log("Old stream for " + id + " would be disposed " + ctx.stream);
+							silentClose(ctx.stream);
+							ctx.gateway.disconnect();
+							if (ctx.stream != null) {
+								ctx.listener.interrupted(ctx.stream);
+								ctx.stream = null;
+							}
 						}
 						try {
-							ctx.addComponent(stream);
-							ctx.pipe.setStream(Streams.toDuplex(stream, taskService));
-							ctx.socket = stream;
+							ctx.gateway.connect(stream);
+							ctx.stream = stream;
 							ctx.listener.connected(stream);
 						} catch (IOException e) {
-							LOGGER.error("Stream connection failed " + stream);
+							logError.log("Stream connection failed " + stream);
 						}
-						LOGGER.info("Stream connected at end point " + id + " - " + stream);
+						logInfo.log("Stream connected at end point " + id + " - " + stream);
 						return;
 					}
 				}
 			}
 		}
-		LOGGER.warn("Stream were not connected " + stream);
+		logWarn.log("Stream were not connected " + stream);
 		silentClose(stream);
 	}
 	
@@ -198,100 +182,32 @@ public class RemotingHub {
 		public void closed();		
 	}
 	
-	private class SessionContext extends AbstractSuperviser implements PipeSuperviser, Executor {
+	private class SessionContext implements StreamErrorHandler {
 		
 		private SessionEventListener listener;
 		private RmiGateway gateway;
-		private ReliableBlobPipe pipe;
-		private DuplexStream socket;
-		
-		public SessionContext(String name) {
-			super(name);
-		}
-		
-		public void shutdown() {
-			terminate();
-		}
-		
-		@Override
-		protected Logger getLogger() {
-			return LOGGER;
-		}
-		
-		@Override
-		protected Logger getLogger(Object component) {
-			String name = RemotingHub.class.getName() + "." + component.getClass().getSimpleName();
-			return LoggerFactory.getLogger(name);
-		}
+		private DuplexStream stream;
 
 		@Override
-		public void onStreamRejected(ReliableBlobPipe pipe, Duplex stream,	Exception e) {
-			LOGGER.info("[" + name + "] Stream rejected, will reconnect. ", e);
-			disposeSocket();
-		}
-		
-		private synchronized void disposeSocket() {
-			if (socket == null) {
-				return;
-			}
-			else {
-				try {
-					socket.close();
-				}
-				catch(IOException e) {
-					// ignore;
-				}
-			}
-			components.remove(socket);
+		public synchronized void streamError(DuplexStream socket, Object stream, Exception error) {
+			gateway.disconnect();
+			this.stream = null;
 			listener.interrupted(socket);
-			socket = null;
 		}
 
 		@Override
-		protected void stop(Object obj) {
-			if (obj instanceof DuplexStream) {
-				try {
-					((DuplexStream)obj).close();
-				} catch (IOException e) {
-					// ignore
-				}
-			}
-			else if (obj instanceof RmiGateway) {
-				((RmiGateway)obj).shutdown();
-			}
-			else if (obj instanceof SimpleTaskService) {
-				((SimpleTaskService)obj).shutdown();
-			}
-			else {
-				super.stop(obj);
-			}
+		public void streamClosed(DuplexStream socket, Object stream) {
+			gateway.disconnect();
+			this.stream = null;
+			logInfo.log("Closed: " + stream);
 		}
-		
-		@Override
-		public void execute(final Runnable command) {
-			taskService.schedule(new Task(){
-
-				@Override
-				public void run() {
-					command.run();				
-				}
-
-				@Override
-				public void interrupt(Thread taskThread) {
-					taskThread.interrupt();				
-				}
-
-				@Override
-				public void cancled() {
-					// do nothing				
-				}			
-			});		
-		}		
 	}
 	
 	private static final void silentClose(Closeable ch) {
 		try {
-			ch.close();
+			if (ch != null) {
+				ch.close();
+			}
 		} catch (IOException e) {
 			// ignore
 		}

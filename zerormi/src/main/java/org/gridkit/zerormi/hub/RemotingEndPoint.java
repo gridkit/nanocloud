@@ -17,283 +17,197 @@ package org.gridkit.zerormi.hub;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.gridkit.util.concurrent.SensibleTaskService;
-import org.gridkit.util.concurrent.TaskService;
-import org.gridkit.util.concurrent.TaskService.Task;
-import org.gridkit.zerormi.AbstractSuperviser;
-import org.gridkit.zerormi.ByteStream;
-import org.gridkit.zerormi.ByteStream.Duplex;
-import org.gridkit.zerormi.ReliableBlobPipe;
-import org.gridkit.zerormi.ReliableBlobPipe.PipeSuperviser;
-import org.gridkit.zerormi.RmiFactory;
+import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.RmiGateway;
-import org.gridkit.zerormi.Streams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.gridkit.zerormi.SocketStream;
+import org.gridkit.zerormi.zlog.LogLevel;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogFactory;
+import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
  * This is an agent class initiating socket connection to RMI hub.
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class RemotingEndPoint extends AbstractSuperviser implements Runnable, PipeSuperviser, Executor {
+public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RemotingEndPoint.class);
+	public static final String HEARTBEAT_PERIOD = "org.gridkit.telecontrol.slave.heart-beat-period";
+	public static final String HEARTBEAT_TIMEOUT = "org.gridkit.telecontrol.slave.heart-beat-timeout";
+
+//	private static final Logger LOGGER = LoggerFactory.getLogger(RemotingEndPoint.class);
+	
+	private static ZLogger LROOT = ZLogFactory.getDefaultRootLogger().getLogger("RemotingEndPoint");
+	private static LogStream LTRACE = LROOT.get("", LogLevel.TRACE);
+	private static LogStream LVERBOSE = LROOT.get("", LogLevel.VERBOSE);
+	private static LogStream LINFO = LROOT.get("", LogLevel.INFO);
+	private static LogStream LWARN = LROOT.get("", LogLevel.WARN);
+	private static LogStream LERROR = LROOT.get("", LogLevel.CRITICAL);
+	private static LogStream LFATAL = LROOT.get("", LogLevel.FATAL);
+	
 	
 	private String uid;
-	private SocketFactory target;
+	private SocketAddress addr;
 	
 	private RmiGateway gateway;
-	private ReliableBlobPipe pipe;
-	private TaskService.Component taskService;
-	private Socket socket;
 	
-	private long pingInterval = Long.valueOf(System.getProperty("org.gridkit.telecontrol.slave.heart-beat-period", "1000"));
-	private long heartBeatTimeout = Long.valueOf(System.getProperty("org.gridkit.telecontrol.slave.heart-beat-timeout", "60000"));
+	private long pingInterval = Long.valueOf(System.getProperty(HEARTBEAT_PERIOD, "1000"));
+	private long heartBeatTimeout = Long.valueOf(System.getProperty(HEARTBEAT_TIMEOUT, "60000"));
 	private Object pingSingnal = new Object();
 
 	private long lastHeartBeat = System.nanoTime(); 
 	
-	public RemotingEndPoint(String name, String uid, SocketFactory target) {
-		super(name);
+	public RemotingEndPoint(String uid, SocketAddress addr) {
 		this.uid = uid;
-		this.target = target;
-				
-		this.taskService = new SensibleTaskService(name);
-		this.pipe = new ReliableBlobPipe("pipe:" + name, this);
-		
-		this.gateway = RmiFactory.createEndPoint(name, pipe, this);
-		
-		addComponent(pipe);
-		addComponent(taskService);
+		this.addr = addr;
+		this.gateway = new RmiGateway("master");
+		this.gateway.setStreamErrorHandler(this);
 	}
 	
 	public void enableHeartbeatDeatchWatch() {
-		heartBeatTimeout = System.nanoTime();
-		Thread t = new Thread() {
-			@Override
-			public void run() {
-				while(true) {
-					Thread.currentThread().setName("HeartbeatDeathWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
-					long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
-					if (stale > heartBeatTimeout) {
-						System.err.println("Terminating process due to heartbeat timeout");
+		if (heartBeatTimeout != Integer.MAX_VALUE) {
+			Thread t = new Thread() {
+				@Override
+				public void run() {
+					try {
+						while(true) {
+							Thread.currentThread().setName("HeatbeatDeathWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
+							long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
+							if (stale > heartBeatTimeout) {
+								System.err.println("Terminating process due to heartbeat timeout");
+								System.err.flush();
+								Runtime.getRuntime().halt(0);
+							}
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								// ignore;
+							}
+						}
+					}
+					catch(Throwable e) {
+						System.err.println("Unexpected exception in death watch thread " + e.toString());
+						System.err.flush();
 						Runtime.getRuntime().halt(0);
 					}
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// ignore;
-					}
 				}
-			}
-		};
-		t.setDaemon(true);
-		t.setName("HeartbeatDeathWatch");
-		t.start();
+			};
+			t.setDaemon(true);
+			t.setName("HeartbeatDeathWatch");
+			t.start();
+		}
 	}
 	
 	public void run() {
-		try {
-			while(true) {
-				
-				if (terminated) {
-					return;
-				}
-				
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e1) {
-					// ignore
-				}
-				
-				try {
-					
-					reconnect();
-					
-					synchronized(pingSingnal) {
-						pingSingnal.wait(pingInterval);
-					}
-					
-					LOGGER.debug("Pinging ...");
-					try {
-						gateway.asExecutor().submit(new Ping()).get();
-						lastHeartBeat = System.nanoTime();
-					}
-					catch(ExecutionException e) {
-						if (!isConnected()) {
-							break;
-						}
-						LOGGER.warn("Ping failed: " + e.getCause().toString());
-					}
-				} catch (Exception e) {
-					LOGGER.error("Communication error", e);
-				}
+		while(true) {
+			
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e1) {
+				// ignore
 			}
-			LOGGER.info("Slave has been discontinued");
-		}
-		finally {
-			terminate();
-		}
-	}
-
-	public void shutdown() {
-		terminate();
-	}
-	
-	private void reconnect() {
-		try {
-			synchronized(this) {
-				if (!isConnected()) {
+			
+			try {
+				if (!gateway.isConnected()) {
 				
-					if (socket != null) {
-						components.remove(socket);
-					}
+					LINFO.log("Connecting to master socket");
+					final Socket sock = new Socket();
 					
-					LOGGER.info("Connecting to master socket");
 					try {
-						socket = target.connect();
+						sock.connect(addr);
 					} catch (IOException e) {
-						LOGGER.error("Cannot establish connection [" + target + "]", e);
-						return;
-					}
-					
-					try {
-						addComponent(socket);
-					}
-					catch(IllegalStateException e) {
-						// terminated
-						try {
-							socket.close();
-						}
-						catch(IOException ee) {
-							// ignore;
-						}
+						LFATAL.log("Connection has failed", addr);
 						return;
 					}
 					
 					byte[] magic = uid.getBytes();
-					socket.getOutputStream().write(magic);
-					socket.getOutputStream().flush();
-	
-					LOGGER.info("Master socket connected");
-					ByteStream.Duplex ss = Streams.toDuplex(socket, taskService);
+					sock.getOutputStream().write(magic);
+					sock.getOutputStream().flush();
+
+					LVERBOSE.log("Master socket connected");
+					DuplexStream ss = new SocketStream(sock);
 					
-					try {
-						pipe.setStream(ss);
-					}
-					catch(IllegalStateException e) {
-						// this means pipe is terminated
-						// just return and let it die
-						return;
-					}
-					LOGGER.info("Gateway connected");
+					gateway.connect(ss);
+					LVERBOSE.log("Gateway connected");
 				}
-			}
-		}
-		catch(IOException e) {
-			LOGGER.error("Communication error", e);
-			stopAll();
-		}
-	}
-
-	private synchronized boolean isConnected() {
-		return socket != null && socket.isConnected() && !socket.isClosed();
-	}
-
-	@Override
-	public void execute(final Runnable command) {
-		taskService.schedule(new Task(){
-
-			@Override
-			public void run() {
-				command.run();				
-			}
-
-			@Override
-			public void interrupt(Thread taskThread) {
-				taskThread.interrupt();				
-			}
-
-			@Override
-			public void cancled() {
-				// do nothing				
-			}			
-		});		
-	}
-
-	@Override
-	public void onStreamRejected(ReliableBlobPipe pipe, Duplex stream,	Exception e) {
-		LOGGER.info("[" + name + "] Stream rejected, will reconnect. ", e);
-		disposeSocket();
-		reconnect();		
-	}
-
-	private synchronized void disposeSocket() {
-		if (socket != null) {
-			try {
-				if (!socket.isInputShutdown()) {
-					socket.shutdownInput();
+				
+				synchronized(pingSingnal) {
+					pingSingnal.wait(pingInterval);
 				}
-				else if (!socket.isOutputShutdown()) {
-					socket.shutdownOutput();
-				}
-			} catch (IOException e) {
+				
+				LTRACE.log("Ping");
 				try {
-					socket.close();
-				} catch (IOException e1) {
-					//ignore
+					Future<?> f = gateway.getRemoteExecutorService().submit(new Ping());
+					while(true) {
+						try {
+							f.get(5, TimeUnit.SECONDS);
+							break;
+						}
+						catch(TimeoutException e) {
+							long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
+							if (stale > heartBeatTimeout) {
+								System.err.println("Terminating process due to heartbeat timeout");
+								System.err.flush();
+								break;
+							}
+							
+						}
+					}
+					lastHeartBeat = System.nanoTime();
 				}
-			}
-			socket = null;
-			components.remove(socket);
-		}
-	}
-
-	@Override
-	protected Logger getLogger() {
-		return LOGGER;
-	}
-
-	@Override
-	protected Logger getLogger(Object component) {
-		String name = getClass().getName() + component.getClass().getSimpleName();
-		return LoggerFactory.getLogger(name);
-	}
-
-	@Override
-	protected Object safeStatus(Object obj) {
-		if (obj instanceof Socket) {
-			Socket sock = (Socket)obj;
-			return "connected=" + sock.isConnected() +" ,closed=" + sock.isClosed();
-		}
-		return super.safeStatus(obj);
-	}
-	
-	@Override
-	protected void stop(Object obj) {
-		if (obj instanceof RmiGateway) {
-			((RmiGateway)obj).shutdown();
-		}
-		else if (obj instanceof TaskService.Component) {
-			((TaskService.Component)obj).shutdown();
-		}
-		else if (obj instanceof Socket) {
-			try {
-				((Socket)obj).close();
-			} catch (IOException e) {
-				// ignore
+				catch(RejectedExecutionException e) {
+					// shutting down
+					break;
+				}
+				catch(ExecutionException e) {
+					if (!gateway.isConnected()) {
+						break;
+					}
+					LWARN.log("Ping failed: " + e.getCause().toString());
+				}
+			} catch (Exception e) {
+				LERROR.log("Communication error %s", e);
 			}
 		}
-		else {
-			super.stop(obj);
+		LINFO.log("Slave is disconting");
+	}
+
+	@Override
+	public void streamError(DuplexStream socket, Object stream, Exception error) {
+		LWARN.log("Slave read error: " + error.toString());
+		synchronized(pingSingnal) {
+			pingSingnal.notifyAll();
+		}
+		try {
+			// TODO WTF?
+			if (socket != null) {
+				socket.close();
+			}
+		} catch (IOException e) {
+			LERROR.log("Stream error " + socket, e);
 		}
 	}
-	
-	
+
+	@Override
+	public void streamClosed(DuplexStream socket, Object stream) {
+		synchronized(pingSingnal) {
+			pingSingnal.notifyAll();
+		}
+		try {
+			// TODO WTF?
+			if (socket != null) {
+				socket.close();
+			}
+		} catch (IOException e) {
+			LERROR.log("Stream error " + socket, e);
+		}		
+	}
 }

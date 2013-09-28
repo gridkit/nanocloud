@@ -17,27 +17,30 @@ package org.gridkit.vicluster;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-
-import org.gridkit.util.concurrent.AdvancedExecutor;
-import org.gridkit.util.concurrent.FutureEx;
+import java.util.concurrent.Future;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ViExecutor extends AdvancedExecutor {
+public interface ViExecutor {
 
+	/**
+	 * Sends empty runnable for sync execution. Usefully to force node initialization.
+	 */
+	public void touch();
+	
 	public void exec(Runnable task);
 	
 	public void exec(VoidCallable task);
 
 	public <T> T exec(Callable<T> task);
 	
-	public FutureEx<Void> submit(Runnable task);
+	public Future<Void> submit(Runnable task);
 	
-	public FutureEx<Void> submit(VoidCallable task);
+	public Future<Void> submit(VoidCallable task);
 	
-	public <T> FutureEx<T> submit(Callable<T> task);	
+	public <T> Future<T> submit(Callable<T> task);	
 
 	// Mass operations
 
@@ -48,11 +51,9 @@ public interface ViExecutor extends AdvancedExecutor {
 	 */
 	public <T> List<T> massExec(Callable<? extends T> task);
 	
-	public List<FutureEx<Void>> massSubmit(Runnable task);
+	public List<Future<Void>> massSubmit(Runnable task);
 	
-	public List<FutureEx<Void>> massSubmit(VoidCallable task);
+	public List<Future<Void>> massSubmit(VoidCallable task);
 	
-	public <T> List<FutureEx<T>> massSubmit(Callable<? extends T> task);
-	
-	public <T> FutureEx<List<T>> vectorSubmit(Callable<? extends T> task);
+	public <T> List<Future<T>> massSubmit(Callable<? extends T> task);
 }

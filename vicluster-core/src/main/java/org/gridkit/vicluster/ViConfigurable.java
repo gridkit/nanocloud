@@ -15,13 +15,34 @@
  */
 package org.gridkit.vicluster;
 
+import java.util.Map;
 
 /**
- * 
+ * TODO config calls chaining 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public interface ViConfigurable {
 
-	// TODO
+	public void setProp(String propName, String value);
+	
+	public void setProps(Map<String, String> props);
+	
+	public void setConfigElement(String key, Object value);
+
+	public void setConfigElements(Map<String, Object> config);
+	
+	public void addStartupHook(String id, Runnable hook);
+
+	public void addShutdownHook(String id, Runnable hook);
+
+	/**
+	 * @deprecated Override protection is to be remove 
+	 */
+	public void addStartupHook(String id, Runnable hook, boolean override);
+
+	/**
+	 * @deprecated Override protection is to be remove 
+	 */
+	public void addShutdownHook(String id, Runnable hook, boolean override);
 	
 }

@@ -16,6 +16,8 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +34,28 @@ import java.util.List;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 class StreamHelper {
+	
+	public static byte[] readFile(File file) {
+		try {
+			if (file.length() > 1 << 30) {
+				throw new ArrayIndexOutOfBoundsException("File is too big");
+			}
+			byte[] data = new byte[(int)file.length()];
+			FileInputStream fis = new FileInputStream(file);
+			int n = 0;
+			while(n < data.length) {
+				int m = fis.read(data, n, data.length - n);
+				if (m < 0) {
+					throw new RuntimeException("Cannot read file: " + file.getCanonicalPath());
+				}
+				n += m;
+			}
+			fis.close();
+			return data;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} 
+	}
 	
 	public static String digest(byte[] data, String algorithm) {
 		try {

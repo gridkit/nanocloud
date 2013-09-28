@@ -22,10 +22,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.gridkit.util.concurrent.Box;
-import org.gridkit.util.concurrent.FutureBox;
-import org.gridkit.util.concurrent.FutureEx;
-
 
 /**
  * Helper class, hosting and number of methods for handling futures etc.
@@ -37,7 +33,7 @@ public class MassExec {
 	 * Collect result from all futures. If any of futures have thrown exception, other futures will be collected but exception disacred.
 	 * @return list of results from futures
 	 */
-	public static <T> List<? super T> waitAll(List<? extends Future<T>> futures) {
+	public static <T> List<? super T> waitAll(List<Future<T>> futures) {
 		try {
 			Object[] results = new Object[futures.size()];
 			int n = 0;
@@ -100,41 +96,20 @@ public class MassExec {
 		return Arrays.asList(results);
 	}
 	
-	public static <V> FutureEx<List<V>> vectorFuture(List<FutureEx<V>> futures) {
-		final FutureVector<V> vect = new FutureVector<V>(futures.size());
-		
-		int n = 0;
-		for (FutureEx<V> f: futures) {
-			final int i = n++;
-			
-			f.addListener(new Box<V>() {
-				@Override
-				public void setData(V data) {
-					vect.setElement(i, data);					
-				}
-				@Override
-				public void setError(Throwable e) {
-					vect.setFailure(e);					
-				}
-			});
-		}
-		return vect;
-	}
-	
 	public static <T> List<T> singleNodeMassExec(ViExecutor exec, Callable<? extends T> task) {
 		return Collections.singletonList((T)exec.exec(task));
 	}
 	
-	public static List<FutureEx<Void>> singleNodeMassSubmit(ViExecutor exec, Runnable task) {
+	public static List<Future<Void>> singleNodeMassSubmit(ViExecutor exec, Runnable task) {
 		return Collections.singletonList(exec.submit(task));
 	}
 	
-	public static List<FutureEx<Void>> singleNodeMassSubmit(ViExecutor exec, VoidCallable task) {
+	public static List<Future<Void>> singleNodeMassSubmit(ViExecutor exec, VoidCallable task) {
 		return Collections.singletonList(exec.submit(task));
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T> List<FutureEx<T>> singleNodeMassSubmit(ViExecutor exec, Callable<? extends T> task) {
+	public static <T> List<Future<T>> singleNodeMassSubmit(ViExecutor exec, Callable<? extends T> task) {
 		return (List)Collections.singletonList(exec.submit(task));
 	}	
 
@@ -168,42 +143,6 @@ public class MassExec {
 			throw new Error("Unreachable");
 		}
 	}	
-	
-	private static class FutureVector<V> extends FutureBox<List<V>> {
-		
-		private Object[] values;
-		private int remains;
-		private Throwable lastError;
-		
-		public FutureVector(int size) {
-			values = new Object[size];
-			remains = size;
-		}
-		
-		public synchronized void setElement(int n, V v) {
-			--remains;
-			values[n] = v;
-			checkCountDown();
-		}
-		
-		public synchronized void setFailure(Throwable e) {
-			--remains;
-			lastError = e;			
-			checkCountDown();
-		}
-
-		@SuppressWarnings({ "unchecked", "rawtypes" })
-		private void checkCountDown() {
-			if (remains == 0) {
-				if (lastError != null) {
-					setError(lastError);
-				}
-				else {
-					setData((List)Arrays.asList(values));
-				}
-			}
-		}
-	}
 	
 	private static class AnyThrow {
 

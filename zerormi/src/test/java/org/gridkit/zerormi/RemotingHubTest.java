@@ -1,14 +1,25 @@
+/**
+ * Copyright 2013 Alexey Ragozin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.rmi.Remote;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -18,31 +29,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
-import org.gridkit.zerormi.hub.DirectConnectSocket;
+import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.gridkit.zerormi.hub.SimpleSocketAcceptor;
+import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class RemotingHubTest {
 
+	int hubPort;
+	
 	private RemotingHub hub;
 	private RemotingEndPoint endPoint1;
 	private RemotingEndPoint endPoint2;
 	private SimpleSocketAcceptor acceptor;
-	private RmiGateway gateway1;
-	private RmiGateway gateway2;
 	private AdvancedExecutor remoteExecutor1;
 	private AdvancedExecutor remoteExecutor2;
 	
 	@Before
 	public void initHub() throws InterruptedException, BrokenBarrierException, TimeoutException {
-		hub = new RemotingHub();
+		hub = new RemotingHub(ZLogFactory.getDefaultRootLogger());
 		
 		final CountDownLatch latch = new CountDownLatch(2);
 		
@@ -69,41 +80,42 @@ public class RemotingHubTest {
 			}
 		};
 		
-		String uid1 = hub.newSession("side1", sessionListener);
-		String uid2 = hub.newSession("side2", sessionListener);
+		String uid1 = LegacySpore.uidOf(hub.allocateSession("side1", sessionListener));
+		String uid2 = LegacySpore.uidOf(hub.allocateSession("side2", sessionListener));
 		
 		
 		acceptor = new SimpleSocketAcceptor();
-		ServerSocket ssock;
-		try {
-			ssock = new ServerSocket(21000);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		ServerSocket ssock = openServerSocket();
 		
 		acceptor.bind(ssock, hub);
 		acceptor.start();
 		
-		endPoint1 = new RemotingEndPoint("slave1", uid1, new DirectConnectSocket("localhost", 21000));
+		endPoint1 = new RemotingEndPoint(uid1, new InetSocketAddress("localhost", hubPort));
 		new Thread(endPoint1).start();
 		
-		gateway1 = hub.getGateway(uid1);
-		remoteExecutor1 = gateway1.asExecutor();
+		remoteExecutor1 = hub.getExecutionService(uid1);
 
-		endPoint2 = new RemotingEndPoint("slave2", uid2, new DirectConnectSocket("localhost", 21000));
+		endPoint2 = new RemotingEndPoint(uid2, new InetSocketAddress("localhost", hubPort));
 		new Thread(endPoint2).start();
 		
-		gateway2 = hub.getGateway(uid2);
-		remoteExecutor2 = gateway2.asExecutor();
+		remoteExecutor2 = hub.getExecutionService(uid2);
 		
-		latch.await(5000, TimeUnit.MILLISECONDS);
+		latch.await(5000, TimeUnit.MILLISECONDS);		
+	}
+
+	protected ServerSocket openServerSocket() {
+		ServerSocket ssock;
+		try {
+			ssock = new ServerSocket(0);
+			hubPort = ssock.getLocalPort();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return ssock;
 	}
 	
 	@After
 	public void shutdown() {
-		gateway1.shutdown();
-		gateway2.shutdown();
-		hub.closeAllConnections();
 		acceptor.close();
 	}
 	
@@ -126,72 +138,6 @@ public class RemotingHubTest {
 		Assert.assertEquals("123", result);		
 	}
 	
-	@Test @Ignore
-	public void test_resource_leak() throws InterruptedException, ExecutionException {
-
-		SessionEventListener listener = new SessionEventLogger();		
-		
-		Random rnd = new Random(1);
-		Map<String, RemotingEndPoint> slaves = new HashMap<String, RemotingEndPoint>(); 
-		List<String> sessions = new ArrayList<String>();
-		for(int i = 0; i != 10000; ++i) {
-			if (sessions.size() < 10) {
-				String id = hub.newSession("slave-" + i, listener);
-				RemotingEndPoint slave = createSlave("slave-" + i, id);
-				sessions.add(id);
-				slaves.put(id, slave);
-				
-				hub.getGateway(id).asExecutor().submit(new Callable<String>() {
-					@Override
-					public String call() throws Exception {
-						return "Ping";
-					}					
-				}).get();
-			}
-			int n = rnd.nextInt(sessions.size());
-			hub.getGateway(sessions.get(n)).asExecutor().submit(new Callable<String>() {
-				@Override
-				public String call() throws Exception {
-					return "Ping";
-				}					
-			}).get();
-			if (rnd.nextInt(100) < 30) {
-				String id = sessions.remove(n);
-				slaves.remove(id).shutdown();
-				hub.closeConnection(id);
-			}
-		}
-	}
-	
-	private RemotingEndPoint createSlave(String name, String id) {
-		RemotingEndPoint endPoint = new RemotingEndPoint(name, id, new DirectConnectSocket("localhost", 21000));
-		new Thread(endPoint).start();
-		return endPoint;
-	}
-
-	private final class SessionEventLogger implements
-			SessionEventListener {
-		@Override
-		public void reconnected(DuplexStream stream) {
-			System.out.println("HUB: reconnected: " + stream);
-		}
-
-		@Override
-		public void interrupted(DuplexStream stream) {
-			System.out.println("HUB: interrupted: " + stream);
-		}
-
-		@Override
-		public void connected(DuplexStream stream) {
-			System.out.println("HUB: connected: " + stream);
-		}
-
-		@Override
-		public void closed() {
-			System.out.println("HUB: closed");
-		}
-	}
-
 	@SuppressWarnings("serial")
 	public static class Echo<V> implements Callable<V>, Serializable {
 

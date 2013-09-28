@@ -55,15 +55,4 @@ public class RemoteReturn implements RemoteMessage {
 		this.ret = ret;
 		this.callId = callId;
 	}
-
-	@Override
-	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("RemoteReturn[").append(callId)
-				.append(", ").append(throwing).append(", ")
-				.append(ret).append("]");
-		return builder.toString();
-	}
-
-	
 }

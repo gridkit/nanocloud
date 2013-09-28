@@ -21,12 +21,14 @@ import java.util.Collection;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ViNodeSet<V extends ViNode> {
+public interface ViNodeSet {
 
 	/**
 	 * Return node by name (or group of nodes for pattern).
 	 */
 	public ViNode node(String namePattern);
+
+	public ViNode nodes(String... namePatterns);
 
 	/**
 	 * List non-terminated nodes matching namePattern
@@ -34,5 +36,5 @@ public interface ViNodeSet<V extends ViNode> {
 	public Collection<ViNode> listNodes(String namePattern);
 	
 	public void shutdown();
-	
+
 }

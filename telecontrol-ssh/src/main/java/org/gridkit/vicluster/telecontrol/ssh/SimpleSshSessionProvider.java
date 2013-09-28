@@ -18,15 +18,16 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.gridkit.internal.com.jcraft.jsch.JSch;
+import org.gridkit.internal.com.jcraft.jsch.JSchException;
+import org.gridkit.internal.com.jcraft.jsch.Session;
+import org.gridkit.internal.com.jcraft.jsch.UIKeyboardInteractive;
+import org.gridkit.internal.com.jcraft.jsch.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UIKeyboardInteractive;
-import com.jcraft.jsch.UserInfo;
 
 
 public class SimpleSshSessionProvider implements SshSessionFactory {
@@ -38,6 +39,7 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 	private String user;
 	private String password;
 	private String passphrase;
+	private Map<String, String> config = new HashMap<String, String>();
 	
 	public SimpleSshSessionProvider() {
 		this(new JSch());
@@ -45,10 +47,6 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 
 	public SimpleSshSessionProvider(JSch jsch) {
 		this.jsch = jsch;
-	}
-	
-	public String getUser() {
-		return user;
 	}
 	
 	public void setUser(String user) {
@@ -60,23 +58,33 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 	}
 	
 	public void setKeyFile(String fileName) {
-		try {
-			File f = new File(fileName);
-			if (!f.exists()) {
-				// Try to lookup files in home directory
-				File home = new File(System.getProperty("user.home"));
-				if (new File(home, fileName).exists()) {
+		boolean added = false;
+		String[] paths = fileName.split("[|]");
+		for(String path: paths) {
+			try {
+				if (path.startsWith("~/")) {
 					try {
-						fileName = new File(home, fileName).getCanonicalPath();
+						path = new File(System.getProperty("user.home"), path.substring(2)).getCanonicalPath();
 					} catch (IOException e) {
 						// ignore
 					}
 				}
+				File f = new File(path);
+				if (f.exists()) {
+					jsch.addIdentity(path);
+					added = true;
+				}
+			} catch (JSchException e) {
+				throw new IllegalArgumentException(e);
 			}
-			jsch.addIdentity(fileName);
-		} catch (JSchException e) {
-			throw new IllegalArgumentException(e);
 		}
+		if (!added) {
+			throw new IllegalArgumentException("No keys found at [" + fileName + "]");
+		}
+	}
+	
+	public void setConfig(String key, String value) {
+		config.put(key, value);
 	}
 	
 	@Override
@@ -96,6 +104,9 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 				
 		Session session = jsch.getSession(user, host, port);
 		session.setConfig("StrictHostKeyChecking", "no");
+		for(String key: config.keySet()) {
+			session.setConfig(key, config.get(key));
+		}
 		session.setDaemonThread(true);
 		session.setUserInfo(ui);		
 		session.connect();
@@ -117,7 +128,7 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		@Override
 		public String[] promptKeyboardInteractive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
 			LOGGER.debug("[" + host + "] SSH: keyboard-interactive Prompt=" + Arrays.toString(prompt));
-			return new String[]{password};
+			return new String[]{password != null ? password : ""};
 		}
 
 		@Override
@@ -156,7 +167,7 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 		}
 	}
 
-	private final static class JSchLogger implements com.jcraft.jsch.Logger {
+	private final static class JSchLogger implements org.gridkit.internal.com.jcraft.jsch.Logger {
 		
 		private org.slf4j.Logger logger;
 		
