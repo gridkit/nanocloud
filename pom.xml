@@ -48,9 +48,9 @@
     </developers>
     
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.7.5</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.7.5</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.7.5</url>
+        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/true</connection>
+        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/true</developerConnection>
+        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/true</url>
     </scm>
 
     <properties>
