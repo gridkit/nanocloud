@@ -28,7 +28,7 @@
 
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.7.24-SNAPSHOT</version>
+    <version>0.8.1-SNAPSHOT</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
     <licenses>
@@ -61,7 +61,6 @@
         <module>viconcurrent</module>
         <module>vicluster-core</module>
         <module>zerormi</module>
-        <module>telecontrol</module>
         <module>telecontrol-ssh</module>
     </modules>
 
@@ -85,11 +84,6 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>zerormi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.gridkit.lab</groupId>
-                <artifactId>telecontrol</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
