@@ -17,12 +17,14 @@ package org.gridkit.zerormi.zlog;
 
 public class ZLogFactory {
 
+	public static final String PROP_ZLOG_MODE = "org.gridkit.zlog.mode";
+	
 	public static ZLogger getStdErrRootLogger() {
 		return new PrintStreamLogger("", System.err);
 	}
 
 	public static ZLogger getDefaultRootLogger() {
-		if ("slf4j".equals(System.getProperty("zlog-mode"))) {
+		if ("slf4j".equals(System.getProperty(PROP_ZLOG_MODE))) {
 			return getSlf4JRootLogger();
 		}
 		else {

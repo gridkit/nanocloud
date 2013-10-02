@@ -113,7 +113,7 @@ public class LocalControlConsole implements HostControlConsole {
 		ProcessObserver observer;
 		try {
 			File wd = new File(workingDir).getCanonicalFile();
-			Process process = Runtime.getRuntime().exec(command, environment, wd);
+			Process process = Runtime.getRuntime().exec(command, null, wd);
 			observer = new ProcessObserver(process, handler);
 			Thread thread = new Thread(observer);
 			thread.setDaemon(false);

@@ -108,6 +108,7 @@ public class Classpath {
 				lname = file.getParentFile().getParentFile().getName();
 			}
 			lname += ".jar";
+			entry.file = file;
 			entry.filename = lname;
 			entry.data = ClasspathUtils.jarFiles(file.getPath());
 			if (entry.data == null) {

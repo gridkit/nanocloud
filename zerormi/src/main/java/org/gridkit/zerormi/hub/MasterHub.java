@@ -39,9 +39,13 @@ public interface MasterHub {
 
 	public AdvancedExecutor getExecutionService(String sessionId);
 
+	public AdvancedExecutor getSlaveExecutor(SlaveSpore spore);
+
 	public void dispatch(DuplexStream stream);
 
 	public void dropSession(String sessionId);
+
+	public void terminateSpore(SlaveSpore spore);
 
 	public void dropAllSessions();
 }

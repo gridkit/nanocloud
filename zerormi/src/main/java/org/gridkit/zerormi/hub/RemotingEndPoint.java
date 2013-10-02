@@ -127,13 +127,13 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 			try {
 				if (!gateway.isConnected()) {
 				
-					LINFO.log("Connecting to master socket");
+					LINFO.log("Connecting to master socket " + connector);
 					final DuplexStream ss;
 					
 					try {
 						ss = connector.connect();
 					} catch (IOException e) {
-						LFATAL.log("Connection has failed", connector);
+						LFATAL.log("Connection has failed " + connector, e);
 						return;
 					}
 					

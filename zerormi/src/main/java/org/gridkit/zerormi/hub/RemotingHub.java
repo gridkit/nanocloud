@@ -75,6 +75,11 @@ public class RemotingHub implements MasterHub {
 	}
 	
 	@Override
+	public AdvancedExecutor getSlaveExecutor(SlaveSpore spore) {
+		return getExecutionService(LegacySpore.uidOf(spore));
+	}
+
+	@Override
 	public AdvancedExecutor getExecutionService(String sessionId) {
 		SessionContext ctx = connections.get(sessionId);
 		if (ctx != null) {
@@ -103,6 +108,11 @@ public class RemotingHub implements MasterHub {
 		}
 	}
 	
+	@Override
+	public void terminateSpore(SlaveSpore spore) {
+		dropSession(LegacySpore.uidOf(spore));		
+	}
+
 	@Override
 	public void dropSession(String id) {
 		SessionContext ctx = connections.get(id);
