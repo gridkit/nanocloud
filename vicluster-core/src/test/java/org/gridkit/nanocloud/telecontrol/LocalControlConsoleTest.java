@@ -24,6 +24,7 @@ import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class LocalControlConsoleTest  {
@@ -221,7 +222,7 @@ public class LocalControlConsoleTest  {
 	}
 
 	// TODO should support disposable sockets
-	@Test
+	@Test @Ignore("See TODO")
 	public void verify_multi_bind_tunneled_connection() throws IOException, InterruptedException, ExecutionException {
 		
 		final FutureBox<SocketAddress> bindAddress = new FutureBox<SocketAddress>();
