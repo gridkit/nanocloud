@@ -16,6 +16,7 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +76,11 @@ public class SftpCacheCheck {
 			this.filename = filename;
 			this.data = data;
 			this.hash = StreamHelper.digest(data, "SHA-1");
+		}
+
+		@Override
+		public File getLocalFile() {
+			return null;
 		}
 
 		@Override

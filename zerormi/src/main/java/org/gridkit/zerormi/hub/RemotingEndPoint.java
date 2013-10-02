@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.gridkit.zerormi.DuplexStream;
+import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.SocketStream;
 import org.gridkit.zerormi.zlog.LogLevel;
@@ -55,7 +56,6 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	
 	
 	private String uid;
-	private SocketAddress addr;
 	
 	private RmiGateway gateway;
 	
@@ -63,11 +63,20 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	private long heartBeatTimeout = Long.valueOf(System.getProperty(HEARTBEAT_TIMEOUT, "60000"));
 	private Object pingSingnal = new Object();
 
-	private long lastHeartBeat = System.nanoTime(); 
+	private long lastHeartBeat = System.nanoTime();
+	
+	private DuplexStreamConnector connector;
 	
 	public RemotingEndPoint(String uid, SocketAddress addr) {
 		this.uid = uid;
-		this.addr = addr;
+		this.connector = new ConnectSocketConnector(addr);
+		this.gateway = new RmiGateway("master");
+		this.gateway.setStreamErrorHandler(this);		
+	}
+
+	public RemotingEndPoint(String uid, DuplexStreamConnector connector) {
+		this.uid = uid;
+		this.connector = connector;
 		this.gateway = new RmiGateway("master");
 		this.gateway.setStreamErrorHandler(this);
 	}
@@ -119,21 +128,20 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				if (!gateway.isConnected()) {
 				
 					LINFO.log("Connecting to master socket");
-					final Socket sock = new Socket();
+					final DuplexStream ss;
 					
 					try {
-						sock.connect(addr);
+						ss = connector.connect();
 					} catch (IOException e) {
-						LFATAL.log("Connection has failed", addr);
+						LFATAL.log("Connection has failed", connector);
 						return;
 					}
 					
 					byte[] magic = uid.getBytes();
-					sock.getOutputStream().write(magic);
-					sock.getOutputStream().flush();
+					ss.getOutput().write(magic);
+					ss.getOutput().flush();
 
 					LVERBOSE.log("Master socket connected");
-					DuplexStream ss = new SocketStream(sock);
 					
 					gateway.connect(ss);
 					LVERBOSE.log("Gateway connected");
@@ -210,4 +218,26 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 			LERROR.log("Stream error " + socket, e);
 		}		
 	}
+	
+	private static class ConnectSocketConnector implements DuplexStreamConnector {
+
+		private final SocketAddress address;
+		
+		public ConnectSocketConnector(SocketAddress address) {
+			this.address = address;
+		}
+
+		@Override
+		public DuplexStream connect() throws IOException {
+			Socket socket = new Socket();
+			socket.connect(address);
+
+			return new SocketStream(socket);
+		}
+		
+		@Override
+		public String toString() {
+			return String.valueOf(address);
+		}
+	}	
 }

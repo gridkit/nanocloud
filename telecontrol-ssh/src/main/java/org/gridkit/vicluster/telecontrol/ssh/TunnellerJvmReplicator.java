@@ -16,6 +16,7 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -644,6 +645,11 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			this.filename = filename;
 			this.data = data;
 			this.hash = StreamHelper.digest(data, "SHA-1");
+		}
+
+		@Override
+		public File getLocalFile() {
+			return null;
 		}
 
 		@Override

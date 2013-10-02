@@ -28,7 +28,8 @@ public class LegacySpore implements SlaveSpore {
 
 	@Override
 	public void start(DuplexStreamConnector masterConnector) {
-		// TODO migrate bootstraper logic here
-		throw new UnsupportedOperationException();		
+		RemotingEndPoint endpoint = new RemotingEndPoint(uid, masterConnector);
+		endpoint.enableHeartbeatDeatchWatch();
+		endpoint.run();
 	}
 }

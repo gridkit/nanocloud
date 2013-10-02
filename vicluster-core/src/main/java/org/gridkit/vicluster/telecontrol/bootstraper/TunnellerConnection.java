@@ -99,7 +99,7 @@ public class TunnellerConnection extends TunnellerIO {
 		control.start();		
 	}
 
-	public synchronized void newSocket(SocketHandler handler) throws IOException {
+	public synchronized long newSocket(SocketHandler handler) throws IOException {
 		long sockId = nextSocket++;
 		SocketContext ctx = new SocketContext();
 		ctx.sockId = sockId;
@@ -111,6 +111,7 @@ public class TunnellerConnection extends TunnellerIO {
 			shutdown();
 			throw new IOException("Broken tunnel");
 		}
+		return sockId;
 	}
 
 	public synchronized void pushFile(String path, FileHandler handler) throws IOException {

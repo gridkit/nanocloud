@@ -15,9 +15,15 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
+import java.io.File;
 import java.io.InputStream;
 
 public interface FileBlob {
+	
+	/**
+	 * @return file path if blob is file based or <code>null</code>
+	 */
+	public File getLocalFile();
 	
 	public String getFileName();
 	

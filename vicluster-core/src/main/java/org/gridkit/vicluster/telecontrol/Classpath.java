@@ -149,6 +149,11 @@ public class Classpath {
 		}
 		
 		@Override
+		public File getLocalFile() {
+			return file;
+		}
+
+		@Override
 		public String getFileName() {
 			return filename;
 		}
