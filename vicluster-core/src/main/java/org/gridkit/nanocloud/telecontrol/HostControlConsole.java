@@ -3,6 +3,7 @@ package org.gridkit.nanocloud.telecontrol;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
 
 import org.gridkit.vicluster.telecontrol.FileBlob;
 
@@ -25,7 +26,7 @@ public interface HostControlConsole {
 
 	public Destroyable openSocket(SocketHandler handler);
 
-	public Destroyable startProcess(String workDir, String[] command, String[] environment, ProcessHandler handler);
+	public Destroyable startProcess(String workDir, String[] command, Map<String, String> env, ProcessHandler handler);
 	
 	public void terminate();
 	

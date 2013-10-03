@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.gridkit.vicluster.telecontrol.FileBlob;
+import org.gridkit.vicluster.telecontrol.bootstraper.EnvVarHelper;
 
 /**
  * {@link HostControlConsole} implementation for local execution.
@@ -108,12 +109,13 @@ public class LocalControlConsole implements HostControlConsole {
 	}
 
 	@Override
-	public Destroyable startProcess(String workingDir, String[] command, String[] environment, ProcessHandler handler) {
+	public Destroyable startProcess(String workingDir, String[] command, Map<String, String> env, ProcessHandler handler) {
 		ensureRunning();
 		ProcessObserver observer;
 		try {
 			File wd = new File(workingDir).getCanonicalFile();
-			Process process = Runtime.getRuntime().exec(command, null, wd);
+			String[] envp = EnvVarHelper.buildInheritedEnvironment(env);
+			Process process = Runtime.getRuntime().exec(command, envp, wd);
 			observer = new ProcessObserver(process, handler);
 			Thread thread = new Thread(observer);
 			thread.setDaemon(false);

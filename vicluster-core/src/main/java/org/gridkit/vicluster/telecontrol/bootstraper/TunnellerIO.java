@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -62,7 +64,7 @@ class TunnellerIO {
 		
 		String workingDir;
 		String[] command;
-		String[] env;
+		Map<String, String> env;
 		
 		public void read(DataInputStream dis) throws IOException {
 			procId = dis.readLong();
@@ -72,7 +74,7 @@ class TunnellerIO {
 			
 			workingDir = dis.readUTF();
 			command = readStringArray(dis);
-			env = readStringArray(dis);
+			env = readStringMap(dis);
 		}
 		
 		public void write(DataOutputStream dos) throws IOException {
@@ -83,7 +85,7 @@ class TunnellerIO {
 			dos.writeLong(errId);
 			dos.writeUTF(workingDir);
 			writeStringArray(dos, command);
-			writeStringArray(dos, env);
+			writeStringMap(dos, env);
 		}
 	}
 
@@ -283,6 +285,47 @@ class TunnellerIO {
 		dos.writeShort(strings.length);
 		for(String string: strings) {
 			dos.writeUTF(string);
+		}
+	}
+
+	private static Map<String, String> readStringMap(DataInputStream dis) throws IOException {
+		int n = dis.readShort();
+		if (n == -1) {
+			return null;
+		}
+		Map<String, String> result = new LinkedHashMap<String, String>(n);
+		for(int i = 0; i != n; ++i) {
+			String key = dis.readUTF();
+			boolean notNull = dis.readBoolean();
+			String value;
+			if (notNull) {
+				value = dis.readUTF();
+			}
+			else {
+				value = null;				
+			}
+			result.put(key, value);
+		}
+		return result;
+	}
+
+	private static void writeStringMap(DataOutputStream dos, Map<String, String> map) throws IOException {
+		if (map == null) {
+			dos.writeShort(-1);
+		}
+		else {
+			dos.writeShort(map.size());
+			for(String key: map.keySet()) {
+				dos.writeUTF(key);
+				String val = map.get(key);
+				if (val == null) {
+					dos.writeBoolean(false);
+				}
+				else {
+					dos.writeBoolean(true);
+					dos.writeUTF(val);
+				}
+			}
 		}
 	}
 	

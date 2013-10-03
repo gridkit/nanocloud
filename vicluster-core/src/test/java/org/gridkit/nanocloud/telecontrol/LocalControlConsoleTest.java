@@ -125,7 +125,7 @@ public class LocalControlConsoleTest  {
 			}
 		};
 
-		console.startProcess(".", new String[]{exec, "-version"}, new String[0], handler);
+		console.startProcess(".", new String[]{exec, "-version"}, null, handler);
 		
 		assertEquals("Exit code", 0, pexit.get().intValue());
 		System.out.write(pout.toByteArray());
@@ -164,7 +164,7 @@ public class LocalControlConsoleTest  {
 			}
 		};
 		
-		console.startProcess(".", new String[]{exec, "-version"}, new String[0], handler);
+		console.startProcess(".", new String[]{exec, "-version"}, null, handler);
 		
 		assertEquals("Exit code", Integer.MIN_VALUE, pexit.get().intValue());
 		System.out.write(pout.toByteArray());

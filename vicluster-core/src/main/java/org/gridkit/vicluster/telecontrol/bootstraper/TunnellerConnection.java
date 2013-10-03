@@ -128,7 +128,7 @@ public class TunnellerConnection extends TunnellerIO {
 		}
 	}
 	
-	public synchronized long exec(String wd, String[] cmd, String[] env, ExecHandler handler) throws IOException {
+	public synchronized long exec(String wd, String[] cmd, Map<String, String> env, ExecHandler handler) throws IOException {
 		long procId = nextProc++;
 		ExecContext ctx = new ExecContext();
 		ctx.procId = procId;
@@ -220,7 +220,7 @@ public class TunnellerConnection extends TunnellerIO {
 		sendAccept(ac.context.sockId, ac.cmdId,inId, outId);		
 	}
 	
-	private synchronized void sendExec(long procId, String wd, String[] command, String[] env, long stdIn, long stdOut, long stdErr) throws IOException {
+	private synchronized void sendExec(long procId, String wd, String[] command, Map<String, String> env, long stdIn, long stdOut, long stdErr) throws IOException {
 		ExecCmd cmd = new ExecCmd();
 		cmd.procId = procId;
 		cmd.workingDir = wd;

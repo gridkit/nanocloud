@@ -188,10 +188,11 @@ public class Tunneller extends TunnellerIO {
 		sendFileResponse(cmd.fileId, path, size, error);
 	}
 	
-	private void startProc(long procId, String workingDir, String command[],	String[] env, InputStream stdIn, OutputStream stdOut, OutputStream stdErr) {
+	private void startProc(long procId, String workingDir, String command[],	Map<String, String> env, InputStream stdIn, OutputStream stdOut, OutputStream stdErr) {
 		try {
 			File wd = new File(workingDir).getCanonicalFile();
-			Process process = Runtime.getRuntime().exec(command, env, wd);
+			String[] envp = EnvVarHelper.buildInheritedEnvironment(env);
+			Process process = Runtime.getRuntime().exec(command, envp, wd);
 			new ProcessHandler(procId, process, stdIn, stdOut, stdErr).start();
 			sendStarted(procId);
 		} catch (IOException e) {

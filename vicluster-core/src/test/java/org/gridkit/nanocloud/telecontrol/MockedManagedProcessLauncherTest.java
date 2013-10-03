@@ -1,8 +1,6 @@
 package org.gridkit.nanocloud.telecontrol;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -33,7 +31,7 @@ public class MockedManagedProcessLauncherTest {
 		console = new LocalControlConsole() {
 
 			@Override
-			public Destroyable startProcess(String workingDir, String[] command, String[] environment, final ProcessHandler handler) {
+			public Destroyable startProcess(String workingDir, String[] command, Map<String, String> environment, final ProcessHandler handler) {
 				final StreamPipe pipeIn = new StreamPipe(4096);
 				StreamPipe pipeOut = new StreamPipe(4096);
 				

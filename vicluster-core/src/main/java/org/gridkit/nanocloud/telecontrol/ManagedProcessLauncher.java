@@ -93,7 +93,7 @@ public class ManagedProcessLauncher {
 		commands.add("-D" + ZLogFactory.PROP_ZLOG_MODE + "=slf4j");
 		commands.add(SmartBootstraper.class.getName());
 		
-		console.startProcess(".", commands.toArray(new String[0]), new String[0], session);
+		console.startProcess(".", commands.toArray(new String[0]), null, session);
 		
 		return session;
 	}
