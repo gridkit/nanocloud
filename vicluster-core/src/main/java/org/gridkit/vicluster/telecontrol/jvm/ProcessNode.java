@@ -39,9 +39,9 @@ import org.gridkit.vicluster.ViExecutor;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyVanilaProps;
-import org.gridkit.vicluster.ViNodeLifeCycleHelper;
-import org.gridkit.vicluster.ViNodeLifeCycleHelper.Interceptor;
-import org.gridkit.vicluster.ViNodeLifeCycleHelper.Phase;
+import org.gridkit.vicluster.ViEngine;
+import org.gridkit.vicluster.ViEngine.Interceptor;
+import org.gridkit.vicluster.ViEngine.Phase;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
@@ -103,7 +103,7 @@ class ProcessNode implements ViNode {
 		
 		execProxy = new ExecProxy(executor);
 		
-		ViNodeLifeCycleHelper helper = new ViNodeLifeCycleHelper();
+		ViEngine helper = new ViEngine();
 		Map<String, Object> postInit = helper.processPhase(Phase.POST_INIT, this.config.getInternalConfigMap());
 
 		initPropperteis();
@@ -161,13 +161,13 @@ class ProcessNode implements ViNode {
 	}
 
 	private void processPreShutdown() {
-		ViNodeLifeCycleHelper helper = new ViNodeLifeCycleHelper();
+		ViEngine helper = new ViEngine();
 		Map<String, Object> phaseConfig = helper.processPhase(Phase.PRE_SHUTDOWN, this.config.getInternalConfigMap());
 		helper.executeHooks(execProxy, phaseConfig, true);
 	}
 
 	private void processPostShutdown() {
-		ViNodeLifeCycleHelper helper = new ViNodeLifeCycleHelper();
+		ViEngine helper = new ViEngine();
 		Map<String, Object> phaseConfig = helper.processPhase(Phase.POST_SHUTDOWN, this.config.getInternalConfigMap());
 		helper.executeHooks(execProxy, phaseConfig, true);		
 	}
@@ -254,7 +254,7 @@ class ProcessNode implements ViNode {
 			throw new IllegalArgumentException("Shapd keys could be produced only by quorum games");
 		}
 		if (ViConf.isHook(key)) {
-			ViNodeLifeCycleHelper.Interceptor interceptor = (Interceptor) value;
+			ViEngine.Interceptor interceptor = (Interceptor) value;
 			if (value != null) {
 				interceptor.processAddHoc(key, this);
 			}

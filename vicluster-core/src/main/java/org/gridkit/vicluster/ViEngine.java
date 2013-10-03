@@ -8,9 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
-public class ViNodeLifeCycleHelper {
+public class ViEngine {
 
 	public enum Phase {
 		PRE_INIT,
@@ -317,6 +318,106 @@ public class ViNodeLifeCycleHelper {
 			public RerunContext(Rerun closure) {
 				this.closure = closure;
 			}
+		}
+	}
+	
+	public static void addRule(QuorumGame game, InductiveRule rule) {
+		game.rerunOnQuorum(new InductiveRuleHook(new AtomicBoolean(false), rule, false));
+	}
+	
+	public static class InductiveRuleHook implements Rerun {
+		
+		private AtomicBoolean done;
+		private InductiveRule rule;
+		private boolean lastChance;
+		
+		public InductiveRuleHook(AtomicBoolean done, InductiveRule rule, boolean lastChance) {
+			this.done = done;
+			this.rule = rule;
+			this.lastChance = lastChance;
+		}
+
+		@Override
+		public void rerun(QuorumGame game, Map<String, Object> changes) {
+			if (done.get()) {
+				return;
+			}
+			if (rule.isApplicable(game) && rule.execute(game)) {
+				done.set(true);
+			}
+			else {
+				if (!lastChance) {
+					lastChance = true;
+				}
+				game.rerunOnQuorum(this);
+			}
+		}
+	}
+	
+	public static interface InductiveRule {
+
+		public boolean isApplicable(QuorumGame game);
+		
+		public boolean execute(QuorumGame game);
+
+	}
+	
+	public static class DefaultInitRuleSet implements Interceptor {
+
+		@Override
+		public void process(String name, Phase phase, QuorumGame game) {
+			if (phase == Phase.PRE_INIT) {
+				
+			}
+		}
+
+		@Override
+		public void processAddHoc(String name, ViNode node) {
+			throw new IllegalStateException("Node '" + node + "' is already initialized"); 
+		}
+	}
+	
+	public static class TypeInitializerRule implements InductiveRule {
+
+		@Override
+		public boolean isApplicable(QuorumGame game) {
+			String type = game.getStringProp(ViConf.NODE_TYPE);
+			if (type == null) {
+				return false;
+			}
+			else {
+				return game.getProp(ViConf.TYPE_HANDLER + type) != null;
+			}
+		}
+
+		@Override
+		public boolean execute(QuorumGame game) {
+			String type = game.getStringProp(ViConf.NODE_TYPE);
+			InductiveRule rule = (InductiveRule) game.getProp(ViConf.TYPE_HANDLER + type);
+			addRule(game, rule);
+			return true;
+		}
+	}
+
+	public static class ProcessLauncherRule implements InductiveRule {
+		
+		@Override
+		public boolean isApplicable(QuorumGame game) {
+			String type = game.getStringProp(ViConf.NODE_TYPE);
+			if (type == null) {
+				return false;
+			}
+			else {
+				return game.getProp(ViConf.TYPE_HANDLER + type) != null;
+			}
+		}
+		
+		@Override
+		public boolean execute(QuorumGame game) {
+			String type = game.getStringProp(ViConf.NODE_TYPE);
+			InductiveRule rule = (InductiveRule) game.getProp(ViConf.TYPE_HANDLER + type);
+			addRule(game, rule);
+			return true;
 		}
 	}
 }

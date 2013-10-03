@@ -1,8 +1,8 @@
 package org.gridkit.vicluster;
 
-import org.gridkit.vicluster.ViNodeLifeCycleHelper.Interceptor;
-import org.gridkit.vicluster.ViNodeLifeCycleHelper.Phase;
-import org.gridkit.vicluster.ViNodeLifeCycleHelper.QuorumGame;
+import org.gridkit.vicluster.ViEngine.Interceptor;
+import org.gridkit.vicluster.ViEngine.Phase;
+import org.gridkit.vicluster.ViEngine.QuorumGame;
 
 public class Hooks {
 
@@ -17,7 +17,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.POST_INIT) {
-				game.addUniqueProp(ViNodeLifeCycleHelper.ACTIVATED_REMOTE_HOOK + name, runnable);
+				game.addUniqueProp(ViEngine.ACTIVATED_REMOTE_HOOK + name, runnable);
 			}
 		}
 		
@@ -44,7 +44,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.PRE_SHUTDOWN) {
-				game.addUniqueProp(ViNodeLifeCycleHelper.ACTIVATED_REMOTE_HOOK + name, runnable);
+				game.addUniqueProp(ViEngine.ACTIVATED_REMOTE_HOOK + name, runnable);
 			}
 		}
 	}
@@ -65,7 +65,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.PRE_SHUTDOWN) {
-				game.addUniqueProp(ViNodeLifeCycleHelper.ACTIVATED_HOST_HOOK + name, runnable);
+				game.addUniqueProp(ViEngine.ACTIVATED_HOST_HOOK + name, runnable);
 			}
 		}
 	}
@@ -86,7 +86,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.POST_SHUTDOWN) {
-				game.addUniqueProp(ViNodeLifeCycleHelper.ACTIVATED_HOST_HOOK + name, runnable);
+				game.addUniqueProp(ViEngine.ACTIVATED_HOST_HOOK + name, runnable);
 			}
 		}
 	}

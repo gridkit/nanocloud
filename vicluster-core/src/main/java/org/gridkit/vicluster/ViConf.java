@@ -22,6 +22,15 @@ public class ViConf extends GenericConfig {
 	public static final String CONSOLE_SILENT_SHUTDOWN = "console:silent-shutdown";
 	
 	public static final String HOOK = "hook:";
+
+	public static final String PREFIX_HANDLER = "prefix-handler:";
+	public static final String TYPE_HANDLER = "type-handler:";
+
+	public static final String SPI_REMOTING_HUB = "#spi:remoting-hub";
+	public static final String SPI_JVM_CONFIG = "#spi:java-process-config";
+	public static final String SPI_CONTROL_CONSOLE = "#spi:control-console";
+	public static final String SPI_PROCESS_LAUNCHER = "#spi:process-launcher";
+	public static final String SPI_MANAGED_PROCESS = "#spi:managed-process";
 	
 	public static final String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";
