@@ -51,15 +51,14 @@ import org.gridkit.zerormi.hub.MasterHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.gridkit.zerormi.hub.SlaveSpore;
 import org.gridkit.zerormi.zlog.ZLogFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class ManagedProcessLauncher {
+public class ProcessSporeLauncher implements ProcessLauncher {
 
+	@Override
 	public ManagedProcess createProcess(Map<String, Object> configuration) {
 		HostControlConsole console = (HostControlConsole) configuration.get("#boostrap:control-console");
 		MasterHub masterHub = (MasterHub) configuration.get("#boostrap:master-hub");

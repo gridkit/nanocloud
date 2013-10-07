@@ -27,10 +27,14 @@ public class ViConf extends GenericConfig {
 	public static final String TYPE_HANDLER = "type-handler:";
 
 	public static final String SPI_REMOTING_HUB = "#spi:remoting-hub";
-	public static final String SPI_JVM_CONFIG = "#spi:java-process-config";
+	public static final String SPI_JVM_EXEC_CMD = "#spi:jvm-exec-cmd";
+	public static final String SPI_JVM_ARGS = "#spi:jvm-args";
+	public static final String SPI_JVM_CLASSPATH = "#spi:jvm-classpath";
 	public static final String SPI_CONTROL_CONSOLE = "#spi:control-console";
 	public static final String SPI_PROCESS_LAUNCHER = "#spi:process-launcher";
 	public static final String SPI_MANAGED_PROCESS = "#spi:managed-process";
+	public static final String SPI_NODE_FACTORY = "#spi:node-factory";
+	public static final String SPI_NODE_INSTANCE = "#spi:node-instance";
 	
 	public static final String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";

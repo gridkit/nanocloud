@@ -74,7 +74,7 @@ public class MockedManagedProcessLauncherTest {
 		config.put("#boostrap:control-console", console);
 		config.put("#boostrap:master-hub", hub);
 		
-		ManagedProcessLauncher launcher = new ManagedProcessLauncher();
+		ProcessSporeLauncher launcher = new ProcessSporeLauncher();
 		ManagedProcess slave = launcher.createProcess(config);
 		
 		slave.bindStdOut(System.out);

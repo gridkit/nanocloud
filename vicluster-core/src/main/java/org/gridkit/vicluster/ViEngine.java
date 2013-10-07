@@ -11,6 +11,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
+import org.gridkit.nanocloud.telecontrol.HostControlConsole;
+import org.gridkit.nanocloud.telecontrol.NodeFactory;
+import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.zerormi.hub.MasterHub;
+
 public class ViEngine {
 
 	public enum Phase {
@@ -67,7 +74,90 @@ public class ViEngine {
 		}
 	}
 	
-	public interface QuorumGame {
+	public interface SpiProps {
+		
+		public HostControlConsole getControlConsole();
+
+		public ProcessLauncher getProcessLauncher();
+
+		public MasterHub getMasterHub();
+		
+		public String getJvmPath();
+
+		public List<ClasspathEntry> getJvmClasspath();
+		
+		public List<String> getJvmArgs();
+		
+		public ManagedProcess getManagedProcess();
+		
+		public NodeFactory getNodeFactory();
+		
+		public ViNode getNodeInstance();
+		
+	}
+	
+	public static SpiProps asSpiConfig(final Map<String, Object> config) {
+		return new SpiPropsWrapper() {
+			@Override
+			protected Map<String, Object> getConfig() {
+				return config;
+			}
+		};
+	}
+	
+	public static abstract class SpiPropsWrapper implements SpiProps {
+		
+		protected abstract Map<String, Object> getConfig();
+		
+		@Override
+		public HostControlConsole getControlConsole() {
+			return (HostControlConsole) getConfig().get(ViConf.SPI_MANAGED_PROCESS);
+		}
+
+		@Override
+		public ProcessLauncher getProcessLauncher() {
+			return (ProcessLauncher) getConfig().get(ViConf.SPI_PROCESS_LAUNCHER);
+		}
+
+		@Override
+		public MasterHub getMasterHub() {
+			return (MasterHub) getConfig().get(ViConf.SPI_REMOTING_HUB);
+		}
+
+		@Override
+		public String getJvmPath() {
+			return (String) getConfig().get(ViConf.SPI_JVM_EXEC_CMD);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public List<ClasspathEntry> getJvmClasspath() {
+			return (List<ClasspathEntry>) getConfig().get(ViConf.SPI_JVM_CLASSPATH);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public List<String> getJvmArgs() {
+			return (List<String>) getConfig().get(ViConf.SPI_JVM_ARGS);
+		}
+
+		@Override
+		public ManagedProcess getManagedProcess() {
+			return (ManagedProcess) getConfig().get(ViConf.SPI_MANAGED_PROCESS);
+		}
+
+		@Override
+		public NodeFactory getNodeFactory() {
+			return (NodeFactory) getConfig().get(ViConf.SPI_NODE_FACTORY);
+		}
+
+		@Override
+		public ViNode getNodeInstance() {
+			return (ViNode) getConfig().get(ViConf.SPI_NODE_INSTANCE);
+		}
+	}
+	
+	public interface QuorumGame extends SpiProps {
 		
 		public String getStringProp(String propName);
 
@@ -111,7 +201,7 @@ public class ViEngine {
 		
 	}	
 
-	private static class Game implements QuorumGame {
+	private static class Game extends SpiPropsWrapper implements QuorumGame {
 
 		List<String> keyOrder;
 		Map<String, Object> config; 
@@ -128,6 +218,13 @@ public class ViEngine {
 			this.keyOrder = new ArrayList<String>(config.keySet());
 		}
 		
+		@Override
+		protected Map<String, Object> getConfig() {
+			return config;
+		}
+
+
+
 		public void play(Phase phase) {
 			while(true) {
 				String key = pickInterceptor();
@@ -342,7 +439,7 @@ public class ViEngine {
 			if (done.get()) {
 				return;
 			}
-			if (rule.isApplicable(game) && rule.execute(game)) {
+			if (rule.apply(game)) {
 				done.set(true);
 			}
 			else {
@@ -356,9 +453,7 @@ public class ViEngine {
 	
 	public static interface InductiveRule {
 
-		public boolean isApplicable(QuorumGame game);
-		
-		public boolean execute(QuorumGame game);
+		public boolean apply(QuorumGame game);
 
 	}
 	
@@ -380,20 +475,15 @@ public class ViEngine {
 	public static class TypeInitializerRule implements InductiveRule {
 
 		@Override
-		public boolean isApplicable(QuorumGame game) {
+		public boolean apply(QuorumGame game) {
 			String type = game.getStringProp(ViConf.NODE_TYPE);
 			if (type == null) {
 				return false;
 			}
-			else {
-				return game.getProp(ViConf.TYPE_HANDLER + type) != null;
-			}
-		}
-
-		@Override
-		public boolean execute(QuorumGame game) {
-			String type = game.getStringProp(ViConf.NODE_TYPE);
 			InductiveRule rule = (InductiveRule) game.getProp(ViConf.TYPE_HANDLER + type);
+			if (rule == null) {
+				return false;
+			}
 			addRule(game, rule);
 			return true;
 		}
@@ -402,22 +492,36 @@ public class ViEngine {
 	public static class ProcessLauncherRule implements InductiveRule {
 		
 		@Override
-		public boolean isApplicable(QuorumGame game) {
-			String type = game.getStringProp(ViConf.NODE_TYPE);
-			if (type == null) {
-				return false;
+		public boolean apply(QuorumGame game) {
+			if (
+					game.getManagedProcess() == null
+				&&  game.getControlConsole() != null
+				&&  game.getMasterHub() != null
+				&&  game.getProcessLauncher() != null
+				&&  game.getJvmPath() != null
+				&&  game.getJvmClasspath() != null
+				&&  game.getJvmArgs() != null)
+			{
+				ProcessLauncher launcher = (ProcessLauncher) game.getProp(ViConf.SPI_PROCESS_LAUNCHER);
+				ManagedProcess mp = launcher.createProcess(game.getConfigProps("**"));
+				game.setProp(ViConf.SPI_MANAGED_PROCESS, mp);
+				return true;
 			}
 			else {
-				return game.getProp(ViConf.TYPE_HANDLER + type) != null;
+				return false;
 			}
 		}
+	}
+
+	public static class ProcessLauncherRule1 implements InductiveRule {
 		
 		@Override
-		public boolean execute(QuorumGame game) {
+		public boolean apply(QuorumGame game) {
 			String type = game.getStringProp(ViConf.NODE_TYPE);
 			InductiveRule rule = (InductiveRule) game.getProp(ViConf.TYPE_HANDLER + type);
 			addRule(game, rule);
 			return true;
 		}
 	}
+
 }
