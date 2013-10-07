@@ -1,9 +1,14 @@
 package org.gridkit.vicluster;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +19,10 @@ import java.util.regex.Pattern;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.vicluster.CloudContext.ServiceKey;
+import org.gridkit.vicluster.CloudContext.ServiceProvider;
+import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.zerormi.hub.MasterHub;
@@ -74,7 +83,9 @@ public class ViEngine {
 		}
 	}
 	
-	public interface SpiProps {
+	public interface SpiContext {
+		
+		public CloudContext getCloudContext();
 		
 		public HostControlConsole getControlConsole();
 
@@ -82,7 +93,9 @@ public class ViEngine {
 
 		public MasterHub getMasterHub();
 		
-		public String getJvmPath();
+		public RemoteExecutionSession getRemotingSession();
+		
+		public String getJvmExecCmd();
 
 		public List<ClasspathEntry> getJvmClasspath();
 		
@@ -96,7 +109,7 @@ public class ViEngine {
 		
 	}
 	
-	public static SpiProps asSpiConfig(final Map<String, Object> config) {
+	public static SpiContext asSpiConfig(final Map<String, Object> config) {
 		return new SpiPropsWrapper() {
 			@Override
 			protected Map<String, Object> getConfig() {
@@ -105,13 +118,18 @@ public class ViEngine {
 		};
 	}
 	
-	public static abstract class SpiPropsWrapper implements SpiProps {
+	public static abstract class SpiPropsWrapper implements SpiContext {
 		
 		protected abstract Map<String, Object> getConfig();
 		
 		@Override
+		public CloudContext getCloudContext() {
+			return (CloudContext) getConfig().get(ViConf.SPI_CLOUD_CONTEXT);
+		}
+
+		@Override
 		public HostControlConsole getControlConsole() {
-			return (HostControlConsole) getConfig().get(ViConf.SPI_MANAGED_PROCESS);
+			return (HostControlConsole) getConfig().get(ViConf.SPI_CONTROL_CONSOLE);
 		}
 
 		@Override
@@ -123,10 +141,15 @@ public class ViEngine {
 		public MasterHub getMasterHub() {
 			return (MasterHub) getConfig().get(ViConf.SPI_REMOTING_HUB);
 		}
+		
+		@Override
+		public RemoteExecutionSession getRemotingSession() {
+			return (RemoteExecutionSession) getConfig().get(ViConf.SPI_REMOTING_SESSION);
+		}
 
 		@Override
-		public String getJvmPath() {
-			return (String) getConfig().get(ViConf.SPI_JVM_EXEC_CMD);
+		public String getJvmExecCmd() {
+			return (String) getConfig().get(ViConf.JVM_EXEC_CMD);
 		}
 
 		@Override
@@ -157,9 +180,13 @@ public class ViEngine {
 		}
 	}
 	
-	public interface QuorumGame extends SpiProps {
+	public interface QuorumGame extends SpiContext {
 		
 		public String getStringProp(String propName);
+
+		void setPropIfAbsent(String propName, Object value);
+
+		Map<String, Object> getAllConfigProps();
 
 		public Object getProp(String propName);
 
@@ -189,7 +216,7 @@ public class ViEngine {
 	
 	public interface Rerun {
 		
-		public void rerun(QuorumGame shift, Map<String, Object> changes);
+		public void rerun(QuorumGame game, Map<String, Object> changes);
 		
 	}
 	
@@ -247,7 +274,10 @@ public class ViEngine {
 				}
 				// initial quorum reached
 				dirty = false;
-				for(RerunContext ctx: quorumRerunQueue) {
+				while(!quorumRerunQueue.isEmpty()) {
+					Iterator<RerunContext> it = quorumRerunQueue.iterator();
+					RerunContext ctx = it.next();
+					it.remove();
 					incRunCount();
 					ctx.closure.rerun(this, ctx.changes);
 					if (dirty) {
@@ -307,6 +337,11 @@ public class ViEngine {
 		}
 
 		@Override
+		public Map<String, Object> getAllConfigProps() {
+			return Collections.unmodifiableMap(config);
+		}
+
+		@Override
 		public void setProp(String propName, Object value) {
 			if (value == null) {
 				unsetProp(propName);
@@ -316,6 +351,21 @@ public class ViEngine {
 				keyOrder.add(propName);
 				config.put(propName, value);
 				broadcastChange(propName, value);
+			}
+		}
+
+		@Override
+		public void setPropIfAbsent(String propName, Object value) {
+			if (config.get(propName) == null) {
+				if (value == null) {
+					unsetProp(propName);
+				}
+				else {
+					keyOrder.remove(propName);
+					keyOrder.add(propName);
+					config.put(propName, value);
+					broadcastChange(propName, value);
+				}
 			}
 		}
 
@@ -386,7 +436,7 @@ public class ViEngine {
 			}			
 			for (RerunContext ctx: quorumRerunQueue) {
 				ctx.changes.put(propName, object);
-			}			
+			}
 		}
 
 		@Override
@@ -421,6 +471,25 @@ public class ViEngine {
 	public static void addRule(QuorumGame game, InductiveRule rule) {
 		game.rerunOnQuorum(new InductiveRuleHook(new AtomicBoolean(false), rule, false));
 	}
+
+	public static <T> Interceptor newSingletonInjector(final String configKey, final ServiceKey<T> key, final ServiceProvider<T> provider) {
+		return new Interceptor() {
+			
+			@Override
+			public void process(String name, Phase phase, QuorumGame game) {
+				CloudContext context = game.getCloudContext();
+				T service = provider == null ? context.lookup(key) : context.lookup(key, provider);
+				if (service != null) {
+					game.setProp(configKey, service);
+				}
+			}
+			
+			@Override
+			public void processAddHoc(String name, ViNode node) {
+				throw new IllegalArgumentException("Node is already initialized");
+			}
+		};
+	}
 	
 	public static class InductiveRuleHook implements Rerun {
 		
@@ -436,6 +505,9 @@ public class ViEngine {
 
 		@Override
 		public void rerun(QuorumGame game, Map<String, Object> changes) {
+			if (changes != null) {
+				lastChance = false;
+			}
 			if (done.get()) {
 				return;
 			}
@@ -443,10 +515,13 @@ public class ViEngine {
 				done.set(true);
 			}
 			else {
+				game.rerunOnUpdate(this);
 				if (!lastChance) {
 					lastChance = true;
 				}
-				game.rerunOnQuorum(this);
+				else {
+					game.rerunOnQuorum(this);
+				}
 			}
 		}
 	}
@@ -463,6 +538,17 @@ public class ViEngine {
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.PRE_INIT) {
 				
+				String type = game.getStringProp(ViConf.NODE_TYPE);
+				if (type == null) {
+					throw new IllegalArgumentException("Node type is not defined");
+				}
+				InductiveRule rule = (InductiveRule) game.getProp(ViConf.TYPE_HANDLER + type);
+				if (rule == null) {
+					throw new IllegalArgumentException("Handler for type '" + type + "' is not found");
+				}
+				if (!rule.apply(game)) {
+					throw new IllegalArgumentException("Type initilizer " + rule + " has failed");
+				}				
 			}
 		}
 
@@ -496,9 +582,9 @@ public class ViEngine {
 			if (
 					game.getManagedProcess() == null
 				&&  game.getControlConsole() != null
-				&&  game.getMasterHub() != null
+				&&  game.getRemotingSession() != null
 				&&  game.getProcessLauncher() != null
-				&&  game.getJvmPath() != null
+				&&  game.getJvmExecCmd() != null
 				&&  game.getJvmClasspath() != null
 				&&  game.getJvmArgs() != null)
 			{
@@ -513,15 +599,224 @@ public class ViEngine {
 		}
 	}
 
-	public static class ProcessLauncherRule1 implements InductiveRule {
+	public static class NodeProductionRule implements InductiveRule {
 		
 		@Override
 		public boolean apply(QuorumGame game) {
-			String type = game.getStringProp(ViConf.NODE_TYPE);
-			InductiveRule rule = (InductiveRule) game.getProp(ViConf.TYPE_HANDLER + type);
-			addRule(game, rule);
-			return true;
+			if (
+					game.getNodeInstance() == null
+				&&  game.getNodeFactory() != null
+				&&  game.getManagedProcess() != null
+				)
+			{
+				NodeFactory factory = game.getNodeFactory();
+				ViNode mp = factory.createViNode(game.getAllConfigProps());
+				game.setProp(ViConf.SPI_NODE_INSTANCE, mp);
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+	
+	public static abstract class IdempotentConfigBuilder<T> implements Interceptor, Rerun {
+		
+		protected String configKey;
+		
+		protected abstract T buildState(QuorumGame game);
+		
+		protected boolean sameState(T oldState, T newState) {
+			return oldState == null ? newState == null : oldState.equals(newState);
+		}
+
+		public IdempotentConfigBuilder(String configKey) {
+			this.configKey = configKey;
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public void rerun(QuorumGame game, Map<String, Object> changes) {
+			game.rerunOnUpdate(this);
+			if (!changes.isEmpty()) {
+				T oldV = (T)game.getProp(configKey);
+				T newV = buildState(game);
+				if (!sameState(oldV, newV)) {
+					game.setProp(configKey, buildState(game));					
+				}
+			}			
+		}
+
+		@Override
+		public void process(String name, Phase phase, QuorumGame game) {
+			if (phase == Phase.PRE_INIT) {
+				game.setProp(configKey, buildState(game));
+				game.rerunOnUpdate(this);
+			}			
+		}
+
+		@Override
+		public void processAddHoc(String name, ViNode node) {
+			throw new IllegalArgumentException("Node is already initialized");
+		}
+	}
+	
+	public static class JvmArgumentBuilder extends IdempotentConfigBuilder<List<String>> {
+
+		public JvmArgumentBuilder() {
+			super(ViConf.SPI_JVM_ARGS);
+		}
+		
+		@Override
+		protected List<String> buildState(QuorumGame game) {
+			Map<String, Object> cmd = game.getConfigProps(ViConf.JVM_ARGUMENT);
+			List<String> options = new ArrayList<String>();
+			for(Object v: cmd.values()) {
+				String o = (String) v;
+				if (o.startsWith("|")) {
+					String[] opts = o.split("\\|");
+					for(String oo: opts) {
+						addOption(options, oo);
+					}
+				}
+				else {
+					addOption(options, o);
+				}
+			}
+			return options;
+		}
+		
+		private void addOption(List<String> options, String o) {
+			o = o.trim();
+			if (o.length() > 0) {
+				options.add(o);
+			}
 		}
 	}
 
+	public static class JvmClasspathReplicaBuilder extends IdempotentConfigBuilder<List<ClasspathEntry>> {
+
+		public JvmClasspathReplicaBuilder() {
+			super(ViConf.SPI_JVM_CLASSPATH);
+		}
+
+		
+		@Override
+		protected List<ClasspathEntry> buildState(QuorumGame game) {
+			try {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				Map<String, String> tweaks = (Map<String, String>) (Map) game.getConfigProps(ViConf.CLASSPATH_TWEAK);
+				List<ClasspathEntry> cp = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
+				if (tweaks.isEmpty()) {
+					return cp;
+				}
+				else {
+					List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
+					
+					for(String change: tweaks.values()) {
+						if (change.startsWith("+")) {
+							String cpe = normalize(change.substring(1));
+							addEntry(entries, cpe);
+						}
+						else if (change.startsWith("-")) {
+							String cpe = normalize(change.substring(1));
+							removeEntry(entries, cpe);
+						}
+					}
+					
+					return entries;
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
+			ClasspathEntry entry = Classpath.getLocalEntry(path);
+			if (entry != null) {
+				entries.add(entry);
+			}
+		}
+
+		private void removeEntry(List<ClasspathEntry> entries, String path) {
+			Iterator<ClasspathEntry> it = entries.iterator();
+			while(it.hasNext()) {
+				if (path.equals(normalize(it.next().getUrl()))) {
+					it.remove();
+				}
+			}
+		}
+				
+		private String normalize(String path) {
+			try {
+				// normalize path entry if possible
+				return new File(path).getCanonicalPath();
+			} catch (IOException e) {
+				return path;
+			}
+		}
+		
+		private String normalize(URL url) {
+			try {
+				if (!"file".equals(url.getProtocol())) {
+					throw new IllegalArgumentException("Non file URL in classpath: " + url);
+				}
+				File f = new File(url.toURI());
+				String path = f.getPath();
+				return normalize(path);
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException("Malformed URL in classpath: " + url);
+			}
+		}
+				
+		@Override
+		protected boolean sameState(List<ClasspathEntry> existing, List<ClasspathEntry> rebuilt) {
+			if (existing.size() != rebuilt.size()) {
+				return false;
+			}
+			else {
+				for(int i = 0; i != existing.size(); ++i) {
+					ClasspathEntry e1 = existing.get(0);
+					ClasspathEntry e2 = rebuilt.get(0);
+					if (e1.getLocalFile() == null && e2.getLocalFile() == null) {
+						if (!compareContent(e1, e2)) {
+							return false;
+						}
+					}
+					else if (e1.getLocalFile() == null || e2.getLocalFile() == null) {
+						return false;
+					}
+					else {
+						File p1 = e1.getLocalFile();
+						File p2 = e2.getLocalFile();
+						if (!p1.getPath().equals(p2.getPath())) {
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		private boolean compareContent(ClasspathEntry e1, ClasspathEntry e2) {
+			return e1.getContentHash().equals(e2.getContentHash());
+		}
+
+		@Override
+		public void processAddHoc(String name, ViNode node) {
+			throw new IllegalArgumentException("Node is already initialized");
+		}
+	}
+	
+	public static abstract class ControlConsoleInitialzer implements InductiveRule {
+
+		@Override
+		public boolean apply(QuorumGame game) {
+			game.setPropIfAbsent(ViConf.SPI_CONTROL_CONSOLE, getControlConsole());
+			return true;
+		}
+		
+		protected abstract HostControlConsole getControlConsole();
+		
+	}
 }

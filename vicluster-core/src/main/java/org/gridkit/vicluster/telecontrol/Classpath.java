@@ -190,5 +190,9 @@ public class Classpath {
 				return StreamHelper.readFile(file);
 			}
 		}		
+		
+		public String toString() {
+			return filename;
+		}
 	}	
 }

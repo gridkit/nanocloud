@@ -38,7 +38,8 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole.SocketHandler;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.ViEngine;
+import org.gridkit.vicluster.ViEngine.SpiContext;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -47,8 +48,6 @@ import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.NamedStreamPair;
 import org.gridkit.zerormi.SocketStream;
-import org.gridkit.zerormi.hub.MasterHub;
-import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
 import org.gridkit.zerormi.hub.SlaveSpore;
 import org.gridkit.zerormi.zlog.ZLogFactory;
 
@@ -59,17 +58,15 @@ import org.gridkit.zerormi.zlog.ZLogFactory;
 public class ProcessSporeLauncher implements ProcessLauncher {
 
 	@Override
-	public ManagedProcess createProcess(Map<String, Object> configuration) {
-		HostControlConsole console = (HostControlConsole) configuration.get("#boostrap:control-console");
-		MasterHub masterHub = (MasterHub) configuration.get("#boostrap:master-hub");
-		String name = new ViConf(configuration).getNodeName();
+	public ManagedProcess createProcess(Map<String, Object> config) {
+		SpiContext ctx = ViEngine.asSpiConfig(config);
+		HostControlConsole console = ctx.getControlConsole();
+		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
 		
 		ControlledSession session = new ControlledSession();
-		session.sessionId = name;
-		session.hub = masterHub;
+		session.session = rmiSession;
 		
-		SlaveSpore spore = masterHub.allocateSession(name, session);
-		session.spore = spore;
+		SlaveSpore spore = rmiSession.getMobileSpore();
 
 		Destroyable socketHandler = console.openSocket(session);
 		session.socketHandle = socketHandler;
@@ -184,12 +181,11 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		
 	}
 	
-	private static class ControlledSession implements SessionEventListener, ManagedProcess, ProcessHandler, SocketHandler {
+	// FIXME shutdown sequence is a mess, should be handled properly
+	private static class ControlledSession implements ManagedProcess, ProcessHandler, SocketHandler {
 
-		MasterHub hub;
-		String sessionId;
+		RemoteExecutionSession session;
 		FutureBox<SocketAddress> bindAddress = new FutureBox<SocketAddress>();
-		SlaveSpore spore;
 		byte[] binspore;
 		FutureBox<ProcessStreams> procStreams = new FutureBox<ProcessStreams>();
 		FutureBox<Integer> exitCode = new FutureBox<Integer>();
@@ -205,7 +201,8 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		@Override
 		public void accepted(String remoteHost, int remotePort, InputStream soIn, OutputStream soOut) {
 			// TODO logging
-			hub.dispatch(new NamedStreamPair("tunnel(" + remoteHost + ":" + remotePort + ")", soIn, soOut));
+			session.setTransportConnection(new NamedStreamPair("tunnel(" + remoteHost + ":" + remotePort + ")", soIn, soOut));
+			executor.setData(session.getRemoteExecutor());
 		}
 
 		@Override
@@ -238,7 +235,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		@Override
 		public void finished(int exitCode) {
 			this.exitCode.setData(exitCode);
-			hub.terminateSpore(spore);
+			session.terminate();
 		}
 
 		@Override
@@ -304,35 +301,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 		@Override
 		public void destroy() {
-			hub.terminateSpore(spore);
-			closed();
+			session.terminate();
+			if (procHandle != null) {
+				procHandle.destroy();
+			}
 		}
 
 		@Override
 		public FutureEx<Integer> getExitCodeFuture() {
 			return exitCode;
-		}
-		
-		@Override
-		public void connected(DuplexStream stream) {
-			executor.setData(hub.getSlaveExecutor(spore));
-		}
-
-		@Override
-		public void interrupted(DuplexStream stream) {
-			// ignore
-		}
-
-		@Override
-		public void reconnected(DuplexStream stream) {
-			// ignore
-		}
-
-		@Override
-		public void closed() {
-			if (procHandle != null) {
-				procHandle.destroy();
-			}
-		}
+		}		
 	}	
 }

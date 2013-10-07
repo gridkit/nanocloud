@@ -137,9 +137,12 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 						return;
 					}
 					
-					byte[] magic = uid.getBytes();
-					ss.getOutput().write(magic);
-					ss.getOutput().flush();
+					// Temporary workaround to let legacy and new master/slave transport to co-exist
+					if (uid != null) {
+						byte[] magic = uid.getBytes();
+						ss.getOutput().write(magic);
+						ss.getOutput().flush();
+					}
 
 					LVERBOSE.log("Master socket connected");
 					

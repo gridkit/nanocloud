@@ -28,6 +28,7 @@ import org.gridkit.zerormi.RmiGateway;
 import org.gridkit.zerormi.RmiGateway.StreamErrorHandler;
 import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.LogStream;
+import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.gridkit.zerormi.zlog.ZLogger;
 
 /**
@@ -45,6 +46,11 @@ public class RemotingHub implements MasterHub {
 	private LogStream logError;
 	private SecureRandom srnd ;	
 	private ConcurrentMap<String, SessionContext> connections = new ConcurrentHashMap<String, SessionContext>();
+	
+	public RemotingHub() {
+		// TODO to be removed after coupling of remotting and connection dispatching logic
+		this(ZLogFactory.getDefaultRootLogger());
+	}
 	
 	public RemotingHub(ZLogger logger) {
 		try {

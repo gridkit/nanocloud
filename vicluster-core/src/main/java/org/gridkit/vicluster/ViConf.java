@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 
 public class ViConf extends GenericConfig {
 
@@ -20,13 +21,27 @@ public class ViConf extends GenericConfig {
 	public static final String CONSOLE_STD_ERR_ECHO = "console:stdErr.echo";
 	public static final String CONSOLE_STD_ERR = "console:stdErr";
 	public static final String CONSOLE_SILENT_SHUTDOWN = "console:silent-shutdown";
+
+	public static final String JVM_EXEC_CMD = "jvm:exec-command";
+	public static final String JVM_ARGUMENT = JvmProps.JVM_XX;
+	public static final String JVM_WORK_DIR = JvmProps.JVM_WORK_DIR;
+	public static final String JVM_ENV_VAR = JvmProps.JVM_ENV;
+
+	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
 	
 	public static final String HOOK = "hook:";
+
+	public static final String HOOK_CLASSPATH_BUILDER = "hook:classpath-builder";
+	public static final String HOOK_JVM_ARGUMENTS_BUIDLER = "hook:jvm-arguments-builder";
+	public static final String HOOK_JVM_ENV_VARS_BUIDLER = "hook:jvm-env-vars-builder";
+	public static final String HOOK_NODE_INITIALIZER = "hook:node-initializer";
 
 	public static final String PREFIX_HANDLER = "prefix-handler:";
 	public static final String TYPE_HANDLER = "type-handler:";
 
+	public static final String SPI_CLOUD_CONTEXT = "#spi:cloud-context";
 	public static final String SPI_REMOTING_HUB = "#spi:remoting-hub";
+	public static final String SPI_REMOTING_SESSION = "#spi:remoting-session";
 	public static final String SPI_JVM_EXEC_CMD = "#spi:jvm-exec-cmd";
 	public static final String SPI_JVM_ARGS = "#spi:jvm-args";
 	public static final String SPI_JVM_CLASSPATH = "#spi:jvm-classpath";

@@ -21,7 +21,7 @@ import java.io.InputStream;
 public interface FileBlob {
 	
 	/**
-	 * @return file path if blob is file based or <code>null</code>
+	 * @return file path if blob is file based or <code>null</code>, file may count to a directory (in later binary content will represent archive content of directory) 
 	 */
 	public File getLocalFile();
 	
