@@ -14,6 +14,11 @@ public interface ManagedProcess {
 	
 	public void destroy();
 	
+	/**
+	 * Pulls pending data from stdOut/stdErr pipes
+	 */
+	public void consoleFlush();
+	
 	public FutureEx<Integer> getExitCodeFuture();
 	
 	public AdvancedExecutor getExecutionService();

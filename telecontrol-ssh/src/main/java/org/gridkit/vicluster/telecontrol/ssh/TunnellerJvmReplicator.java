@@ -481,6 +481,11 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 
 		@Override
+		public void consoleFlush() {
+			// do nothing
+		}
+
+		@Override
 		public FutureEx<Integer> getExitCodeFuture() {
 			// FIXME getExitCodeFuture for remote process
 			return new FutureBox<Integer>();

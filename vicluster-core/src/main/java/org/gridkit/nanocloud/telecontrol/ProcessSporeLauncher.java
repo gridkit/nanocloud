@@ -17,7 +17,6 @@ package org.gridkit.nanocloud.telecontrol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
@@ -43,20 +42,19 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViEngine.SpiContext;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper.Link;
 import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.FileBlob;
-import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
-import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
-import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
+import org.gridkit.zeroio.LookbackOutputStream;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.NamedStreamPair;
 import org.gridkit.zerormi.SocketStream;
 import org.gridkit.zerormi.hub.SlaveSpore;
-import org.gridkit.zerormi.zlog.ZLogFactory;
 
 /**
  * 
@@ -84,20 +82,19 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		session.binspore = binspore;
 		
 		String javaCmd = ctx.getJvmExecCmd();
-		String classpath = buildClasspath(console, ctx.getJvmClasspath());
+		String classpath = buildBootJar(console, ctx.getJvmClasspath());
 		
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
 		commands.add("-jar");
 		commands.add("\"" + classpath +"\"");
-		commands.add("-D" + ZLogFactory.PROP_ZLOG_MODE + "=slf4j");
 		
 		console.startProcess(".", commands.toArray(new String[0]), null, session);
 		
 		return session;
 	}
 
-	private String buildClasspath(HostControlConsole console, List<ClasspathEntry> jvmClasspath) {
+	private String buildBootJar(HostControlConsole console, List<ClasspathEntry> jvmClasspath) {
 		
 		List<String> paths = console.cacheFiles(jvmClasspath);
 		
@@ -106,7 +103,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			if (remoteClasspath.length() > 0) {
 				remoteClasspath.append(' ');
 			}
-			remoteClasspath.append(path);			
+			remoteClasspath.append(convertToURI(path));			
 		}
 		
 		Manifest mf = new Manifest();
@@ -125,6 +122,32 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		String path = console.cacheFile(bb);
 		
 		return path;
+	}
+
+	private Object convertToURI(String path) {
+		if (path.indexOf(' ') >= 0 || path.indexOf(':') >= 0 || path.indexOf('\\') >= 0) {
+			StringBuilder sb = new StringBuilder();
+			if (path.charAt(1) == ':') {
+				sb.append("file:/");
+			}
+			for(int i = 0; i != path.length(); ++i) {
+				// TODO proper URL escaping
+				char ch = path.charAt(i);
+				if (ch == '\\') {
+					sb.append('/');
+				}
+				else if (ch == ' ') {
+					sb.append("%20");
+				}
+				else {					
+					sb.append(ch);
+				}
+			}
+			return sb.toString();
+		}
+		else {
+			return path;
+		}
 	}
 
 	private byte[] serialize(Object obj) {
@@ -156,6 +179,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			else {
 				throw new RuntimeException(e.getCause());
 			}
+		}
+	}
+
+	static <T> T uget(Future<T> future) {
+		try {
+			return future.get();
+		} catch (Exception e) {
+			// ignore
+			return null;
 		}
 	}
 	
@@ -209,12 +241,14 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 	private static class ProcessStreams {
 		
 		OutputStream stdIn;
-		InputStream stdOut;
-		InputStream stdErr;
+		LookbackOutputStream stdOut;
+		Link eofOut;
+		LookbackOutputStream stdErr;
+		Link eofErr;
 		
 	}
 	
-	// FIXME shutdown sequence is a mess, should be handled properly
+	// TODO shutdown sequence is still fish
 	private static class ControlledSession implements ManagedProcess, ProcessHandler, SocketHandler {
 
 		RemoteExecutionSession session;
@@ -241,7 +275,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		@Override
 		public void terminated(String message) {
 			if (!executor.isDone()) {
-				executor.setError(new IOException("Transport terminated: " + message));
+				sepuku(new IOException("Transport terminated: " + message));
 			}
 		}
 
@@ -249,17 +283,17 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr) {
 			ProcessStreams ps = new ProcessStreams();
 			ps.stdIn = stdIn;			
-			ps.stdOut = stdOut;
-			ps.stdErr = stdErr;
+			ps.stdOut = new LookbackOutputStream(4096);
+			ps.stdErr = new LookbackOutputStream(4096);
+			ps.eofOut = BackgroundStreamDumper.link(stdOut, ps.stdOut);
+			ps.eofErr = BackgroundStreamDumper.link(stdErr, ps.stdErr);
 			try {
 				DataOutputStream dos = new DataOutputStream(stdIn);
 				dos.writeInt(binspore.length);
 				dos.write(binspore);
 				dos.flush();
 			} catch (IOException e) {
-				procStreams.setError(e);
-				executor.setError(e);
-				procHandle.destroy();
+				sepuku(e);
 				return;
 			}
 			procStreams.setData(ps);
@@ -267,8 +301,28 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 		@Override
 		public void finished(int exitCode) {
-			this.exitCode.setData(exitCode);
-			session.terminate();
+			try {
+				this.exitCode.setData(exitCode);
+			}
+			catch(IllegalStateException e) {
+				// ignore
+			}
+			ProcessStreams ps = fget(procStreams);
+			ps.eofOut.flushAndClose();
+			ps.eofErr.flushAndClose();
+			if (ps.stdOut.getOutput() == null) {
+				byte[] bb = ps.stdOut.getLookbackBuffer();
+				if (bb.length > 0) {
+					System.out.println(new String(bb));
+				}
+			}
+			if (ps.stdErr.getOutput() == null) {
+				byte[] bb = ps.stdErr.getLookbackBuffer();
+				if (bb.length > 0) {
+					System.err.println(new String(bb));
+				}
+			}
+			sepuku(new RuntimeException("Terminated, exitCode=" + exitCode));
 		}
 
 		@Override
@@ -294,30 +348,32 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		@Override
 		public void bindStdOut(OutputStream os) {
 			ProcessStreams ps = fget(procStreams);
-			if (os != null) {
-				BackgroundStreamDumper.link(ps.stdOut, os);
-			}
-			else {
-				try {
-					ps.stdOut.close();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
+			try {
+				if (os != null) {
+					ps.stdOut.setOutput(os);
 				}
+				else {
+					ps.stdOut.close();
+				}
+			} catch (IOException e) {
+				sepuku(e);
+				throw new RuntimeException(e);
 			}
 		}
 
 		@Override
 		public void bindStdErr(OutputStream os) {
 			ProcessStreams ps = fget(procStreams);
-			if (os != null) {
-				BackgroundStreamDumper.link(ps.stdErr, os);
-			}
-			else {
-				try {
-					ps.stdErr.close();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
+			try {
+				if (os != null) {
+					ps.stdErr.setOutput(os);
 				}
+				else {
+					ps.stdErr.close();
+				}
+			} catch (IOException e) {
+				sepuku(e);
+				throw new RuntimeException(e);
 			}
 		}
 		
@@ -331,12 +387,31 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		public void resume() {
 			throw new UnsupportedOperationException();
 		}
+		
+		@Override
+		public void consoleFlush() {
+			if (procStreams.isDone()) {
+				ProcessStreams ps = fget(procStreams);
+				ps.eofOut.flush();
+				ps.eofErr.flush();
+			}
+		}
 
 		@Override
 		public void destroy() {
+			sepuku(new RuntimeException("Terminated"));
+		}
+		
+		protected synchronized void sepuku(Throwable e) {
 			session.terminate();
+			procStreams.setErrorIfWaiting(e);
+			executor.setErrorIfWaiting(e);
+			exitCode.setErrorIfWaiting(e);
 			if (procHandle != null) {
 				procHandle.destroy();
+			}
+			if (socketHandle != null) {
+				socketHandle.destroy();
 			}
 		}
 

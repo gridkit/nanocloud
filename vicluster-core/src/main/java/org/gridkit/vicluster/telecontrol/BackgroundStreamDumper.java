@@ -15,12 +15,16 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.gridkit.util.concurrent.FutureBox;
 
 /**
  * 
@@ -37,7 +41,7 @@ public class BackgroundStreamDumper implements Runnable {
 		worker.start();
 	}
 	
-	public static void link(InputStream is, final OutputStream os, boolean closeOnEof) {
+	public static Link link(InputStream is, final OutputStream os, boolean closeOnEof) {
 		if (!closeOnEof) {
 			OutputStream wos = new OutputStream() {
 				@Override
@@ -65,16 +69,18 @@ public class BackgroundStreamDumper implements Runnable {
 					// do nothing
 				}
 			};
-			link(is, wos);
+			return link(is, wos);
 		}
 		else {
-			link(is, os);
+			return link(is, os);
 		}
 	}
 
-	public static void link(InputStream is, OutputStream os) {
+	public static Link link(InputStream is, OutputStream os) {
 		synchronized (BACKLOG) {
-			BACKLOG.add(new StreamPair(is, os));
+			StreamPair link = new StreamPair(is, os);
+			BACKLOG.add(link);
+			return link;
 		}
 	}
 	
@@ -101,74 +107,145 @@ public class BackgroundStreamDumper implements Runnable {
 			List<StreamPair> backlog;
 			synchronized (BACKLOG) {
 				backlog = new ArrayList<BackgroundStreamDumper.StreamPair>(BACKLOG);
+				for(StreamPair p: backlog) {
+					p.locked.set(true);
+				}
 			}
 			
-			int readCount = 0;
-			
-			for(StreamPair pair: backlog) {
-				try {
-					if (pair.is.read(buffer, 0, 0) < 0) {
-						// EOF
-						closePair(pair);
-					}
-					else if (pair.is.available() > 0) {
-						int n = pair.is.read(buffer);
-						if (n < 0) {
+			try {
+				int readCount = 0;
+				
+				for(StreamPair pair: backlog) {
+					try {
+						if (pair.is.read(buffer, 0, 0) < 0) {
+							// EOF
 							closePair(pair);
 						}
-						else {
-							++readCount;
-							pair.os.write(buffer, 0, n);
+						else if (pair.is.available() > 0) {
+							int n = pair.is.read(buffer);
+							if (n < 0) {
+								closePair(pair);
+							}
+							else {
+								++readCount;
+								pair.os.write(buffer, 0, n);
+							}
 						}
 					}
+					catch(IOException e) {
+						try {
+							PrintStream ps = new PrintStream(pair.os);
+							e.printStackTrace(ps);
+							ps.close();
+						}
+						catch(Exception x) {
+							// ignore;
+						}
+						closePair(pair);
+					}
 				}
-				catch(IOException e) {
+				
+				if (readCount == 0) {
 					try {
-						PrintStream ps = new PrintStream(pair.os);
-						e.printStackTrace(ps);
-						ps.close();
-						pair.is.close();
-					}
-					catch(Exception x) {
-						// ignore;
-					}
-					synchronized (BACKLOG) {
-						BACKLOG.remove(pair);
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// ignore
 					}
 				}
 			}
+			finally {
+				for(StreamPair p: backlog) {
+					p.locked.set(false);
+				}
+			}
+		}		
+	}
+
+	private void closePair(StreamPair pair) {
+		synchronized (BACKLOG) {
+			BACKLOG.remove(pair);
+		}
+		close(pair.os);
+		close(pair.is);
+		pair.signal.setData(null);
+	}
+
+	private static void close(Closeable o) {
+		try {
+			o.close();
+		} catch (IOException e) {
+		}
+	}
+	
+	public interface Link {
+		
+		public void flush();
+
+		public void flushAndClose();
+
+		public void join();
+	}
+	
+	private static class StreamPair implements Link {
+		InputStream is;
+		OutputStream os;
+		FutureBox<Void> signal = new FutureBox<Void>();
+		AtomicBoolean locked = new AtomicBoolean(false);
+
+		public StreamPair(InputStream is, OutputStream os) {
+			this.is = is;
+			this.os = os;
+		}
+
+		@Override
+		public void flush() {
+			synchronized (BACKLOG) {
+				BACKLOG.remove(this);
+			}
 			
-			if (readCount == 0) {
+			try {
+				pullStream(new byte[8 << 10], is, os);
+			} catch (IOException e) {
+				// ignore
+			}			
+
+			synchronized (BACKLOG) {
+				BACKLOG.add(this);
+			}			
+		}
+		
+		@Override
+		public void flushAndClose() {
+			sync();
+			
+			try {
+				pullStream(new byte[8 << 10], is, os);
+			} catch (IOException e) {
+				// ignore
+			}			
+			
+			close(is);
+			close(os);
+			signal.setData(null);
+		}
+
+		private void sync() {
+			while(locked.get()) {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// ignore
 				}
 			}
-		}		
-	}
-
-
-	private void closePair(StreamPair pair) {
-		synchronized (BACKLOG) {
-			BACKLOG.remove(pair);
 		}
-		try {
-			pair.os.close();
-		}
-		catch(Exception e) {
-			// ignore
-		}
-	}
 
-
-	private static class StreamPair {
-		InputStream is;
-		OutputStream os;
-		public StreamPair(InputStream is, OutputStream os) {
-			super();
-			this.is = is;
-			this.os = os;
+		@Override
+		public void join() {
+			try {
+				signal.get();
+			} catch (Exception e) {
+				// ignore
+			}
 		}
 	}	
 }

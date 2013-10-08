@@ -342,17 +342,17 @@ class ProcessNode implements ViNode {
 
 	protected synchronized void terminate(boolean gracefully) {
 		if (active) {
+			flushOutput();
+			if (config.getSilenceOutputOnShutdown()) {
+				outplex.silence();
+				errplex.silence();
+			}
 			try {
 				if (gracefully) { 
 					processPreShutdown();
 				}
-				flushOutput();
 			} catch (Exception e) {
 				e.printStackTrace(); // TODO logging
-			}
-			if (config.getSilenceOutputOnShutdown()) {
-				outplex.silence();
-				errplex.silence();
 			}
 			boolean destroyDelay = false;
 			try {
@@ -389,6 +389,7 @@ class ProcessNode implements ViNode {
 		          System.err.flush();
 			}
 		});
+		process.consoleFlush();
 	}
 
 	private Runnable poisonPill(boolean graceful) {

@@ -102,6 +102,18 @@ public class FutureBox<V> implements FutureEx<V>, Box<V> {
 		}		
 	}
 
+	public synchronized void setErrorIfWaiting(Throwable e) {
+		if (finalized) {
+			return;
+		}
+		else {
+			finalized = true;
+			error = e;
+			ft.run();
+			notifyTriggers();
+		}		
+	}
+
 	private void notifyTriggers() {
 		if (triggers != null) {
 			for(Box<? super V> r: triggers) {

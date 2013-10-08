@@ -178,6 +178,7 @@ public class LocalControlConsole implements HostControlConsole {
 						Socket socket = serverSocket.accept();
 						InetSocketAddress remote = (InetSocketAddress) socket.getRemoteSocketAddress();
 						socketHandler.accepted(remote.getHostName(), remote.getPort(), socket.getInputStream(), socket.getOutputStream());
+						
 						break;
 					}
 					catch(Exception e) {
@@ -189,7 +190,7 @@ public class LocalControlConsole implements HostControlConsole {
 			}
 			finally {
 				sendDeathNote("");
-				unregister(this);
+				unregister(this); // FIXME socket is still open :( should handle it some how
 			}
 		}
 
@@ -207,6 +208,7 @@ public class LocalControlConsole implements HostControlConsole {
 			} catch (IOException e) {
 				// ignore
 			}
+			unregister(this);
 		}		
 	}
 	
@@ -243,6 +245,7 @@ public class LocalControlConsole implements HostControlConsole {
 		@Override
 		public void destroy() {
 			process.destroy();			
+			unregister(this);
 		}
 	}
 	

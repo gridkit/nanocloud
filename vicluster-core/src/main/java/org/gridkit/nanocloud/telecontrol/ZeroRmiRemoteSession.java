@@ -53,5 +53,10 @@ public class ZeroRmiRemoteSession implements RemoteExecutionSession {
 			endpoint.enableHeartbeatDeatchWatch();
 			endpoint.run();
 		}
-	}	
+		
+		@Override
+		public String toString() {
+			return "RemotingEndPoint";
+		}
+	}		
 }

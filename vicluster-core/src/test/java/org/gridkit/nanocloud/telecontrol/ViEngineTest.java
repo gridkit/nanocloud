@@ -25,8 +25,9 @@ public class ViEngineTest {
 	}
 	
 	@Test
-	public void verify_default_local_node_start_up() {
+	public void verify_default_local_node_start_up() throws InterruptedException {
 		Map<String, Object> config = new HashMap<String, Object>();
+		config.put(ViConf.NODE_NAME, "test-node");
 		config.put(ViConf.SPI_CLOUD_CONTEXT, ctx);
 		config.put(ViConf.NODE_TYPE, "local");
 		config.put(ViConf.TYPE_HANDLER + "local", new LocalNodeTypeHandler());
@@ -42,6 +43,7 @@ public class ViEngineTest {
 		String ping = node.exec(new Callable<String>() {
 			@Override
 			public String call() throws Exception {
+				System.out.println("Ping");
 				return "ping";
 			}
 		});

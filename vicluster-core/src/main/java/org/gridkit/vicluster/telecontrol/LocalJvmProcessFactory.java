@@ -314,6 +314,11 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		}
 
 		@Override
+		public void consoleFlush() {
+			// do nothing
+		}
+
+		@Override
 		public void destroy() {
 			closed();
 		}

@@ -20,6 +20,7 @@ public class ViConf extends GenericConfig {
 	public static final String CONSOLE_STD_OUT = "console:stdOut";
 	public static final String CONSOLE_STD_ERR_ECHO = "console:stdErr.echo";
 	public static final String CONSOLE_STD_ERR = "console:stdErr";
+	public static final String CONSOLE_FLUSH = "console:flush";
 	public static final String CONSOLE_SILENT_SHUTDOWN = "console:silent-shutdown";
 
 	public static final String JVM_EXEC_CMD = "jvm:exec-command";

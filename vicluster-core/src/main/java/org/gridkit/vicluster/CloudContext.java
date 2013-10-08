@@ -29,10 +29,6 @@ public interface CloudContext {
 	
 	public static class ServiceKey<T> {
 		
-		public static <T> ServiceKey<T> make(Class<T> type) {
-			return new ServiceKey<T>(type);
-		}
-		
 		private Class<T> type;
 		private java.util.Map<String, String> props = new LinkedHashMap<String, String>();
 
@@ -100,6 +96,15 @@ public interface CloudContext {
 	}
 	
 	public static class Helper {
+		
+		public static <T> ServiceKey<T> key(Class<T> type) {
+			return new ServiceKey<T>(type);
+		}
+
+		public static <T> ServiceKey<T> key(Class<T> type, String propName, String value) {
+			return new ServiceKey<T>(type, Collections.singletonMap(propName, value));
+		}
+				
 		
 		public static <T> ServiceProvider<T> reflectionProvider(final Class<? extends T> type, final String finalizerMethod) {
 			try {

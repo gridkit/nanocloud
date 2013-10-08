@@ -9,6 +9,7 @@ import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.ProcessSporeLauncher;
 import org.gridkit.nanocloud.telecontrol.ZeroRmiRemoteSession;
 import org.gridkit.vicluster.CloudContext;
+import org.gridkit.vicluster.CloudContext.Helper;
 import org.gridkit.vicluster.CloudContext.ServiceKey;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine;
@@ -60,19 +61,19 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 	}
 
 	protected HostControlConsole createControlConsole(QuorumGame game) {
-		return game.getCloudContext().lookup(ServiceKey.make(LocalControlConsole.class), CloudContext.Helper.reflectionProvider(LocalControlConsole.class, "terminate"));
+		return game.getCloudContext().lookup(Helper.key(LocalControlConsole.class), CloudContext.Helper.reflectionProvider(LocalControlConsole.class, "terminate"));
 	}
 
 	protected MasterHub createRemotingHub(QuorumGame game) {
-		return game.getCloudContext().lookup(ServiceKey.make(RemotingHub.class), CloudContext.Helper.reflectionProvider(RemotingHub.class, "dropAllSessions"));
+		return game.getCloudContext().lookup(Helper.key(RemotingHub.class), CloudContext.Helper.reflectionProvider(RemotingHub.class, "dropAllSessions"));
 	}
 
 	protected ProcessLauncher createProcessLauncher(QuorumGame game) {
-		return game.getCloudContext().lookup(ServiceKey.make(ProcessSporeLauncher.class), CloudContext.Helper.reflectionProvider(ProcessSporeLauncher.class, null));
+		return game.getCloudContext().lookup(Helper.key(ProcessSporeLauncher.class), CloudContext.Helper.reflectionProvider(ProcessSporeLauncher.class, null));
 	}
 
 	protected NodeFactory createNodeFactory(QuorumGame game) {
-		return game.getCloudContext().lookup(ServiceKey.make(ProcessNodeFactory.class), CloudContext.Helper.reflectionProvider(ProcessNodeFactory.class, null));
+		return game.getCloudContext().lookup(Helper.key(ProcessNodeFactory.class), CloudContext.Helper.reflectionProvider(ProcessNodeFactory.class, null));
 	}
 
 	protected InductiveRule createRemotingConfigurationRule() {
