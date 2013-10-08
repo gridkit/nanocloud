@@ -72,6 +72,10 @@ public class Classpath {
 			throw new IOException(e);
 		}
 	}
+
+	public static synchronized FileBlob createBinaryEntry(String name, byte[] data) {
+		return new ByteBlob(name, data);
+	}
 	
 	private static void fillClasspath(List<ClasspathEntry> classpath, Collection<URL> urls) {
 		// TODO jars located under JDK/JRE folder should be excluded
@@ -193,6 +197,44 @@ public class Classpath {
 		
 		public String toString() {
 			return filename;
+		}
+	}	
+	
+	static class ByteBlob implements FileBlob {
+
+		private String filename;
+		private String hash;
+		private byte[] data;
+		
+		public ByteBlob(String filename, byte[] data) {
+			this.filename = filename;
+			this.data = data;
+			this.hash = StreamHelper.digest(data, "SHA-1");
+		}
+
+		@Override
+		public File getLocalFile() {
+			return null;
+		}
+
+		@Override
+		public String getFileName() {
+			return filename;
+		}
+
+		@Override
+		public String getContentHash() {
+			return hash;
+		}
+
+		@Override
+		public InputStream getContent() {
+			return new ByteArrayInputStream(data);
+		}
+
+		@Override
+		public long size() {
+			return data.length;
 		}
 	}	
 }

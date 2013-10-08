@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.Destroyable;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.ProcessHandler;
@@ -41,9 +43,14 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViEngine.SpiContext;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
+import org.gridkit.vicluster.telecontrol.FileBlob;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
+import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.NamedStreamPair;
@@ -76,22 +83,48 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		byte[] binspore = serialize(planter);
 		session.binspore = binspore;
 		
-		String classpath = System.getProperty("java.class.path");
-		JvmConfig jc = new JvmConfig();
-		classpath = jc.filterClasspath(classpath);
-		
-		String javaCmd = new File(new File(new File(System.getProperty("java.home")), "bin"), "java").getPath();
+		String javaCmd = ctx.getJvmExecCmd();
+		String classpath = buildClasspath(console, ctx.getJvmClasspath());
 		
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
-		commands.add("-cp");
+		commands.add("-jar");
 		commands.add("\"" + classpath +"\"");
 		commands.add("-D" + ZLogFactory.PROP_ZLOG_MODE + "=slf4j");
-		commands.add(SmartBootstraper.class.getName());
 		
 		console.startProcess(".", commands.toArray(new String[0]), null, session);
 		
 		return session;
+	}
+
+	private String buildClasspath(HostControlConsole console, List<ClasspathEntry> jvmClasspath) {
+		
+		List<String> paths = console.cacheFiles(jvmClasspath);
+		
+		StringBuilder remoteClasspath = new StringBuilder();
+		for(String path: paths) {
+			if (remoteClasspath.length() > 0) {
+				remoteClasspath.append(' ');
+			}
+			remoteClasspath.append(path);			
+		}
+		
+		Manifest mf = new Manifest();
+		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+		mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, remoteClasspath.toString());
+		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, SmartBootstraper.class.getName());
+		
+		byte[] booter;
+		try {
+			booter = ClasspathUtils.createManifestJar(mf);
+		} catch (IOException e) {
+			throw new RuntimeException();
+		}
+		FileBlob bb = Classpath.createBinaryEntry("booter.jar", booter);
+		
+		String path = console.cacheFile(bb);
+		
+		return path;
 	}
 
 	private byte[] serialize(Object obj) {
