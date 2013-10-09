@@ -115,6 +115,11 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		}		
 	}
 
+	@Override
+	public void shutdown() {
+		// TODO implement shutdown()
+	}
+
 	private RemoteJmvReplicator getReplicatorProto(SshSessionConfig sc) {
 //		RemoteJmvReplicator rep = new LegacySshJvmReplicator();
 		RemoteJmvReplicator rep = new TunnellerJvmReplicator();

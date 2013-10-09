@@ -27,8 +27,22 @@ public interface ViConfigurable {
 	
 	public void setProps(Map<String, String> props);
 	
+//	/**
+//	 * SPI communication method.<br/>
+//	 * Queries runtime configuration element.
+//	 */
+//	public Object spiGet(String key);
+
+	/**
+	 * SPI communication method.<br/>
+	 * Update runtime configuration element.
+	 */
 	public void setConfigElement(String key, Object value);
 
+	/**
+	 * SPI communication method.<br/>
+	 * Update runtime configuration elements.
+	 */
 	public void setConfigElements(Map<String, Object> config);
 	
 	public void addStartupHook(String id, Runnable hook);

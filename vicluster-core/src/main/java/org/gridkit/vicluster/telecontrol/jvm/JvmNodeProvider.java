@@ -54,6 +54,11 @@ public class JvmNodeProvider implements ViNodeProvider {
 			throw new RuntimeException("Failed to create node '" + name + "'", e);
 		}		
 	}
+	
+	@Override
+	public void shutdown() {
+		// do nothing
+	}
 
 	protected JvmConfig prepareJvmConfig(ViNodeConfig config) {
 		JvmConfig jvmConfig = new JvmConfig();
@@ -68,7 +73,8 @@ public class JvmNodeProvider implements ViNodeProvider {
 	}
 
 	protected ViNode createViNode(String name, ViNodeConfig config, ManagedProcess process) throws IOException {
-		return new ProcessNode(name, config.getInternalConfigMap(), process);
+//		return new ViEngineNode(name, config.getInternalConfigMap(), process);
+		return new JvmNode(name, config, process);
 	}
 	
 	private static class JvmOptionsInitializer extends ViNodeConfig.ReplyProps {

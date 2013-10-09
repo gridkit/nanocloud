@@ -83,6 +83,8 @@ public class ViGroup implements ViNode {
 		}
 	}
 	
+	
+	
 	@Override
 	public synchronized void setProps(Map<String, String> props) {
 		checkActive();

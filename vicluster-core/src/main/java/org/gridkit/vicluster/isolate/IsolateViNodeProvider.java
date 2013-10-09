@@ -36,5 +36,10 @@ public class IsolateViNodeProvider implements ViNodeProvider {
 		IsolateViNode node = new IsolateViNode(name);
 		config.apply(node);
 		return node;
+	}
+
+	@Override
+	public void shutdown() {
+		// do nothing
 	}	
 }

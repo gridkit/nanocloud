@@ -64,6 +64,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 	@Override
 	public ManagedProcess createProcess(Map<String, Object> config) {
+		
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		HostControlConsole console = ctx.getControlConsole();
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
@@ -408,10 +409,20 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			executor.setErrorIfWaiting(e);
 			exitCode.setErrorIfWaiting(e);
 			if (procHandle != null) {
+				finalConsoleFlush();
 				procHandle.destroy();
 			}
 			if (socketHandle != null) {
 				socketHandle.destroy();
+			}
+		}
+
+		private void finalConsoleFlush() {
+			try {
+				consoleFlush();
+			}
+			catch(Exception x) {
+				// ignore
 			}
 		}
 

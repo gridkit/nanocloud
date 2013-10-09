@@ -38,6 +38,11 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 		config.apply(node);
 		return node;
 	}
+	
+	@Override
+	public void shutdown() {
+		// TODO implement shutdown()
+	}
 
 	private static class InProcessViNode implements ViNode {
 		

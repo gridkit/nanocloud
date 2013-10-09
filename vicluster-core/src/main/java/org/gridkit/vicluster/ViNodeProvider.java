@@ -26,4 +26,6 @@ public interface ViNodeProvider {
 	
 	public ViNode createNode(String name, ViNodeConfig config);
 	
+	public void shutdown();
+	
 }

@@ -27,6 +27,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String CONSOLE_STD_OUT = "console:stdOut";
 	public static final String CONSOLE_STD_ERR_ECHO = "console:stdErr.echo";
 	public static final String CONSOLE_STD_ERR = "console:stdErr";
+	public static final String CONSOLE_ECHO_PREFIX = "console:echo-prefix";
 	public static final String CONSOLE_FLUSH = "console:flush";
 	public static final String CONSOLE_SILENT_SHUTDOWN = "console:silent-shutdown";
 
@@ -44,10 +45,19 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String HOOK_JVM_ENV_VARS_BUIDLER = "hook:jvm-env-vars-builder";
 	public static final String HOOK_NODE_INITIALIZER = "hook:node-initializer";
 
-	public static final String PREFIX_HANDLER = "prefix-handler:";
+	public static final String PRAGMA_HANDLER = "pragma-handler:";
+	public static final String PRAGMA_HANDLER__CONSOLE = "pragma-handler:console";
+	public static final String PRAGMA_HANDLER__HOOK = "pragma-handler:hook";
+	public static final String PRAGMA_HANDLER__CLASSPATH = "pragma-handler:classpath";
+	public static final String PRAGMA_HANDLER__JVM = "pragma-handler:jvm";
+	public static final String PRAGMA_HANDLER__NODE = "pragma-handler:node";
+	public static final String PRAGMA_HANDLER__RUNTIME = "pragma-handler:runtime";
+	
 	public static final String TYPE_HANDLER = "type-handler:";
 
 	public static final String SPI_CLOUD_CONTEXT = "#spi:cloud-context";
+	public static final String SPI_KILL_SWITCH = "#spi:kill-switch";
+	public static final String SPI_EPITAPH = "#spi:epitaph";
 	public static final String SPI_REMOTING_SESSION = "#spi:remoting-session";
 	public static final String SPI_JVM_EXEC_CMD = JVM_EXEC_CMD; // TODO "#spi:jvm-exec-cmd";
 	public static final String SPI_JVM_ARGS = "#spi:jvm-args";
@@ -60,10 +70,21 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	
 	public static final String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";
+	public static final String ACTIVATED_FINALIZER_HOOK = "#finally:";
 
 	
 	public static boolean isVanilaProp(String key) {
 		return key.indexOf(':') < 0 && key.indexOf('#') < 0;
+	}
+
+	public static String getPragmaQualifier(String key) {
+		int n = key.indexOf(':');
+		if (n < 0) {
+			return null;
+		}
+		else {
+			return key.substring(0, n);
+		}
 	}
 
 	public static boolean isHook(String key) {
@@ -93,6 +114,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	}
 
 	@Override
+	public Map<String, Object> getConfigMap() {
+		return config;
+	}
+
+	@Override
 	Object readRawProp(String name) {
 		return config.get(name);
 	}
@@ -102,11 +128,13 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 		config.put(name, value);		
 	}
 
+	@Override
 	@PropName(NODE_NAME)
 	public String getNodeName() {
 		return readString();
 	}
 
+	@Override
 	@PropName(NODE_TYPE)
 	public String getNodeType() {
 		return readString();
@@ -233,5 +261,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@DefaultNull
 	public ViNode getNodeInstance() {
 		return readObject();
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T> T get(String key) {
+		return (T) config.get(key);
 	}
 }

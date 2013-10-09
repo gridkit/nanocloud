@@ -42,6 +42,22 @@ public class ConfigurableNodeProvider implements ViNodeProvider {
 	}
 
 	@Override
+	public void shutdown() {
+		if (inprocessProvider != null) {
+			inprocessProvider.shutdown();
+		}
+		if (isolateProvider != null) {
+			isolateProvider.shutdown();
+		}
+		if (localProvider != null) {
+			localProvider.shutdown();
+		}
+		if (remoteProvider != null) {
+			remoteProvider.shutdown();
+		}
+	}
+
+	@Override
 	public ViNode createNode(String name, ViNodeConfig config) {
 		String type = config.getProp(ViProps.NODE_TYPE);
 		if (ViProps.NODE_TYPE_ISOLATE.equals(type)) {

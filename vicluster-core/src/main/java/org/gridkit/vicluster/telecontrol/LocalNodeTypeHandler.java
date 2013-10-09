@@ -25,7 +25,6 @@ import org.gridkit.vicluster.ViEngine.Interceptor;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
-import org.gridkit.vicluster.telecontrol.jvm.ProcessNodeFactory;
 
 public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 
@@ -38,11 +37,9 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 
 		game.setPropIfAbsent(ViConf.SPI_CONTROL_CONSOLE, createControlConsole(game));
 		game.setPropIfAbsent(ViConf.SPI_PROCESS_LAUNCHER, createProcessLauncher(game));
-		game.setPropIfAbsent(ViConf.SPI_NODE_FACTORY, createNodeFactory(game));
 		
 		ViEngine.Core.addRule(game, createRemotingConfigurationRule());
 		ViEngine.Core.addRule(game, createProcessLauncherRule());
-		ViEngine.Core.addRule(game, createNodeProducerRule());
 		
 		return true;
 	}
@@ -72,10 +69,6 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 
 	protected ProcessLauncher createProcessLauncher(QuorumGame game) {
 		return game.getCloudContext().lookup(Helper.key(ProcessSporeLauncher.class), CloudContext.Helper.reflectionProvider(ProcessSporeLauncher.class, null));
-	}
-
-	protected NodeFactory createNodeFactory(QuorumGame game) {
-		return game.getCloudContext().lookup(Helper.key(ProcessNodeFactory.class), CloudContext.Helper.reflectionProvider(ProcessNodeFactory.class, null));
 	}
 
 	protected InductiveRule createRemotingConfigurationRule() {
@@ -217,11 +210,6 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 		private boolean compareContent(ClasspathEntry e1, ClasspathEntry e2) {
 			return e1.getContentHash().equals(e2.getContentHash());
 		}
-
-		@Override
-		public void processAddHoc(String name, ViNode node) {
-			throw new IllegalArgumentException("Node is already initialized");
-		}
 	}
 	
 	public static class JvmArgumentBuilder extends IdempotentConfigBuilder<List<String>> {
@@ -271,8 +259,14 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 				&&  game.getJvmArgs() != null)
 			{
 				ProcessLauncher launcher = (ProcessLauncher) game.getProp(ViConf.SPI_PROCESS_LAUNCHER);
-				ManagedProcess mp = launcher.createProcess(game.getConfigProps("**"));
+				final ManagedProcess mp = launcher.createProcess(game.getConfigProps("**"));
 				game.setProp(ViConf.SPI_MANAGED_PROCESS, mp);
+				game.addUniqueProp(ViConf.ACTIVATED_FINALIZER_HOOK + "destroy-process", new Runnable() {
+					@Override
+					public void run() {
+						mp.destroy();
+					}
+				});
 				return true;
 			}
 			else {

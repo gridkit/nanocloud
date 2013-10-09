@@ -1,17 +1,12 @@
 package org.gridkit.nanocloud.telecontrol;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
-import junit.framework.Assert;
-
 import org.gridkit.vicluster.AbstractCloudContext;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViEngine;
-import org.gridkit.vicluster.ViEngine.Phase;
+import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.LocalNodeTypeHandler;
+import org.gridkit.vicluster.telecontrol.jvm.ViEngineNodeProvider;
 import org.junit.After;
 import org.junit.Test;
 
@@ -24,33 +19,55 @@ public class ViEngineTest {
 		ctx.runFinalizers();
 	}
 	
-	@Test
-	public void verify_default_local_node_start_up() throws InterruptedException {
-		Map<String, Object> config = new HashMap<String, Object>();
-		config.put(ViConf.NODE_NAME, "test-node");
-		config.put(ViConf.SPI_CLOUD_CONTEXT, ctx);
-		config.put(ViConf.NODE_TYPE, "local");
-		config.put(ViConf.TYPE_HANDLER + "local", new LocalNodeTypeHandler());
+//	@Test
+//	public void verify_default_local_node_start_up() throws InterruptedException {
+//		Map<String, Object> config = new HashMap<String, Object>();
+//		config.put(ViConf.NODE_NAME, "test-node");
+//		config.put(ViConf.SPI_CLOUD_CONTEXT, ctx);
+//		config.put(ViConf.NODE_TYPE, "local");
+//		config.put(ViConf.TYPE_HANDLER + "local", new LocalNodeTypeHandler());
+//		
+//		config.put(ViConf.HOOK_NODE_INITIALIZER, new ViEngine.DefaultInitRuleSet());
+//		
+//		ViEngine.Core veng = new ViEngine.Core();
+//		config = veng.processPhase(Phase.PRE_INIT, config);
+//		
+//		ViNode node = (ViNode) config.get(ViConf.SPI_NODE_INSTANCE);
+//		Assert.assertNotNull(node);
+//		
+//		String ping = node.exec(new Callable<String>() {
+//			@Override
+//			public String call() throws Exception {
+//				System.out.println("Ping");
+//				return "ping";
+//			}
+//		});
+//		
+//		Assert.assertEquals("ping", ping);
+//		
+//		node.shutdown();
+//	}
 
-		config.put(ViConf.HOOK_NODE_INITIALIZER, new ViEngine.DefaultInitRuleSet());
+	@Test
+	public void vi_engine_node_test() throws InterruptedException {
+		ViManager cloud = new ViManager(new ViEngineNodeProvider());
 		
-		ViEngine.Core veng = new ViEngine.Core();
-		config = veng.processPhase(Phase.PRE_INIT, config);
+		cloud.node("**").setConfigElement(ViConf.TYPE_HANDLER + "local", new LocalNodeTypeHandler());
 		
-		ViNode node = (ViNode) config.get(ViConf.SPI_NODE_INSTANCE);
-		Assert.assertNotNull(node);
-		
-		String ping = node.exec(new Callable<String>() {
+		ViNode node = cloud.node("test");
+		ViProps.at(node).setLocalType();
+		node.touch();
+		node.exec(new Runnable() {
 			@Override
-			public String call() throws Exception {
-				System.out.println("Ping");
-				return "ping";
+			public void run() {
+				System.out.println("Hallo world!");
 			}
 		});
 		
-		Assert.assertEquals("ping", ping);
+//		node.setConfigElement(ViConf.CONSOLE_FLUSH, null);
+//		Thread.sleep(200);
 		
-		node.shutdown();
+		cloud.shutdown();
 	}
 	
 	public static class CloudContext extends AbstractCloudContext {

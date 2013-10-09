@@ -11,24 +11,31 @@ import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
 public interface ViSpiConfig {
 
-	public abstract ViNode getNodeInstance();
+	public String getNodeName();
 
-	public abstract NodeFactory getNodeFactory();
+	public String getNodeType();
 
-	public abstract ManagedProcess getManagedProcess();
+	public java.util.Map<String, Object> getConfigMap();
+	
+	public ViNode getNodeInstance();
 
-	public abstract List<String> getJvmArgs();
+	public NodeFactory getNodeFactory();
 
-	public abstract List<ClasspathEntry> getJvmClasspath();
+	public ManagedProcess getManagedProcess();
 
-	public abstract String getJvmExecCmd();
+	public List<String> getJvmArgs();
 
-	public abstract RemoteExecutionSession getRemotingSession();
+	public List<ClasspathEntry> getJvmClasspath();
 
-	public abstract ProcessLauncher getProcessLauncher();
+	public String getJvmExecCmd();
 
-	public abstract HostControlConsole getControlConsole();
+	public RemoteExecutionSession getRemotingSession();
 
-	public abstract CloudContext getCloudContext();
+	public ProcessLauncher getProcessLauncher();
 
+	public HostControlConsole getControlConsole();
+
+	public CloudContext getCloudContext();
+	
+	public <T> T get(String key);
 }

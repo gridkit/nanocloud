@@ -57,6 +57,14 @@ public class CompositeViNodeProvider implements ViNodeProvider {
 		return null;
 	}
 
+	
+	@Override
+	public void shutdown() {
+		for(Provider p: providers) {
+			p.provider.shutdown();
+		}
+	}
+
 	private static class Provider {
 		
 		private Map<String, Object> selector;
