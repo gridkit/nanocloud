@@ -103,7 +103,7 @@ class ProcessNode implements ViNode {
 		
 		execProxy = new ExecProxy(executor);
 		
-		ViEngine helper = new ViEngine();
+		ViEngine.Core helper = new ViEngine.Core();
 		Map<String, Object> postInit = helper.processPhase(Phase.POST_INIT, this.config.getInternalConfigMap());
 
 		initPropperteis();
@@ -161,13 +161,13 @@ class ProcessNode implements ViNode {
 	}
 
 	private void processPreShutdown() {
-		ViEngine helper = new ViEngine();
+		ViEngine.Core helper = new ViEngine.Core();
 		Map<String, Object> phaseConfig = helper.processPhase(Phase.PRE_SHUTDOWN, this.config.getInternalConfigMap());
 		helper.executeHooks(execProxy, phaseConfig, true);
 	}
 
 	private void processPostShutdown() {
-		ViEngine helper = new ViEngine();
+		ViEngine.Core helper = new ViEngine.Core();
 		Map<String, Object> phaseConfig = helper.processPhase(Phase.POST_SHUTDOWN, this.config.getInternalConfigMap());
 		helper.executeHooks(execProxy, phaseConfig, true);		
 	}

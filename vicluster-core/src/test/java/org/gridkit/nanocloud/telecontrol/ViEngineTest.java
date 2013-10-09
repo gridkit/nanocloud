@@ -34,7 +34,7 @@ public class ViEngineTest {
 
 		config.put(ViConf.HOOK_NODE_INITIALIZER, new ViEngine.DefaultInitRuleSet());
 		
-		ViEngine veng = new ViEngine();
+		ViEngine.Core veng = new ViEngine.Core();
 		config = veng.processPhase(Phase.PRE_INIT, config);
 		
 		ViNode node = (ViNode) config.get(ViConf.SPI_NODE_INSTANCE);

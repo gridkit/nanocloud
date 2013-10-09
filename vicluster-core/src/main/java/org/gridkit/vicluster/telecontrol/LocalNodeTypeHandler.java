@@ -1,6 +1,13 @@
 package org.gridkit.vicluster.telecontrol;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.LocalControlConsole;
@@ -10,15 +17,15 @@ import org.gridkit.nanocloud.telecontrol.ProcessSporeLauncher;
 import org.gridkit.nanocloud.telecontrol.ZeroRmiRemoteSession;
 import org.gridkit.vicluster.CloudContext;
 import org.gridkit.vicluster.CloudContext.Helper;
-import org.gridkit.vicluster.CloudContext.ServiceKey;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine;
+import org.gridkit.vicluster.ViEngine.IdempotentConfigBuilder;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViEngine.Interceptor;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
+import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.jvm.ProcessNodeFactory;
-import org.gridkit.zerormi.hub.MasterHub;
-import org.gridkit.zerormi.hub.RemotingHub;
 
 public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 
@@ -30,13 +37,12 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 		game.setPropIfAbsent(ViConf.JVM_EXEC_CMD, defaultJavaExecCmd(game));
 
 		game.setPropIfAbsent(ViConf.SPI_CONTROL_CONSOLE, createControlConsole(game));
-		game.setPropIfAbsent(ViConf.SPI_REMOTING_HUB, createRemotingHub(game));
 		game.setPropIfAbsent(ViConf.SPI_PROCESS_LAUNCHER, createProcessLauncher(game));
 		game.setPropIfAbsent(ViConf.SPI_NODE_FACTORY, createNodeFactory(game));
 		
-		ViEngine.addRule(game, createRemotingConfigurationRule());
-		ViEngine.addRule(game, createProcessLauncherRule());
-		ViEngine.addRule(game, createNodeProducerRule());
+		ViEngine.Core.addRule(game, createRemotingConfigurationRule());
+		ViEngine.Core.addRule(game, createProcessLauncherRule());
+		ViEngine.Core.addRule(game, createNodeProducerRule());
 		
 		return true;
 	}
@@ -48,11 +54,11 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 	}
 
 	protected Interceptor createClasspathBuilder(QuorumGame game) {
-		return new ViEngine.JvmClasspathReplicaBuilder();
+		return new JvmClasspathReplicaBuilder();
 	}
 
 	protected Interceptor createJvmArgumentsBuilder(QuorumGame game) {
-		return new ViEngine.JvmArgumentBuilder();
+		return new JvmArgumentBuilder();
 	}
 
 	protected Interceptor createJvmEnvironmentBuilder(QuorumGame game) {
@@ -62,10 +68,6 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 
 	protected HostControlConsole createControlConsole(QuorumGame game) {
 		return game.getCloudContext().lookup(Helper.key(LocalControlConsole.class), CloudContext.Helper.reflectionProvider(LocalControlConsole.class, "terminate"));
-	}
-
-	protected MasterHub createRemotingHub(QuorumGame game) {
-		return game.getCloudContext().lookup(Helper.key(RemotingHub.class), CloudContext.Helper.reflectionProvider(RemotingHub.class, "dropAllSessions"));
 	}
 
 	protected ProcessLauncher createProcessLauncher(QuorumGame game) {
@@ -81,11 +83,11 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 	}
 
 	protected InductiveRule createProcessLauncherRule() {
-		return new ViEngine.ProcessLauncherRule();
+		return new ProcessLauncherRule();
 	}
 
 	protected InductiveRule createNodeProducerRule() {
-		return new ViEngine.NodeProductionRule();
+		return new NodeProductionRule();
 	}
 	
 	public static class ZeroRmiConfigurationRule implements InductiveRule {
@@ -107,4 +109,196 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 			}
 		}
 	}
+	
+	public static class JvmClasspathReplicaBuilder extends IdempotentConfigBuilder<List<ClasspathEntry>> {
+
+		public JvmClasspathReplicaBuilder() {
+			super(ViConf.SPI_JVM_CLASSPATH);
+		}
+
+		
+		@Override
+		protected List<ClasspathEntry> buildState(QuorumGame game) {
+			try {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				Map<String, String> tweaks = (Map<String, String>) (Map) game.getConfigProps(ViConf.CLASSPATH_TWEAK);
+				List<ClasspathEntry> cp = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
+				if (tweaks.isEmpty()) {
+					return cp;
+				}
+				else {
+					List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
+					
+					for(String change: tweaks.values()) {
+						if (change.startsWith("+")) {
+							String cpe = normalize(change.substring(1));
+							addEntry(entries, cpe);
+						}
+						else if (change.startsWith("-")) {
+							String cpe = normalize(change.substring(1));
+							removeEntry(entries, cpe);
+						}
+					}
+					
+					return entries;
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
+			ClasspathEntry entry = Classpath.getLocalEntry(path);
+			if (entry != null) {
+				entries.add(entry);
+			}
+		}
+
+		private void removeEntry(List<ClasspathEntry> entries, String path) {
+			Iterator<ClasspathEntry> it = entries.iterator();
+			while(it.hasNext()) {
+				if (path.equals(normalize(it.next().getUrl()))) {
+					it.remove();
+				}
+			}
+		}
+				
+		private String normalize(String path) {
+			try {
+				// normalize path entry if possible
+				return new File(path).getCanonicalPath();
+			} catch (IOException e) {
+				return path;
+			}
+		}
+		
+		private String normalize(URL url) {
+			try {
+				if (!"file".equals(url.getProtocol())) {
+					throw new IllegalArgumentException("Non file URL in classpath: " + url);
+				}
+				File f = new File(url.toURI());
+				String path = f.getPath();
+				return normalize(path);
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException("Malformed URL in classpath: " + url);
+			}
+		}
+				
+		@Override
+		protected boolean sameState(List<ClasspathEntry> existing, List<ClasspathEntry> rebuilt) {
+			if (existing.size() != rebuilt.size()) {
+				return false;
+			}
+			else {
+				for(int i = 0; i != existing.size(); ++i) {
+					ClasspathEntry e1 = existing.get(0);
+					ClasspathEntry e2 = rebuilt.get(0);
+					if (e1.getLocalFile() == null && e2.getLocalFile() == null) {
+						if (!compareContent(e1, e2)) {
+							return false;
+						}
+					}
+					else if (e1.getLocalFile() == null || e2.getLocalFile() == null) {
+						return false;
+					}
+					else {
+						File p1 = e1.getLocalFile();
+						File p2 = e2.getLocalFile();
+						if (!p1.getPath().equals(p2.getPath())) {
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		private boolean compareContent(ClasspathEntry e1, ClasspathEntry e2) {
+			return e1.getContentHash().equals(e2.getContentHash());
+		}
+
+		@Override
+		public void processAddHoc(String name, ViNode node) {
+			throw new IllegalArgumentException("Node is already initialized");
+		}
+	}
+	
+	public static class JvmArgumentBuilder extends IdempotentConfigBuilder<List<String>> {
+
+		public JvmArgumentBuilder() {
+			super(ViConf.SPI_JVM_ARGS);
+		}
+		
+		@Override
+		protected List<String> buildState(QuorumGame game) {
+			Map<String, Object> cmd = game.getConfigProps(ViConf.JVM_ARGUMENT);
+			List<String> options = new ArrayList<String>();
+			for(Object v: cmd.values()) {
+				String o = (String) v;
+				if (o.startsWith("|")) {
+					String[] opts = o.split("\\|");
+					for(String oo: opts) {
+						addOption(options, oo);
+					}
+				}
+				else {
+					addOption(options, o);
+				}
+			}
+			return options;
+		}
+		
+		private void addOption(List<String> options, String o) {
+			o = o.trim();
+			if (o.length() > 0) {
+				options.add(o);
+			}
+		}
+	}	
+	
+	public static class ProcessLauncherRule implements InductiveRule {
+		
+		@Override
+		public boolean apply(QuorumGame game) {
+			if (
+					game.getManagedProcess() == null
+				&&  game.getControlConsole() != null
+				&&  game.getRemotingSession() != null
+				&&  game.getProcessLauncher() != null
+				&&  game.getJvmExecCmd() != null
+				&&  game.getJvmClasspath() != null
+				&&  game.getJvmArgs() != null)
+			{
+				ProcessLauncher launcher = (ProcessLauncher) game.getProp(ViConf.SPI_PROCESS_LAUNCHER);
+				ManagedProcess mp = launcher.createProcess(game.getConfigProps("**"));
+				game.setProp(ViConf.SPI_MANAGED_PROCESS, mp);
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
+	public static class NodeProductionRule implements InductiveRule {
+		
+		@Override
+		public boolean apply(QuorumGame game) {
+			if (
+					game.getNodeInstance() == null
+				&&  game.getNodeFactory() != null
+				&&  game.getManagedProcess() != null
+				)
+			{
+				NodeFactory factory = game.getNodeFactory();
+				ViNode mp = factory.createViNode(game.getAllConfigProps());
+				game.setProp(ViConf.SPI_NODE_INSTANCE, mp);
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}	
 }

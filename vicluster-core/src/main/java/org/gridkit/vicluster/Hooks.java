@@ -17,7 +17,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.POST_INIT) {
-				game.addUniqueProp(ViEngine.ACTIVATED_REMOTE_HOOK + name, runnable);
+				game.addUniqueProp(ViConf.ACTIVATED_REMOTE_HOOK + name, runnable);
 			}
 		}
 		
@@ -44,7 +44,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.PRE_SHUTDOWN) {
-				game.addUniqueProp(ViEngine.ACTIVATED_REMOTE_HOOK + name, runnable);
+				game.addUniqueProp(ViConf.ACTIVATED_REMOTE_HOOK + name, runnable);
 			}
 		}
 	}
@@ -65,7 +65,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.PRE_SHUTDOWN) {
-				game.addUniqueProp(ViEngine.ACTIVATED_HOST_HOOK + name, runnable);
+				game.addUniqueProp(ViConf.ACTIVATED_HOST_HOOK + name, runnable);
 			}
 		}
 	}
@@ -86,7 +86,7 @@ public class Hooks {
 		@Override
 		public void process(String name, Phase phase, QuorumGame game) {
 			if (phase == Phase.POST_SHUTDOWN) {
-				game.addUniqueProp(ViEngine.ACTIVATED_HOST_HOOK + name, runnable);
+				game.addUniqueProp(ViConf.ACTIVATED_HOST_HOOK + name, runnable);
 			}
 		}
 	}

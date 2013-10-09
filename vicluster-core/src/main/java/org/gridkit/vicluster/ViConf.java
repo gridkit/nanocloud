@@ -2,12 +2,19 @@ package org.gridkit.vicluster;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Map;
 
+import org.gridkit.nanocloud.telecontrol.HostControlConsole;
+import org.gridkit.nanocloud.telecontrol.NodeFactory;
+import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
+import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 
-public class ViConf extends GenericConfig {
+public class ViConf extends GenericConfig implements ViSpiConfig {
 
 	public static final String NODE_NAME = "node:name";
 	public static final String NODE_TYPE = "node:type";
@@ -41,9 +48,8 @@ public class ViConf extends GenericConfig {
 	public static final String TYPE_HANDLER = "type-handler:";
 
 	public static final String SPI_CLOUD_CONTEXT = "#spi:cloud-context";
-	public static final String SPI_REMOTING_HUB = "#spi:remoting-hub";
 	public static final String SPI_REMOTING_SESSION = "#spi:remoting-session";
-	public static final String SPI_JVM_EXEC_CMD = "#spi:jvm-exec-cmd";
+	public static final String SPI_JVM_EXEC_CMD = JVM_EXEC_CMD; // TODO "#spi:jvm-exec-cmd";
 	public static final String SPI_JVM_ARGS = "#spi:jvm-args";
 	public static final String SPI_JVM_CLASSPATH = "#spi:jvm-classpath";
 	public static final String SPI_CONTROL_CONSOLE = "#spi:control-console";
@@ -158,4 +164,74 @@ public class ViConf extends GenericConfig {
 	public boolean getSilenceOutputOnShutdown() {
 		return readBoolean();
 	}	
+	
+	@Override
+	@PropName(SPI_CLOUD_CONTEXT)
+	@DefaultNull
+	public CloudContext getCloudContext() {
+		return readObject();
+	}
+	
+	@Override
+	@PropName(SPI_CONTROL_CONSOLE)
+	@DefaultNull
+	public HostControlConsole getControlConsole() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_PROCESS_LAUNCHER)
+	@DefaultNull
+	public ProcessLauncher getProcessLauncher() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_REMOTING_SESSION)
+	@DefaultNull
+	public RemoteExecutionSession getRemotingSession() {
+		return readObject();
+	}
+	
+	@Override
+	@PropName(SPI_JVM_EXEC_CMD)
+	@DefaultNull
+	public String getJvmExecCmd() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_JVM_CLASSPATH)
+	@DefaultNull
+	public List<ClasspathEntry> getJvmClasspath() {
+		return readObject();
+	}
+	
+	@Override
+	@PropName(SPI_JVM_ARGS)
+	@DefaultNull
+	public List<String> getJvmArgs() {
+		return readObject();
+	}
+	
+	@Override
+	@PropName(SPI_MANAGED_PROCESS)
+	@DefaultNull
+	public ManagedProcess getManagedProcess() {
+		return readObject();
+	}
+	
+	@Override
+	@PropName(SPI_NODE_FACTORY)
+	@DefaultNull
+	public NodeFactory getNodeFactory() {
+		return readObject();
+	}
+	
+	@Override
+	@PropName(SPI_NODE_INSTANCE)
+	@DefaultNull
+	public ViNode getNodeInstance() {
+		return readObject();
+	}
 }

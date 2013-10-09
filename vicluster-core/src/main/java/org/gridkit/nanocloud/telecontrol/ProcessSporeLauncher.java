@@ -40,7 +40,7 @@ import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
-import org.gridkit.vicluster.ViEngine.SpiContext;
+import org.gridkit.vicluster.ViSpiConfig;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper.Link;
 import org.gridkit.vicluster.telecontrol.Classpath;
@@ -64,7 +64,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 	@Override
 	public ManagedProcess createProcess(Map<String, Object> config) {
-		SpiContext ctx = ViEngine.asSpiConfig(config);
+		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		HostControlConsole console = ctx.getControlConsole();
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
 		

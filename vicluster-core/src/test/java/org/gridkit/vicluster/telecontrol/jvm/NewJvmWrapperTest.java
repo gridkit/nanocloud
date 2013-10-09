@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gridkit.vicluster.Hooks;
+import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -80,6 +81,7 @@ public class NewJvmWrapperTest {
 		Map<String, Object> config = new HashMap<String, Object>();
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		config.put("console:stdOut", bos);
+		config.put(ViConf.CONSOLE_SILENT_SHUTDOWN, "false");
 		
 		config.put("hook:test-shutdown-hook", new Hooks.ShutdownHook(new Runnable() {
 			@Override

@@ -111,6 +111,9 @@ public class Classpath {
 			if ("target".equals(lname)) {
 				lname = file.getParentFile().getParentFile().getName();
 			}
+			if (lname.startsWith(".")) {
+				lname = lname.substring(1);
+			}
 			lname += ".jar";
 			entry.file = file;
 			entry.filename = lname;
