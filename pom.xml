@@ -59,8 +59,9 @@
 
     <modules>
         <module>viconcurrent</module>
-        <module>vicluster-core</module>
         <module>zerormi</module>
+        <module>vicluster-core</module>
+        <module>interceptor</module>
         <module>telecontrol-ssh</module>
     </modules>
 

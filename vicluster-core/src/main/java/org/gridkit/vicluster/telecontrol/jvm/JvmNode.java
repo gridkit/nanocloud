@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.MassExec;
+import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
@@ -110,21 +111,21 @@ class JvmNode implements ViNode {
 	}
 
 	private void runStartupHooks() throws IOException {
-//		try {
-//			config.runStartupHooks(executor);
-//		}
-//		catch(Exception e) {
-//			throw new IOException("Node '" + name + "' has failed to initialize", e);
-//		}
+		try {
+			ViEngine.Core.processStartupHooks(config, executor);
+		}
+		catch(Exception e) {
+			throw new IOException("Node '" + name + "' has failed to initialize", e);
+		}
 	}
 	
 	private void runShutdownHooks() throws IOException {
-//		try {
-//			config.runShutdownHooks(executor);
-//		}
-//		catch(Exception e) {
-//			throw new IOException("Node '" + name + "' has failed to initialize", e);
-//		}
+		try {
+			ViEngine.Core.processStartupHooks(config, executor);
+		}
+		catch(Exception e) {
+			throw new IOException("Node '" + name + "' has failed to initialize", e);
+		}
 	}
 
 	@Override
@@ -235,14 +236,19 @@ class JvmNode implements ViNode {
 
 	@Override
 	public void setConfigElement(String key, Object value) {
-		// TODO implement setConfigElement
-		throw new Error("Not implemented");		
+		if (value instanceof String || value == null) {
+			setProp(key, (String)value);
+		}
+		else {
+			throw new Error("Not implemented");
+		}
 	}
 
 	@Override
 	public void setConfigElements(Map<String, Object> config) {
-	    // TODO implement setConfigElement
-	    throw new Error("Not implemented");   
+		for(String key: config.keySet()) {
+			setConfigElement(key, config.get(key));
+		}
 	}
 
 	@Override

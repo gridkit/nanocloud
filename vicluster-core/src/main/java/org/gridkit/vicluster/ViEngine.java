@@ -18,6 +18,7 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.CloudContext.ServiceKey;
 import org.gridkit.vicluster.CloudContext.ServiceProvider;
@@ -394,6 +395,57 @@ public interface ViEngine {
 					throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
 				}
 			}
+		}
+		
+		@Deprecated
+		public static void processStartupHooks(ViNodeConfig conf, AdvancedExecutor exec) {
+			ViEngineGame game = new ViEngineGame(conf.config);
+			game.play(Phase.POST_INIT);
+			Map<String, Object> result = game.exportConfig();
+			processHooks(result, exec, false);
+		}
+
+		@Deprecated
+		public static void processShutdownHooks(ViNodeConfig conf, AdvancedExecutor exec) {
+			ViEngineGame game = new ViEngineGame(conf.config);
+			game.play(Phase.PRE_SHUTDOWN);
+			Map<String, Object> result = game.exportConfig();
+			processHooks(result, exec, true);
+		}
+
+		protected static void processHooks(Map<String, Object> config, AdvancedExecutor target, boolean reverseOrder) {
+			List<String> keySet = new ArrayList<String>(config.keySet());
+			
+			if (reverseOrder) {
+				Collections.reverse(keySet);
+			}
+			
+			for(String key: keySet) {
+				if (key.startsWith(ViConf.ACTIVATED_REMOTE_HOOK)) {
+					Object hook = config.get(key);
+					config.remove(key);
+					if (hook != null) {
+						if (hook instanceof Runnable) {
+							MassExec.exec(target, (Runnable)hook);
+						}
+						else {
+							throw new IllegalArgumentException("Hook " + key + " is not a Runnable");
+						}
+					}
+				}
+				else if (key.startsWith(ViConf.ACTIVATED_HOST_HOOK)) {
+					Object hook = config.get(key);
+					config.remove(key);
+					if (hook != null) {
+						if (hook instanceof Runnable) {
+							((Runnable)hook).run();
+						}
+						else {
+							throw new IllegalArgumentException("Hook " + key + " is not a Runnable");
+						}
+					}
+				}
+			}			
 		}
 		
 		private class PragmaInvokationContext implements WritableSpiConfig {

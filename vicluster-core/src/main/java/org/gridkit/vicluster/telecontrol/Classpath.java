@@ -117,15 +117,30 @@ public class Classpath {
 			lname += ".jar";
 			entry.file = file;
 			entry.filename = lname;
-			entry.data = ClasspathUtils.jarFiles(file.getPath());
-			if (entry.data == null) {
+			if (isEmpty(file)) {
 				LOGGER.warn("Classpath entry is empty: " + file.getCanonicalPath());
 				return null;
 			}
+			entry.lazyJar = true;
 		}
 		return entry;
 	}
 	
+	private static boolean isEmpty(File file) {
+		File[] files = file.listFiles();
+		if (files == null) {
+			return true;
+		}
+		else {
+			for(File c: files) {
+				if (c.isFile() || !isEmpty(c)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	private static File uriToFile(URI uri) {
 		if ("file".equals(uri.getScheme())) {
 			if (uri.getAuthority() == null) {
@@ -150,6 +165,7 @@ public class Classpath {
 		private String filename;
 		private String hash;
 		private File file;
+		private boolean lazyJar;
 		private byte[] data;
 		
 		public URL getUrl() {
@@ -176,6 +192,7 @@ public class Classpath {
 
 		@Override
 		public synchronized InputStream getContent() {
+			ensureData();
 			try {
 				return (InputStream) (data != null ? new ByteArrayInputStream(data) : new FileInputStream(file));
 			} catch (FileNotFoundException e) {
@@ -183,12 +200,25 @@ public class Classpath {
 			}
 		}
 
+		private synchronized void ensureData() {
+			if (lazyJar) {
+				try {
+					data = ClasspathUtils.jarFiles(file.getPath());
+					lazyJar = false;
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}			
+		}
+
 		@Override
 		public long size() {
+			ensureData();
 			return data != null ? data.length : file.length();
 		}
 
 		public synchronized byte[] getData() {
+			ensureData();
 			if (data != null) {
 				return data;
 			}

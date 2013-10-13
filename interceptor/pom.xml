@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2012 Alexey Ragozin
+    Copyright 2013 Alexey Ragozin
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -27,10 +27,10 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>telecontrol-ssh</artifactId>
+    <artifactId>interceptor</artifactId>
     <packaging>jar</packaging>
     <name>${project.groupId}::${project.artifactId}</name>
-    <description>Telecontrol SSH support</description>
+    <description>Byte code instrumentation library for Nanocloud</description>
     <url>http://code.google.com/p/gridkit</url>
 
     <licenses>
@@ -62,13 +62,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jzlib</artifactId>
-            <version>1.1.1</version>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>provided</scope>
@@ -76,15 +69,21 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridkit.lab</groupId>
-            <artifactId>interceptor</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>4.0</version>
         </dependency>
-
+        
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-util</artifactId>
+            <version>4.0</version>
             <scope>test</scope>
         </dependency>
 

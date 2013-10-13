@@ -260,6 +260,8 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		FutureBox<AdvancedExecutor> executor = new FutureBox<AdvancedExecutor>();
 		Destroyable socketHandle;
 		volatile Destroyable procHandle;
+		/** Process has been started so we except exit code to be invoked eventually */
+		boolean procStarted;
 		
 		@Override
 		public void bound(String host, int port) {
@@ -282,6 +284,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 		@Override
 		public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr) {
+			procStarted = true;
 			ProcessStreams ps = new ProcessStreams();
 			ps.stdIn = stdIn;			
 			ps.stdOut = new LookbackOutputStream(4096);
@@ -407,7 +410,10 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			session.terminate();
 			procStreams.setErrorIfWaiting(e);
 			executor.setErrorIfWaiting(e);
-			exitCode.setErrorIfWaiting(e);
+			// do not add exception to exit code as it may be used even in case of abnormal termination
+			if (!procStarted) {
+				exitCode.setErrorIfWaiting(e);
+			}
 			if (procHandle != null) {
 				finalConsoleFlush();
 				procHandle.destroy();

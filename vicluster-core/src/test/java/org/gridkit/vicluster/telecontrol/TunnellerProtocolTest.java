@@ -62,7 +62,7 @@ public class TunnellerProtocolTest {
 	private TunnellerConnection connection;
 	
 	@Rule
-	public Timeout timeout = new Timeout((int)TimeUnit.MINUTES.toMillis(1)); 
+	public Timeout timeout = new Timeout((int)TimeUnit.MINUTES.toMillis(2)); 
 	
 	@Before
 	public void start() throws IOException, InterruptedException, TimeoutException {

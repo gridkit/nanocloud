@@ -50,7 +50,6 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -81,15 +80,9 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 import java.util.logging.LogManager;
 
-import org.gridkit.lab.interceptor.ClassRewriter;
-import org.gridkit.lab.interceptor.CutPoint;
-import org.gridkit.lab.interceptor.HookManager;
-import org.gridkit.lab.interceptor.Interception;
-import org.gridkit.lab.interceptor.Interceptor;
+import org.gridkit.nanocloud.instrumentation.ByteCodeTransformer;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
-
-import sun.reflect.Reflection;
 
 /**
  *	@author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -162,9 +155,20 @@ public class Isolate {
 		}
 	}
 	
-
 	public static Isolate currentIsolate() {
 		return ISOLATE.get();
+	}
+
+	public static Isolate getIsolate(ClassLoader cl) {
+		if (cl instanceof IsolatedClassloader) {
+			return ((IsolatedClassloader)cl).getIsolate();
+		}
+		else if (cl.getParent() != null) {
+			return getIsolate(cl.getParent());
+		}
+		else {
+			return null;
+		}
 	}
 	
 	private static final Map<Class<?>, Object> PRIMITIVE_DEFAULTS = new HashMap<Class<?>, Object>();
@@ -185,7 +189,7 @@ public class Isolate {
 	private ThreadGroup threadGroup;
 	private Thread isolateControlThread;
 	private IsolatedClassloader cl;
-	private InterceptorManager hookman;
+	private ByteCodeTransformer classTransformer;
 	private long lastThreadScan = System.nanoTime();
 	
 	private PrintStream stdOut;
@@ -328,14 +332,6 @@ public class Isolate {
 		}		
 	}
 	
-	public synchronized void addInstrumenationRule(CutPoint cutPoint, Interceptor interceptor) {
-		if (hookman == null) {
-			hookman = new InterceptorManager();
-		}
-		
-		hookman.addRule(new InstrumentationRule(cutPoint, interceptor));
-	}
-	
 	public synchronized void addPackage(String packageName) {
 		cl.addPackageRule(packageName, true);
 	}
@@ -360,19 +356,26 @@ public class Isolate {
 	}
 
 	/**
-	 * Prohibit loading classes or resources from given URL via parent class loader.
-	 */
-	public synchronized void removeFromClasspath(URL basePath) {
-		cl.prohibitFromClasspath(basePath);
-	}
-
-	/**
 	 * Add URL to isolate class path.
 	 */
 	public synchronized void addToClasspath(URL path) {
 		cl.addToClasspath(path);
 	}
 
+	/**
+	 * Prohibit loading classes or resources from given URL via parent class loader.
+	 */
+	public synchronized void removeFromClasspath(URL basePath) {
+		cl.prohibitFromClasspath(basePath);
+	}
+
+	public synchronized void setByteCodeTransformer(ByteCodeTransformer bct) {
+		if (classTransformer != null) {
+			throw new IllegalArgumentException("ByteCodeTransformer is already set");
+		}
+		classTransformer = bct;
+	}
+	
 	public String getProp(String prop) {
 		return sysProps.getProperty(prop);
 	}
@@ -1582,150 +1585,6 @@ public class Isolate {
 		}
 	}
 	
-	private static class InstrumentationRule {
-		
-		private final CutPoint cutPoint;
-		private final Interceptor interceptor;
-		
-		public InstrumentationRule(CutPoint cutPoint, Interceptor interceptor) {
-			this.cutPoint = cutPoint;
-			this.interceptor = interceptor;
-		}
-	}
-
-	private static class SiteHook {
-		
-		String hostClass;
-		String hostMethod;
-		String methodSignature;
-		String targetClass;
-		String targetMethod;
-		String targetSignature;
-		
-		volatile List<InstrumentationRule> rules;
-		
-		public SiteHook(String hostClass, String hostMethod, String methodSignature, String targetClass, String targetMethod, String targetSignature) {
-			this.hostClass = hostClass;
-			this.hostMethod = hostMethod;
-			this.methodSignature = methodSignature;
-			this.targetClass = targetClass;
-			this.targetMethod = targetMethod;
-			this.targetSignature = targetSignature;
-		}
-
-		public synchronized void add(InstrumentationRule rule) {
-			InstrumentationRule[] nrules = new InstrumentationRule[rules == null ? 1 : rules.size() + 1];
-			for(int i = 0; i < nrules.length - 1; ++i) {
-				nrules[i] = rules.get(i);
-			}
-			nrules[nrules.length - 1] = rule;
-			rules = Arrays.asList(nrules);
-		}
-
-		public boolean matches(CutPoint cutPoint) {
-			return cutPoint.evaluateCallSite(hostClass, hostMethod, methodSignature, targetClass, targetMethod, targetSignature);
-		}
-	}
-	
-	/**
-	 * This is a callback method for byte code instrumenter.
-	 * @deprecated
-	 */
-	@Deprecated
-	public static void __intercept(int hookId, Interception hook) throws ExecutionException {
-		Class<?> caller = Reflection.getCallerClass(2);
-		if (caller == Isolate.class) {
-			// since JDK 7u25 call stack has changed
-			caller = Reflection.getCallerClass(3);
-		}
-		InterceptorManager hookman;
-		try {
-			IsolatedClassloader cl = (IsolatedClassloader)caller.getClassLoader();
-			hookman = cl.getIsolate().hookman;
-			if (hookman == null) {
-				throw new NullPointerException("No nookman in for Isolate");
-			}
-		}
-		catch(Exception e) {
-			reportHookError(e);
-			return;
-		}
-		hookman.invoke(hookId, hook);
-	}
-	
-	private static void reportHookError(Object msg) {
-		System.out.println("Error calling instrumentation hook" + (msg == null ? "" : ": " + msg.toString()));
-	}
-	
-	private static class InterceptorManager implements HookManager {
-		
-		private List<InstrumentationRule> allRules = new ArrayList<Isolate.InstrumentationRule>();
-		private List<SiteHook> hookStacks = new ArrayList<SiteHook>();
-		private ClassRewriter rewriter = new ClassRewriter(this);
-		
-		
-		@Override
-		public String getInvocationTargetClass() {
-			return Isolate.class.getName().replace('.', '/');
-		}
-		
-		@Override
-		public String getInvocationTargetMethod() {
-			return "__intercept";
-		}
-		
-		public synchronized void addRule(InstrumentationRule rule) {
-			for(SiteHook hook: hookStacks) {
-				if (hook.matches(rule.cutPoint)) {
-					hook.add(rule);
-				}
-			}
-			allRules.add(rule);
-		}
-		
-		public byte[] rewriteClassData(byte[] classdata) {
-			return rewriter.rewrite(classdata);
-		}
-		
-		@Override
-		public synchronized int checkCallsite(String hostClass, String hostMethod, String methodSignature, String targetClass, String targetMethod, String targetSignature) {
-			SiteHook hook = null;
-			for(InstrumentationRule rule: allRules) {
-				if (rule.cutPoint.evaluateCallSite(hostClass, hostMethod, methodSignature, targetClass, targetMethod, targetSignature)) {
-					if (hook == null) {
-						hook = new SiteHook(hostClass, hostMethod, methodSignature, targetClass, targetMethod, targetSignature);
-					}
-					hook.add(rule);
-				}
-			}
-			
-			if (hook != null) {
-				hookStacks.add(hook);
-				return hookStacks.indexOf(hook);
-			}
-			else {
-				return -1;
-			}
-		}
-
-		public void invoke(int hookId, Interception call) {
-			try {
-				SiteHook stack = hookStacks.get(hookId);
-				for(InstrumentationRule rule: stack.rules) {
-					try {
-						rule.interceptor.handle(call);
-					}
-					catch(Exception e) {
-						reportHookError(e);
-					}
-				}
-			}
-			catch(Exception e) {
-				reportHookError(e);
-			}
-		}
-	}
-	
 	private class IsolatedClassloader extends ClassLoader {
 		
 		private ClassLoader baseClassloader;
@@ -1920,9 +1779,10 @@ public class Isolate {
 					|| name.equals(ThreadKiller.class.getName())
 					|| name.equals(VoidCallable.class.getName())
 					// intsrumentation related interfaces
-					|| name.equals(CutPoint.class.getName())
-					|| name.equals(Interceptor.class.getName())
-					|| name.equals(Interception.class.getName())) {
+					|| name.equals(ByteCodeTransformer.class.getName())
+//					|| name.equals(Interceptor.class.getName())
+//					|| name.equals(Interception.class.getName())
+					) {
 				return true;
 			}
 			else {
@@ -1998,8 +1858,9 @@ public class Isolate {
 			if (shouldTraceIsolation()) {
 				stdOut.println("Isolated class: " + classname);
 			}
-			if (hookman != null) {
-				cd = hookman.rewriteClassData(cd);
+			if (classTransformer != null) {
+				// TODO use classhierarchy helper
+				cd = classTransformer.rewriteClassData(classname, cd, null);
 			}
 			Class<?> c = defineClass(classname, cd, 0, cd.length, getProtectionDomain(url));
 			ensurePackage(classname, url);

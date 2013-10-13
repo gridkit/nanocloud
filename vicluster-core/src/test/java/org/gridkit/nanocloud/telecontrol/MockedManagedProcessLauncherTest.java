@@ -1,11 +1,15 @@
 package org.gridkit.nanocloud.telecontrol;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
+import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamPipe;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
@@ -24,7 +28,7 @@ public class MockedManagedProcessLauncherTest {
 	}
 	
 	private LocalControlConsole console;
-	private RemotingHub hub;
+	private RemoteExecutionSession session;
 	
 	@Before
 	public void initConsole() {
@@ -58,21 +62,24 @@ public class MockedManagedProcessLauncherTest {
 			}
 			
 		};
-		hub = new RemotingHub(ZLogFactory.getDefaultRootLogger());
+		session = new ZeroRmiRemoteSession("test");
 	}
 
 	@After
 	public void destroyConsole() {
 		console.terminate();
-		hub.dropAllSessions();
+		session.terminate();
 	}
 
 	@Test	
 	public void startSlave() throws InterruptedException, ExecutionException {
 		Map<String, Object> config = new HashMap<String, Object>();
 		config.put("node:name", "test");
-		config.put("#boostrap:control-console", console);
-		config.put("#boostrap:master-hub", hub);
+		config.put(ViConf.SPI_CONTROL_CONSOLE, console);
+		config.put(ViConf.SPI_REMOTING_SESSION, session);
+		config.put(ViConf.JVM_EXEC_CMD, new File(new File(System.getProperty("java.home"), "bin"), "java").getPath());
+		config.put(ViConf.SPI_JVM_ARGS, new ArrayList<String>());
+		config.put(ViConf.SPI_JVM_CLASSPATH, Classpath.getClasspath(Thread.currentThread().getContextClassLoader()));
 		
 		ProcessSporeLauncher launcher = new ProcessSporeLauncher();
 		ManagedProcess slave = launcher.createProcess(config);
@@ -94,7 +101,11 @@ public class MockedManagedProcessLauncherTest {
 			}
 		}).get();
 
-		slave.destroy();
+		try {
+			slave.destroy();
+		} catch (Exception e) {
+			// ignore
+		}
 		
 		Assert.assertEquals((Integer)0, slave.getExitCodeFuture().get());
 		

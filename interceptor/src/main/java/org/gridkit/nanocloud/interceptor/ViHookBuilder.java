@@ -32,6 +32,7 @@ import org.gridkit.util.concurrent.BlockingBarrier;
 import org.gridkit.util.concurrent.zerormi.ExportableBarrier;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.vicluster.isolate.IsolateProps;
 
 public class ViHookBuilder {
 
@@ -164,6 +165,11 @@ public class ViHookBuilder {
 				throw new IllegalArgumentException("You should specify at least target class or method name");
 			}
 			else {
+				// we do not want IsolateInstrumentationSupport to transform it self
+				IsolateProps.at(node).shareClass(IsolateInstrumentationSupport.class);
+				IsolateProps.at(node).shareClass(CutPoint.class);
+				IsolateProps.at(node).shareClass(Interceptor.class);
+				IsolateProps.at(node).shareClass(Interception.class);
 				CallSiteCutPoint cp = new CallSiteCutPoint(makeClassNames(), methodName, makeSignature());
 				InstrumentationHookRule rule = new InstrumentationHookRule(cp, makeInterceptor());
 				node.addStartupHook(rule.toString(), rule);
@@ -230,7 +236,16 @@ public class ViHookBuilder {
 			if (isolate == null) {
 				throw new IllegalArgumentException("Not in isolate");
 			}
-			isolate.addInstrumenationRule(cutPoint, new LazyInterceptor(source));
+			IsolateInstrumentationSupport iis = IsolateInstrumentationSupport.getInstrumentationContext(isolate);
+			synchronized(isolate) {
+				iis = (IsolateInstrumentationSupport) isolate.getGlobal(IsolateInstrumentationSupport.class, "instance");
+				if (iis == null) {
+					iis = new IsolateInstrumentationSupport();
+					iis.deploy(isolate);
+				}
+			}
+			
+			iis.addInstrumenationRule(cutPoint, new LazyInterceptor(source));
 		}
 	}
 	

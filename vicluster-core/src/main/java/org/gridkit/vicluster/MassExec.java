@@ -22,6 +22,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.util.concurrent.AdvancedExecutor;
+
 
 /**
  * Helper class, hosting and number of methods for handling futures etc.
@@ -29,6 +31,24 @@ import java.util.concurrent.Future;
  */
 public class MassExec {
 
+	public static void exec(AdvancedExecutor executor, Runnable task) {
+		try {
+			executor.submit(task).get();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof RuntimeException) {
+				throw (RuntimeException)(e.getCause());
+			}
+			else if (e.getCause() instanceof Error) {
+				throw (Error)(e.getCause());
+			}
+			else {
+				throw new RuntimeException(e.getCause());
+			}
+		}
+	}
+	
 	/**
 	 * Collect result from all futures. If any of futures have thrown exception, other futures will be collected but exception disacred.
 	 * @return list of results from futures
