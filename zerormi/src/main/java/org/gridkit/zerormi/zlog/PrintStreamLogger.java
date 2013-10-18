@@ -44,6 +44,41 @@ class PrintStreamLogger implements ZLogger {
 		}
 		return createStream(ln, level);
 	}
+	
+	@Override
+	public LogStream fatal() {
+		return get("", LogLevel.FATAL);
+	}
+
+	@Override
+	public LogStream critical() {
+		return get("", LogLevel.CRITICAL);
+	}
+
+	@Override
+	public LogStream warn() {
+		return get("", LogLevel.WARN);
+	}
+
+	@Override
+	public LogStream info() {
+		return get("", LogLevel.INFO);
+	}
+
+	@Override
+	public LogStream verbose() {
+		return get("", LogLevel.VERBOSE);
+	}
+
+	@Override
+	public LogStream debug() {
+		return get("", LogLevel.DEBUG);
+	}
+
+	@Override
+	public LogStream trace() {
+		return get("", LogLevel.TRACE);
+	}
 
 	private LogStream createStream(String name, LogLevel level) {
 		String pattern = "%1$tF %1$tT.%1$tL%1$tz "+ name + " - [" + level.toString() + "] %2$s";

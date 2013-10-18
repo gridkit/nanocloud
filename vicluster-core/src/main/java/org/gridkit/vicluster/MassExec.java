@@ -90,7 +90,8 @@ public class MassExec {
 		}
 	}
 
-	public static List<Object> collectAll(List<Future<?>> futures) {
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> collectAll(List<? extends Future<?>> futures) {
 		Object[] results = new Object[futures.size()];
 		int n = 0;
 		for(Future<?> f : futures) {
@@ -113,7 +114,7 @@ public class MassExec {
 			}
 			++n;
 		}
-		return Arrays.asList(results);
+		return (List<T>)Arrays.asList(results);
 	}
 	
 	public static <T> List<T> singleNodeMassExec(ViExecutor exec, Callable<? extends T> task) {

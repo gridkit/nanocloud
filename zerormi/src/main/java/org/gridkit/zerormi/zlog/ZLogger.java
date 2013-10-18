@@ -21,4 +21,18 @@ public interface ZLogger {
 	
 	public LogStream get(String path, LogLevel level);
 	
+	public LogStream fatal();
+
+	public LogStream critical();
+
+	public LogStream warn();
+
+	public LogStream info();
+
+	public LogStream verbose();
+
+	public LogStream debug();
+
+	public LogStream trace();
+	
 }

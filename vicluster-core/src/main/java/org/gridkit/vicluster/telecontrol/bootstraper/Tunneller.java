@@ -77,7 +77,9 @@ public class Tunneller extends TunnellerIO {
 		InboundDemux in = new InboundDemux(input);
 		in.start();
 
-		diagOut.println("Tunneller started");
+		if (traceControlThread) {
+			diagOut.println("Tunneller started");
+		}
 		processCommands();
 		in.interrupt();
 		out.interrupt();
@@ -99,7 +101,9 @@ public class Tunneller extends TunnellerIO {
 				}
 			}		
 		} catch (IOException e) {
-			diagOut.println("Control thread stopped");
+			if (traceControlThread) {
+				diagOut.println("Control thread stopped");
+			}
 		} catch (Exception e) {
 			diagOut.println("Error in control thread: " + e.toString());
 		}
@@ -191,7 +195,7 @@ public class Tunneller extends TunnellerIO {
 	private void startProc(long procId, String workingDir, String command[],	Map<String, String> env, InputStream stdIn, OutputStream stdOut, OutputStream stdErr) {
 		try {
 			File wd = new File(workingDir).getCanonicalFile();
-			String[] envp = EnvVarHelper.buildInheritedEnvironment(env);
+			String[] envp = SystemHelper.buildInheritedEnvironment(env);
 			Process process = Runtime.getRuntime().exec(command, envp, wd);
 			new ProcessHandler(procId, process, stdIn, stdOut, stdErr).start();
 			sendStarted(procId);
@@ -202,7 +206,7 @@ public class Tunneller extends TunnellerIO {
 			close(stdIn);
 			close(stdOut);
 			close(stdErr);
-			sendExitCode(procId, -1);
+			sendExitCode(procId, Integer.MIN_VALUE);
 		}
 	}
 
@@ -338,7 +342,7 @@ public class Tunneller extends TunnellerIO {
 			return fp.getCanonicalPath();
 		}
 		else {
-			return new File(path).getAbsolutePath();
+			return new File(path).getCanonicalPath();
 		}
 	}
 	
@@ -389,7 +393,9 @@ public class Tunneller extends TunnellerIO {
 							proc.destroy();
 							
 							sendExitCode(procId, ec);
-							diagOut.println("Process [" + procId + "] exit code: " + ec);
+							if (traceExitCode) {
+								diagOut.println("Process [" + procId + "] exit code: " + ec);
+							}
 							break;
 						}
 						catch(IllegalThreadStateException e) {

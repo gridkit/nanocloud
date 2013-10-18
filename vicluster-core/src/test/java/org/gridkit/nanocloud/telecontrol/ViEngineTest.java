@@ -1,5 +1,9 @@
 package org.gridkit.nanocloud.telecontrol;
 
+import java.util.concurrent.Callable;
+
+import junit.framework.Assert;
+
 import org.gridkit.vicluster.AbstractCloudContext;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViManager;
@@ -57,15 +61,15 @@ public class ViEngineTest {
 		ViNode node = cloud.node("test");
 		ViProps.at(node).setLocalType();
 		node.touch();
-		node.exec(new Runnable() {
+		String r = node.exec(new Callable<String>() {
 			@Override
-			public void run() {
+			public String call() {
 				System.out.println("Hallo world!");
+				return"ping";
 			}
 		});
-		
-//		node.setConfigElement(ViConf.CONSOLE_FLUSH, null);
-//		Thread.sleep(200);
+
+		Assert.assertEquals("ping", r);
 		
 		cloud.shutdown();
 	}

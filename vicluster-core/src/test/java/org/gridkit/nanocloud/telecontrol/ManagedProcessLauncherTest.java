@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
-import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.junit.After;
 import org.junit.Assert;

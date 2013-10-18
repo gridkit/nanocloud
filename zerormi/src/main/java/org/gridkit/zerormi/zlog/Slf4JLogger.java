@@ -58,4 +58,39 @@ class Slf4JLogger implements ZLogger {
 		}
 		return new PrintStreamLogStream("", null, false);
 	}
+	
+	@Override
+	public LogStream fatal() {
+		return get("", LogLevel.FATAL);
+	}
+
+	@Override
+	public LogStream critical() {
+		return get("", LogLevel.CRITICAL);
+	}
+
+	@Override
+	public LogStream warn() {
+		return get("", LogLevel.WARN);
+	}
+
+	@Override
+	public LogStream info() {
+		return get("", LogLevel.INFO);
+	}
+
+	@Override
+	public LogStream verbose() {
+		return get("", LogLevel.VERBOSE);
+	}
+
+	@Override
+	public LogStream debug() {
+		return get("", LogLevel.DEBUG);
+	}
+
+	@Override
+	public LogStream trace() {
+		return get("", LogLevel.TRACE);
+	}
 }

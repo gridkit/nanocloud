@@ -44,7 +44,7 @@ public class RemoteSshProcess extends Process {
 		channel = (ChannelExec) session.openChannel("exec");
 		String cmd = command.getCommand();
 		if (command.getWorkDir() != null) {
-			cmd = "cd " + command.getWorkDir() + ";" + cmd;
+			cmd = "cd \"" + command.getWorkDir() + "\" && " + cmd;
 		}
 		channel.setCommand(cmd);
 		stdin = channel.getOutputStream();
@@ -88,7 +88,7 @@ public class RemoteSshProcess extends Process {
 			if (channel.isClosed()) {
 				break;
 			}
-			Thread.sleep(300);
+			Thread.sleep(100);
 		}
 		return channel.getExitStatus();
 	}

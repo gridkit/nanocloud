@@ -121,7 +121,7 @@ class JvmNode implements ViNode {
 	
 	private void runShutdownHooks() throws IOException {
 		try {
-			ViEngine.Core.processStartupHooks(config, executor);
+			ViEngine.Core.processShutdownHooks(config, executor);
 		}
 		catch(Exception e) {
 			throw new IOException("Node '" + name + "' has failed to initialize", e);
@@ -239,8 +239,11 @@ class JvmNode implements ViNode {
 		if (value instanceof String || value == null) {
 			setProp(key, (String)value);
 		}
+		else if (key.startsWith("hook:")) {
+			config.setConfigElement(key, value);
+		}
 		else {
-			throw new Error("Not implemented");
+			throw new Error("Not implemented: " + key);
 		}
 	}
 

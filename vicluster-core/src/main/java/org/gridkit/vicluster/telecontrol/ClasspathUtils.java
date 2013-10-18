@@ -15,7 +15,6 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -128,7 +127,7 @@ public class ClasspathUtils {
 		ZipEntry e = new ZipEntry(JarFile.MANIFEST_NAME);
 		e.setTime(0l); // this to ensure equal hash for equal content
 		jarOut.putNextEntry(e);
-		manifest.write(new BufferedOutputStream(jarOut));
+		manifest.write(jarOut);
 		jarOut.closeEntry();
 		jarOut.close();
 		byte[] jarFile = bos.toByteArray();
@@ -146,7 +145,14 @@ public class ClasspathUtils {
 			urlp = urlp.substring(0, urlp.indexOf('?'));
 		}
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
-		JarOutputStream jarOut = manifest == null ? new JarOutputStream(bos) : new JarOutputStream(bos, manifest);
+		ZipOutputStream jarOut = new ZipOutputStream(bos);
+		if (manifest != null) {
+			ZipEntry e = new ZipEntry(JarFile.MANIFEST_NAME);
+			e.setTime(0l); // this to ensure equal hash for equal content
+			jarOut.putNextEntry(e);
+			manifest.write(jarOut);
+			jarOut.closeEntry();			
+		}
 		addFiles(jarOut, basePackage, urlp);
 		jarOut.close();
 		byte[] jarFile = bos.toByteArray();
@@ -183,13 +189,13 @@ public class ClasspathUtils {
 		return count;
 	}
 
-	private static void addFiles(JarOutputStream jarOut, String basePackage, String baseUrl) throws IOException, MalformedURLException {
+	private static void addFiles(ZipOutputStream jarOut, String basePackage, String baseUrl) throws IOException, MalformedURLException {
 		String urlBase = baseUrl.substring(0, baseUrl.lastIndexOf('/'));		
 		InputStream is = new URL(urlBase).openStream();
 		for(String line: StreamHelper.toLines(is)) {
 			String fpath = urlBase + "/" + line;
 			String jpath = basePackage + "/" + line;
-			JarEntry entry = new JarEntry(jpath);
+			ZipEntry entry = new ZipEntry(jpath);
 			entry.setTime(0); // this is to facilitate content cache			
 			jarOut.putNextEntry(entry);
 			StreamHelper.copy(new URL(fpath).openStream(), jarOut);

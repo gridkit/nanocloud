@@ -13,7 +13,6 @@ import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamPipe;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
-import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.junit.After;
 import org.junit.Assert;

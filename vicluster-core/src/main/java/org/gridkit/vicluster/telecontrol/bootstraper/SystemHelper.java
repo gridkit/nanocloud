@@ -1,5 +1,7 @@
 package org.gridkit.vicluster.telecontrol.bootstraper;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,7 +9,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class EnvVarHelper {
+/**
+ * Utility code to manage OS specific aspects.
+ *  
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
+public class SystemHelper {
 
 	private static final boolean CASE_INSENSITIVE_VARS = ManagementFactory.getOperatingSystemMXBean().getName().toLowerCase().startsWith("windows");
 	
@@ -46,4 +53,29 @@ public class EnvVarHelper {
 		}
 	}
 	
+	/**
+	 * Transforms and conanize path acording to local system.
+	 * <li>
+	 * Expands ~/
+	 * </li>
+	 * <li>
+	 * Replaces {tmp} to local IO temp dir
+	 * </li> 
+	 */
+	public static String normalizePath(String path) throws IOException {
+		if (path.startsWith("~/")) {
+			String home = System.getProperty("user.home");
+			File fp = new File(new File(home), path.substring("~/".length()));
+			return fp.getCanonicalPath();
+		}
+		else if (path.startsWith("{tmp}/")) {
+			File tmp = File.createTempFile("mark", "").getAbsoluteFile();
+			tmp.delete();
+			File fp = new File(tmp.getParentFile(), path.substring("{tmp}/".length()));
+			return fp.getCanonicalPath();
+		}
+		else {
+			return new File(path).getCanonicalPath();
+		}
+	}	
 }

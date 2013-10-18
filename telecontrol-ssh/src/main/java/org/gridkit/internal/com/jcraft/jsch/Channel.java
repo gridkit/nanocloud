@@ -641,7 +641,7 @@ public abstract class Channel implements Runnable{
 		
 		private int bufferRead(byte[] target, int offs, int size) throws IOException {
 			if (size == 0) {
-				if (closedByWriter) {
+				if (closedByWriter && inBuffer == 0) {
 					return -1;
 				}
 				else {
@@ -788,7 +788,7 @@ public abstract class Channel implements Runnable{
 					return -1;
 				}
 				else {
-					return (0xFF) & bb[0];
+					return (0XFF) & bb[0];
 				}
 			}
 
@@ -814,7 +814,7 @@ public abstract class Channel implements Runnable{
 							throw new IOException("Pipe is closed by reader");
 						}
 						if (inBuffer == 0 && closedByWriter) {
-							throw new EOFException();
+							throw new EOFException("Pipe is closed by writer");
 						}
 					}
 				}

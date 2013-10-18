@@ -28,7 +28,7 @@ public class TunnellerCheck {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put(RemoteNodeProps.HOST, "cbox1");
 		config.put(RemoteNodeProps.ACCOUNT, "root");
-		config.put(RemoteNodeProps.PASSWORD, "toor");
+		config.put(RemoteNodeProps.PASSWORD, "reverse");
 		config.put(RemoteNodeProps.JAVA_EXEC, "java");
 		config.put(RemoteNodeProps.JAR_CACHE_PATH, "/tmp/.vigrid/.cache");
 		return config;

@@ -15,6 +15,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.ProcessHandler;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.SocketHandler;
@@ -24,15 +25,19 @@ import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 public class LocalControlConsoleTest  {
 
-	private LocalControlConsole console;
+	@Rule
+	public Timeout timeout = new Timeout(60 * 1000);
+	
+	protected HostControlConsole console;
 	
 	@Before
-	public void initConsole() {
+	public void initConsole() throws IOException, InterruptedException, TimeoutException {
 		console = new LocalControlConsole();
 	}
 
@@ -222,7 +227,8 @@ public class LocalControlConsoleTest  {
 	}
 
 	// TODO should support disposable sockets
-	@Test @Ignore("See TODO")
+	@Test 
+	//@Ignore("See TODO")
 	public void verify_multi_bind_tunneled_connection() throws IOException, InterruptedException, ExecutionException {
 		
 		final FutureBox<SocketAddress> bindAddress = new FutureBox<SocketAddress>();
@@ -260,6 +266,7 @@ public class LocalControlConsoleTest  {
 		
 		console.openSocket(sockHandler);
 		
+		System.out.println("Connecting first time");
 		Socket sock = new Socket();
 		sock.connect(bindAddress.get());
 		
@@ -269,6 +276,7 @@ public class LocalControlConsoleTest  {
 		
 		// Connecting one more time
 		
+		System.out.println("Connecting second time");
 		sock = new Socket();
 		sock.connect(bindAddress.get());
 		

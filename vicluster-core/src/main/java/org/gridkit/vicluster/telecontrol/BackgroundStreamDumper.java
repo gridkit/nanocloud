@@ -112,8 +112,8 @@ public class BackgroundStreamDumper implements Runnable {
 				}
 			}
 			
+			int readCount = 0;
 			try {
-				int readCount = 0;
 				
 				for(StreamPair pair: backlog) {
 					try {
@@ -143,21 +143,20 @@ public class BackgroundStreamDumper implements Runnable {
 						}
 						closePair(pair);
 					}
-				}
-				
-				if (readCount == 0) {
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// ignore
-					}
-				}
+				}				
 			}
 			finally {
 				for(StreamPair p: backlog) {
 					p.locked.set(false);
 				}
 			}
+			if (readCount == 0) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// ignore
+				}
+			}			
 		}		
 	}
 
@@ -167,7 +166,13 @@ public class BackgroundStreamDumper implements Runnable {
 		}
 		close(pair.os);
 		close(pair.is);
-		pair.signal.setData(null);
+		pair.locked.set(false);
+		try {
+			pair.signal.setData(null);
+		}
+		catch(IllegalStateException e) {
+			// ignore
+		}
 	}
 
 	private static void close(Closeable o) {

@@ -76,7 +76,7 @@ public class TunnellerConnection extends TunnellerIO {
 					readMagic(in);
 					magicReceived.setData(null);
 				}
-				catch(IOException e) {
+				catch(Exception e) {
 					magicReceived.setError(e);
 				}
 				super.run();
@@ -153,7 +153,7 @@ public class TunnellerConnection extends TunnellerIO {
 		}		
 	}
 	
-	public synchronized void kill(long execId) throws IOException {
+	public synchronized void killProc(long execId) throws IOException {
 		if (execs.containsKey(execId)) {
 		
 			try {
@@ -480,6 +480,16 @@ public class TunnellerConnection extends TunnellerIO {
 		public void bound(String host, int port);
 		
 		public void accepted(String remoteHost, int remotePort, InputStream soIn, OutputStream soOut);
+	}
+	
+	public interface DuplexStream extends Closeable {
+		
+		public InputStream getInput() throws IOException;
+		
+		public OutputStream getOutput() throws IOException;
+		
+		public void close() throws IOException;
+
 	}
 	
 	private class NotifyingOutputStream extends OutputStream {

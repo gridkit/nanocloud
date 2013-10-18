@@ -19,8 +19,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 
 /**
+ * Logical wrapper for socket like communication channels.
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */

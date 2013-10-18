@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.gridkit.vicluster.telecontrol.FileBlob;
-import org.gridkit.vicluster.telecontrol.bootstraper.EnvVarHelper;
+import org.gridkit.vicluster.telecontrol.bootstraper.SystemHelper;
 
 /**
  * {@link HostControlConsole} implementation for local execution.
@@ -31,8 +31,21 @@ public class LocalControlConsole implements HostControlConsole {
 
 	private List<Destroyable> activeObjects = new ArrayList<Destroyable>();
 	private boolean terminated = false;
+	private File cacheDir;
 	
 	private Map<String, String> hashCache = new HashMap<String, String>();
+	
+	public LocalControlConsole() {
+		this("{tmp}/nanocloud");
+	}
+
+	public LocalControlConsole(String tmpDir) {
+		try {
+			cacheDir = new File(SystemHelper.normalizePath(tmpDir));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 	
 	protected void ensureRunning() {
 		if (terminated) {
@@ -55,7 +68,8 @@ public class LocalControlConsole implements HostControlConsole {
 						return hashCache.get(hashKey);
 					}
 					else {
-						File f = File.createTempFile("___", "." + blob.getFileName());
+						File f = new File(new File(cacheDir, blob.getContentHash()), blob.getFileName());
+						f.getParentFile().mkdirs();
 						f.deleteOnExit();
 						FileOutputStream fos = new FileOutputStream(f);
 						StreamHelper.copy(blob.getContent(), fos);
@@ -90,7 +104,7 @@ public class LocalControlConsole implements HostControlConsole {
 		try {
 			sock = new ServerSocket();
 			sock.setReuseAddress(true);
-			sock.bind(new InetSocketAddress("127.0.0.1", 0));
+			sock.bind(new InetSocketAddress("127.0.0.1", 0), 1);
 		} catch (SocketException e) {
 			handler.terminated(e.toString());
 			return new DestroyableStub();
@@ -113,13 +127,11 @@ public class LocalControlConsole implements HostControlConsole {
 		ensureRunning();
 		ProcessObserver observer;
 		try {
-			File wd = new File(workingDir).getCanonicalFile();
-			String[] envp = EnvVarHelper.buildInheritedEnvironment(env);
-			Process process = Runtime.getRuntime().exec(command, envp, wd);
+			Process process = startProcess(workingDir, command, env);
 			observer = new ProcessObserver(process, handler);
 			Thread thread = new Thread(observer);
 			thread.setDaemon(false);
-			thread.setName("EXEC" + Arrays.toString(command) + "." + process.hashCode());
+			thread.setName("EXEC[" + shortCmd(command) + "]." + process.hashCode());
 			thread.start();
 			return observer;
 		} catch (IOException e) {
@@ -136,9 +148,39 @@ public class LocalControlConsole implements HostControlConsole {
 			return new DestroyableStub();
 		}
 	}
+
+	protected Process startProcess(String workingDir, String[] command,
+			Map<String, String> env) throws IOException {
+		File wd = workingDir == null ? null : new File(workingDir).getCanonicalFile();
+		String[] envp = SystemHelper.buildInheritedEnvironment(env);
+		Process process = Runtime.getRuntime().exec(command, envp, wd);
+		return process;
+	}
 	
+	protected String shortCmd(String[] cmd) {
+		StringBuilder sb = new StringBuilder();
+		if (cmd.length > 0) {
+			String f = cmd[0];
+			if (f.indexOf('/') > 0) {
+				f = f.substring(f.lastIndexOf('/'));
+			}
+			if (f.indexOf('\\') > 0) {
+				f = f.substring(f.lastIndexOf('\\'));
+			}
+			sb.append(f);
+		}
+		int n = 1;
+		while(sb.length() < 40 && n < cmd.length) {
+			sb.append(' ').append(cmd);
+		}
+		if (sb.length() > 40) {
+			sb.setLength(40);
+		}
+		return sb.toString();
+	}
+
 	protected synchronized void register(Destroyable resource) {
-		activeObjects.add(resource);
+		activeObjects.add(0, resource);
 	}
 
 	protected synchronized void unregister(Destroyable resource) {
@@ -172,14 +214,13 @@ public class LocalControlConsole implements HostControlConsole {
 		public void run() {
 			try {
 				InetSocketAddress local = (InetSocketAddress) serverSocket.getLocalSocketAddress();
+				Thread.currentThread().setName("ACCEPT[" + local + "]");
 				socketHandler.bound(local.getHostName(), local.getPort());
 				while(!serverSocket.isClosed()) {
 					try {
 						Socket socket = serverSocket.accept();
 						InetSocketAddress remote = (InetSocketAddress) socket.getRemoteSocketAddress();
 						socketHandler.accepted(remote.getHostName(), remote.getPort(), socket.getInputStream(), socket.getOutputStream());
-						
-						break;
 					}
 					catch(Exception e) {
 						if (serverSocket.isClosed()) {

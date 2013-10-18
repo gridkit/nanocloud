@@ -552,7 +552,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			TunnellerConnection tc = control;
 			try {
 				if (tc != null) {
-					tc.kill(execId);
+					tc.killProc(execId);
 				}
 			} catch (IOException e) {
 				// ignore

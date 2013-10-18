@@ -24,9 +24,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
+@Ignore
 public class SpeedLimitTest {
 
 	@Test

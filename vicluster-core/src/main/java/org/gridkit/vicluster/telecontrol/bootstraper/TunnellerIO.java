@@ -31,11 +31,9 @@ import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.gridkit.vicluster.telecontrol.StreamPipe;
-
 class TunnellerIO {
 
-	protected static final byte[] MAGIC = "TUNNELLER".getBytes();
+	protected static final byte[] MAGIC = "START TUNNEL".getBytes();
 	
 	protected static final long CTRL_REQ = -1;
 	protected static final long CTRL_REP = -2;
@@ -336,6 +334,7 @@ class TunnellerIO {
 	protected boolean traceChannelOpen;
 	protected boolean traceChannelData;
 	protected boolean traceChannelClose;
+	protected boolean traceControlThread;
 	
 	protected boolean embededMode = true;
 	
@@ -355,7 +354,7 @@ class TunnellerIO {
 		int n = 0;
 		while(n < data.length) {
 			int m = is.read(data, n, data.length - n);
-			if (m < -1) {
+			if (m < 0) {
 				throw new IOException("Failed to read MAGIC, EOF reached");
 			}
 			n += m;
