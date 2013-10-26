@@ -114,10 +114,10 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 
 	private String detectCachePath(String jarpath) {
 		String cachePath = jarpath;
-		if (cachePath.indexOf('/') > 0) {
+		if (cachePath.indexOf('/') >= 0) {
 			cachePath =cachePath.substring(0, cachePath.lastIndexOf('/') + 1);
 		}
-		if (cachePath.indexOf('\\') > 0) {
+		if (cachePath.indexOf('\\') >= 0) {
 			cachePath =cachePath.substring(0, cachePath.lastIndexOf('\\') + 1);
 		}
 		cachePath = cachePath + "..";

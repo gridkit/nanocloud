@@ -243,6 +243,11 @@ public class SftFileCache implements RemoteFileCache {
 		}
 	}
 
+	public void close() {
+		// TODO close channels
+		executor.shutdown();
+	}
+	
 	private static boolean exists(ChannelSftp sftp, String path) {
 		try {
 			return sftp.stat(path) != null;

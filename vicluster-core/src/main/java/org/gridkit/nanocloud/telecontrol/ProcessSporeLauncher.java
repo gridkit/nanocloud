@@ -57,6 +57,8 @@ import org.gridkit.zerormi.SocketStream;
 import org.gridkit.zerormi.hub.SlaveSpore;
 
 /**
+ * {@link ProcessSporeLauncher} is using {@link SmartBootstraper}
+ * to instantiate and launch slave spore.
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
@@ -74,6 +76,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		
 		SlaveSpore spore = rmiSession.getMobileSpore();
 
+		// TODO single socket per console should be reused or at least it should be closed after use
 		Destroyable socketHandler = console.openSocket(session);
 		session.socketHandle = socketHandler;
 		
@@ -88,9 +91,10 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
 		commands.add("-jar");
-		commands.add("\"" + classpath +"\"");
+		commands.add(classpath);
 		
 		console.startProcess(".", commands.toArray(new String[0]), null, session);
+//		console.startProcess(".", new String[]{"cat"}, null, session);
 		
 		return session;
 	}
@@ -291,7 +295,12 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			ps.stdErr = new LookbackOutputStream(4096);
 			ps.eofOut = BackgroundStreamDumper.link(stdOut, ps.stdOut);
 			ps.eofErr = BackgroundStreamDumper.link(stdErr, ps.stdErr);
+			
 			try {
+				// TO DO just for debug
+//				ps.stdOut.setOutput(System.out);
+//				ps.stdErr.setOutput(System.err);
+				
 				DataOutputStream dos = new DataOutputStream(stdIn);
 				dos.writeInt(binspore.length);
 				dos.write(binspore);

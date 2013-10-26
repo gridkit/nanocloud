@@ -37,6 +37,10 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String JVM_ENV_VAR = JvmProps.JVM_ENV;
 
 	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
+
+	public static final String REMOTE_HOST = "remote:host";
+	public static final String REMOTE_ACCOUNT = "remote:account";
+	public static final String REMOTE_HOST_CONFIG = "remote:host-config";
 	
 	public static final String HOOK = "hook:";
 
@@ -52,6 +56,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String PRAGMA_HANDLER__JVM = "pragma-handler:jvm";
 	public static final String PRAGMA_HANDLER__NODE = "pragma-handler:node";
 	public static final String PRAGMA_HANDLER__RUNTIME = "pragma-handler:runtime";
+	public static final String PRAGMA_HANDLER__REMOTE = "pragma-handler:remote";
 	
 	public static final String TYPE_HANDLER = "type-handler:";
 

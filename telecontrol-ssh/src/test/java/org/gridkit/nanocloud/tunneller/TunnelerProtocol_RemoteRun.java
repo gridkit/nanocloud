@@ -12,7 +12,6 @@ import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.TunnellerProtocolTest;
 import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -9,6 +9,7 @@ import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.ProcessHandler;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper.Link;
 import org.junit.Test;
 
 public class SshConsoleCheck {
@@ -21,19 +22,22 @@ public class SshConsoleCheck {
 		
 		Session session = sshFactory.getSession("cbox1", null);
 		
-		SshHostControlConsole console= new SshHostControlConsole(session, "~/.nanocloud/cache");
+		SshHostControlConsole console= new SshHostControlConsole(session, "~/.nanocloud/cache", 1);
 
 		final FutureBox<Void> exit = new FutureBox<Void>();
 		
-		console.startProcess("~/target/", new String[]{"pwd"}, null, new ProcessHandler() {
+		console.startProcess(null, new String[]{"pwd"}, null, new ProcessHandler() {
+			
+			Link outLink;
+			Link errLink;
 			
 			@Override
 			public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr) {
 				System.out.println("Process started");
 				try {
 //					stdIn.close();
-					BackgroundStreamDumper.link(stdOut, System.out, false);
-					BackgroundStreamDumper.link(stdErr, System.err, false);
+					outLink = BackgroundStreamDumper.link(stdOut, System.out, false);
+					errLink = BackgroundStreamDumper.link(stdErr, System.err, false);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -41,13 +45,13 @@ public class SshConsoleCheck {
 			
 			@Override
 			public void finished(int exitCode) {
+				outLink.flushAndClose();
+				errLink.flushAndClose();
 				System.out.println("Exit code: " + exitCode);
 				exit.setData(null);
 			}
 		});		
 		
 		exit.get();
-	}
-
-	
+	}	
 }

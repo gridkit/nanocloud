@@ -3,11 +3,10 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import org.gridkit.internal.com.jcraft.jsch.ChannelExec;
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
+import org.gridkit.internal.com.jcraft.jsch.SftpException;
 import org.gridkit.nanocloud.telecontrol.LocalControlConsole;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.FileBlob;
@@ -15,23 +14,31 @@ import org.gridkit.vicluster.telecontrol.FileBlob;
 public class SshHostControlConsole extends LocalControlConsole {
 
 	private Session session;
-	private String resourceCachePath;
-	private String resolvedPath;
+	private SftFileCache fileCache;
 	
-	public SshHostControlConsole(Session session, String resourceCachePath) {
-		this.session = session;
-		this.resourceCachePath = resourceCachePath;
-		register(new SessionKiller(session));
+	public SshHostControlConsole(Session session, String cachePath, int sftpParallelFactor) {
+		try {
+			this.session = session;
+			this.fileCache = new SftFileCache(session, cachePath, sftpParallelFactor);
+			register(new CacheKiller(fileCache));
+			register(new SessionKiller(session));
+		} catch (JSchException e) {
+			throw new RuntimeException(e);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (SftpException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public String cacheFile(FileBlob blob) {
-		throw new UnsupportedOperationException();
+		return fileCache.upload(blob);
 	}
 
 	@Override
 	public List<String> cacheFiles(List<? extends FileBlob> blobs) {
-		throw new UnsupportedOperationException();
+		return fileCache.upload(blobs);
 	}
 
 	@Override
@@ -59,142 +66,6 @@ public class SshHostControlConsole extends LocalControlConsole {
 			throw new IOException(e);
 		}
 	}
-
-
-
-	private class ProcessObserver implements Runnable, Destroyable {
-		
-		private ChannelExec process;
-		private ProcessHandler handler;
-		private boolean notified;
-		
-		public ProcessObserver(ChannelExec process, ProcessHandler handler) {
-			this.process = process;
-			this.handler = handler;
-			register(this);
-		}
-
-		@Override
-		public void run() {
-			try {
-				try {
-					handler.started(process.getOutputStream(), process.getInputStream(), process.getExtInputStream());
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				while(true) {
-					if (process.isClosed()) {
-						break;
-					}
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// ignore
-					}
-				}
-				synchronized(this) {
-					if (!notified) {
-						notified = true;
-						handler.finished(process.getExitStatus());
-					}
-				}
-			}
-			finally{
-				destroy();
-			}
-		}
-
-		@Override
-		public void destroy() {
-			synchronized(this) {
-				if (!process.isClosed()) {
-					try {
-						process.sendSignal("KILL");
-					} catch (Exception e) {
-					}
-					long dl = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(200);
-					while(System.nanoTime() < dl) {
-						if (process.isClosed()) {
-							return;
-						}
-						else {
-							try {
-								Thread.sleep(10);
-							}
-							catch(InterruptedException e) {
-								break;
-							}
-						}
-					}
-				}
-
-				if (!notified) {
-					notified = true;
-					int exitCode = process.getExitStatus();
-					handler.finished(exitCode);
-				}
-				try {
-					process.disconnect();
-				}
-				catch(Exception e) {
-					// ignore
-				}
-			}
-			unregister(this);
-		}
-	}
-	
-	private class ProcessKiller implements Destroyable {
-		
-		private final ChannelExec channel;
-		private final ProcessHandler handler;
-		private boolean notified;
-		
-		public ProcessKiller(ChannelExec channel, ProcessHandler handler) {
-			this.channel = channel;
-			this.handler = handler;
-		}
-
-		@Override
-		public void destroy() {
-			synchronized(this) {
-				if (!notified) {
-					notified = true;
-					if (!channel.isClosed()) {
-						try {
-							channel.sendSignal("KILL");
-						} catch (Exception e) {
-						}
-						long dl = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(200);
-						while(System.nanoTime() < dl) {
-							if (channel.isClosed()) {
-								return;
-							}
-							else {
-								try {
-									Thread.sleep(10);
-								}
-								catch(InterruptedException e) {
-									break;
-								}
-							}
-						}
-					}
-					
-					int exitCode = channel.getExitStatus();
-					handler.finished(exitCode);
-					try {
-						channel.disconnect();
-					}
-					catch(Exception e) {
-						// ignore
-					}
-				}			
-			}
-			unregister(this);
-		}		
-	}
 	
 	private static class SessionKiller implements Destroyable {
 
@@ -209,11 +80,18 @@ public class SshHostControlConsole extends LocalControlConsole {
 			session.disconnect();
 		}		
 	}
-	
-	private static class DestroyableStub implements Destroyable {
 
+	private static class CacheKiller implements Destroyable {
+		
+		private final SftFileCache fileCache;
+		
+		public CacheKiller(SftFileCache fileCache) {
+			this.fileCache = fileCache;
+		}
+		
 		@Override
 		public void destroy() {
-		}
-	}
+			fileCache.close();
+		}		
+	}	
 }

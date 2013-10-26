@@ -1,5 +1,11 @@
 package org.gridkit.vicluster;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -144,6 +150,7 @@ public interface ViEngine {
 					started = true;
 				}
 				catch(Exception e) {
+					e.printStackTrace();
 					started = true;
 					killpending = true;
 				}
@@ -397,6 +404,60 @@ public interface ViEngine {
 			}
 		}
 		
+		public static InputStream openStream(String path) throws IOException {
+			if (path.startsWith("?")) {
+				try {
+					return openStream(path.substring(1));
+				} catch (IOException e) {
+					return null;
+				}
+			}
+			String[] alts = path.split("[|]");
+			for(String alt: alts) {
+				try {
+					InputStream is = openStreamSingle(alt);
+					return is;
+				} catch (IOException e) {
+					// continue
+				}
+			}
+			throw new FileNotFoundException("Path spec [" + path + "] was not resolved");
+		}
+
+		private static InputStream openStreamSingle(String path) throws IOException {
+			InputStream is = null;
+			if (path.startsWith("~/")) {
+				String userHome = System.getProperty("user.home");
+				File cpath = new File(new File(userHome), path.substring(2));
+				is = new FileInputStream(cpath);
+			}
+			else if (path.startsWith("resource:")) {
+				String rpath = path.substring("resource:".length());
+				ClassLoader cl = Thread.currentThread().getContextClassLoader();
+				is = cl.getResourceAsStream(rpath);
+				if (is == null) {
+					throw new FileNotFoundException("Resource not found '" + path + "'");
+				}
+			}
+			else {
+				if (new File(path).exists()) {
+					is = new FileInputStream(new File(path));
+				}
+				else {
+					try {
+						is = new URL(path).openStream();
+					}
+					catch(IOException e) {
+						// ignore
+					}
+					if (is == null) {
+						throw new FileNotFoundException("Cannot resolve path '" + path + "'");
+					}
+				}
+			}
+			return is;	
+		}
+		
 		@Deprecated
 		public static void processStartupHooks(ViNodeConfig conf, AdvancedExecutor exec) {
 			ViEngineGame game = new ViEngineGame(conf.config);
@@ -609,7 +670,7 @@ public interface ViEngine {
 	public class InitTimePragmaHandler implements PragmaHandler {
 		
 		public Object get(String key, ViEngine engine) {
-			return engine.getPragma(key);
+			return engine.getConfig().get(key);
 		}
 
 		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
@@ -622,7 +683,7 @@ public interface ViEngine {
 	public class ReadOnlyPragmaHandler implements PragmaHandler {
 		
 		public Object get(String key, ViEngine engine) {
-			return engine.getPragma(key);
+			return engine.getConfig().get(key);
 		}
 		
 		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
@@ -633,7 +694,7 @@ public interface ViEngine {
 	public class HookPragmaHandler implements PragmaHandler {
 		
 		public Object get(String key, ViEngine engine) {
-			return engine.getPragma(key);
+			return engine.getConfig().get(key);
 		}
 		
 		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {

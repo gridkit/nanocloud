@@ -328,6 +328,7 @@ class TunnellerIO {
 	}
 	
 	protected boolean traceExec;
+	protected boolean traceProcIO;
 	protected boolean traceExitCode;
 	protected boolean traceBind;
 	protected boolean traceAccept;

@@ -207,6 +207,7 @@ public class BackgroundStreamDumper implements Runnable {
 			synchronized (BACKLOG) {
 				BACKLOG.remove(this);
 			}
+			sync();
 			
 			try {
 				pullStream(new byte[8 << 10], is, os);
@@ -221,6 +222,9 @@ public class BackgroundStreamDumper implements Runnable {
 		
 		@Override
 		public void flushAndClose() {
+			synchronized (BACKLOG) {
+				BACKLOG.remove(this);
+			}
 			sync();
 			
 			try {
@@ -231,7 +235,6 @@ public class BackgroundStreamDumper implements Runnable {
 			
 			close(is);
 			close(os);
-			signal.setData(null);
 		}
 
 		private void sync() {

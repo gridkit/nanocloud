@@ -12,10 +12,12 @@ public class SmartBootstraper {
 	}
 
 	public static void start(InputStream input) {
+//		System.out.println("Bootstraper started");
 		Runnable spore;
 		try {
 			DataInputStream di = new DataInputStream(input);
 			int blobSize = di.readInt();
+//			System.out.println("Spore size: " + blobSize);
 			byte[] blob = new byte[blobSize];
 			di.readFully(blob);
 			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(blob));

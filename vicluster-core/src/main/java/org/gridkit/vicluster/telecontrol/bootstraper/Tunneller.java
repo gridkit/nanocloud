@@ -297,9 +297,12 @@ public class Tunneller extends TunnellerIO {
 		}
 	}
 	
-	boolean pump(InputStream is, OutputStream os) {
+	boolean pump(String diag, InputStream is, OutputStream os) {
 		try {
 			if (eof(is)) {
+				if (diag != null) {
+					diagOut.println("Pump [" + diag + "]: EOF");
+				}
 				close(os);
 				return false;
 			}
@@ -315,8 +318,12 @@ public class Tunneller extends TunnellerIO {
 			byte[] buf = new byte[n];
 			n = is.read(buf);
 			os.write(buf, 0, n);
+			if (diag != null) {
+				diagOut.println("Pump [" + diag + "]: " + n + " bytes");
+			}
 			return true;
 		} catch (IOException e) {
+			diagOut.println("Pump failure: " + e.toString());
 			return false;
 		}
 	}
@@ -368,10 +375,19 @@ public class Tunneller extends TunnellerIO {
 		@Override
 		public void run() {
 			try {
+				String dStdIn = traceProcIO ? "stdIn@" + procId : null;
+				String dStdOut = traceProcIO ? "stdOut@" + procId : null;
+				String dStdErr = traceProcIO ? "stdErr@" + procId : null;
 				while(true) {
-					if (	pump(stdIn, proc.getOutputStream()) 
-						  | pump(proc.getInputStream(), stdOut)
-						  | pump(proc.getErrorStream(), stdErr)) {
+					if (	pump(dStdIn, stdIn, proc.getOutputStream()) 
+						  | pump(dStdOut, proc.getInputStream(), stdOut)
+						  | pump(dStdErr, proc.getErrorStream(), stdErr)) {
+						// TODO separate IN/OUT
+						try {
+							proc.getOutputStream().flush();
+						} catch (IOException e) {
+							// Ignore
+						}
 						writePending();
 						continue;
 					}
@@ -384,8 +400,8 @@ public class Tunneller extends TunnellerIO {
 							} catch (InterruptedException e) {
 								// ignore
 							}; 
-							pump(proc.getInputStream(), stdOut);
-							pump(proc.getErrorStream(), stdErr);
+							pump(dStdOut, proc.getInputStream(), stdOut);
+							pump(dStdErr, proc.getErrorStream(), stdErr);
 							
 							close(stdOut);
 							close(stdErr);
@@ -458,8 +474,8 @@ public class Tunneller extends TunnellerIO {
 
 			
 			while(sock.isConnected() && !sock.isClosed()) {
-				if (	pump(soIn, os)
-					 || pump(is, soOut)) {
+				if (	pump(null, soIn, os)
+					 || pump(null, is, soOut)) {
 					writePending();
 					continue;
 				}

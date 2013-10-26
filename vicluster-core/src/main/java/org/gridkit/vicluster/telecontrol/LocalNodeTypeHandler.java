@@ -30,18 +30,41 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 
 	@Override
 	public boolean apply(QuorumGame game) {
+		initJvmConfigurationRules(game);
+		initExtraConfigurationRules(game);
+		initControlConsole(game);
+		initProcessLauncher(game);
+		
+		initRemoting(game);
+		initProcessBootstrapper(game);
+		
+		return true;
+	}
+
+	protected void initExtraConfigurationRules(QuorumGame game) {		
+	}
+
+	protected void initProcessBootstrapper(QuorumGame game) {
+		ViEngine.Core.addRule(game, createProcessBootstrapperRule());
+	}
+
+	protected void initRemoting(QuorumGame game) {
+		ViEngine.Core.addRule(game, createRemotingConfigurationRule());
+	}
+
+	protected void initProcessLauncher(QuorumGame game) {
+		game.setPropIfAbsent(ViConf.SPI_PROCESS_LAUNCHER, createProcessLauncher(game));
+	}
+
+	protected void initControlConsole(QuorumGame game) {
+		game.setPropIfAbsent(ViConf.SPI_CONTROL_CONSOLE, createControlConsole(game));
+	}
+
+	protected void initJvmConfigurationRules(QuorumGame game) {
 		game.setPropIfAbsent(ViConf.HOOK_CLASSPATH_BUILDER, createClasspathBuilder(game));
 		game.setPropIfAbsent(ViConf.HOOK_JVM_ARGUMENTS_BUIDLER, createJvmArgumentsBuilder(game));
 		game.setPropIfAbsent(ViConf.HOOK_JVM_ENV_VARS_BUIDLER, createJvmEnvironmentBuilder(game));
 		game.setPropIfAbsent(ViConf.JVM_EXEC_CMD, defaultJavaExecCmd(game));
-
-		game.setPropIfAbsent(ViConf.SPI_CONTROL_CONSOLE, createControlConsole(game));
-		game.setPropIfAbsent(ViConf.SPI_PROCESS_LAUNCHER, createProcessLauncher(game));
-		
-		ViEngine.Core.addRule(game, createRemotingConfigurationRule());
-		ViEngine.Core.addRule(game, createProcessLauncherRule());
-		
-		return true;
 	}
 
 	protected String defaultJavaExecCmd(QuorumGame game) {
@@ -75,7 +98,7 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 		return new ZeroRmiConfigurationRule();
 	}
 
-	protected InductiveRule createProcessLauncherRule() {
+	protected InductiveRule createProcessBootstrapperRule() {
 		return new ProcessLauncherRule();
 	}
 
