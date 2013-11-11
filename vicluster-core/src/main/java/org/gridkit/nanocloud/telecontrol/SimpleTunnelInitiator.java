@@ -42,9 +42,8 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 	@Override
 	public HostControlConsole initTunnel(HostControlConsole console) {
 
-		@SuppressWarnings("unused")
 		String jversion = getJavaVersion(console);
-//		System.out.println("Java " + jversion + " is detected");
+		logger.debug().log("Host JVM version is " + jversion);
 		
 		byte[] bootJar;
 		try {
@@ -108,7 +107,6 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 
 	private String[] tunnellerCommand(String jarpath) {
 		String[] cmd = new String[]{javaCmd, "-Xmx32m", "-Xms32m", "-cp", jarpath, Tunneller.class.getName()};
-//		System.out.println(String.format("%s %s %s %s %s %s", (Object[])cmd));
 		return cmd;
 	}
 
@@ -245,6 +243,4 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 			return null;
 		}
 	}
-	
-	
 }

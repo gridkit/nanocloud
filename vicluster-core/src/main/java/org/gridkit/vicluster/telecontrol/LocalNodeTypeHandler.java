@@ -282,7 +282,7 @@ public class LocalNodeTypeHandler implements ViEngine.InductiveRule {
 				&&  game.getJvmArgs() != null)
 			{
 				ProcessLauncher launcher = (ProcessLauncher) game.getProp(ViConf.SPI_PROCESS_LAUNCHER);
-				final ManagedProcess mp = launcher.createProcess(game.getConfigProps("**"));
+				final ManagedProcess mp = launcher.createProcess(game.getConfigProps(""));
 				game.setProp(ViConf.SPI_MANAGED_PROCESS, mp);
 				game.addUniqueProp(ViConf.ACTIVATED_FINALIZER_HOOK + "destroy-process", new Runnable() {
 					@Override

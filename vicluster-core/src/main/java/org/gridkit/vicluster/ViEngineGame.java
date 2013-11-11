@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.gridkit.vicluster.ViEngine.Interceptor;
 import org.gridkit.vicluster.ViEngine.Phase;
@@ -112,11 +111,10 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 	}
 
 	@Override
-	public Map<String, Object> getConfigProps(String matcher) {
-		Pattern p = GlobHelper.translate(matcher, ".");
+	public Map<String, Object> getConfigProps(String prefix) {
 		Map<String, Object> map = new LinkedHashMap<String, Object>();
 		for(String key: keyOrder) {
-			if (p.matcher(key).matches()) {
+			if (key.startsWith(prefix)) {
 				if (config.get(key) != null) {
 					map.put(key, config.get(key));
 				}

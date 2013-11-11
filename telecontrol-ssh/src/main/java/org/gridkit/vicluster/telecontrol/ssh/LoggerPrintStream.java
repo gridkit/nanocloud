@@ -19,43 +19,32 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.gridkit.zeroio.AbstractLineProcessingOutputStream;
-import org.slf4j.Logger;
+import org.gridkit.zerormi.zlog.LogStream;
 
 class LoggerPrintStream extends PrintStream {
 
-	public enum Level {
-		ERROR,
-		WARN,
-		INFO,
-		DEBUG,
-		TRACE,
-		NONE
-	}
-	
-	public LoggerPrintStream(Logger logger, Level level) {
-		super(new StreamStub(logger, level, null));
+	public LoggerPrintStream(LogStream stream) {
+		super(new StreamStub(stream, null));
 	}
 
-	public LoggerPrintStream(Logger logger, Level level, String prefix) {
-		super(new StreamStub(logger, level, prefix));
+	public LoggerPrintStream(LogStream stream, String prefix) {
+		super(new StreamStub(stream, prefix));
 	}
 	
 	private static final class StreamStub extends AbstractLineProcessingOutputStream {
 				
-		private final Logger logger;
-		private final Level level;	
+		private final LogStream logger;
 		private final String prefix;
 		
-		private StreamStub(Logger logger, Level level, String prefix) {
-			level.toString(); // null check
+		private StreamStub(LogStream logger, String prefix) {
+			logger.toString(); // null check
 			this.logger = logger;
-			this.level = level;			
 			this.prefix = prefix;
 		}
 
 		@Override
 		protected void processLine(byte[] data) throws IOException {
-			if (level != Level.NONE) {
+			if (logger.isEnabled()) {
 				if (prefix == null) {
 					logLine(new String(data));
 				}
@@ -73,13 +62,7 @@ class LoggerPrintStream extends PrintStream {
 				if (text.charAt(text.length() - 1) == '\r') {
 					text = text.substring(0, text.length() - 1);
 				}
-				switch(level) {
-					case ERROR: logger.error(text); break;
-					case WARN: logger.warn(text); break;
-					case INFO: logger.info(text); break;
-					case DEBUG: logger.debug(text); break;
-					case TRACE: logger.trace(text); break;
-				}
+				logger.log(text);
 			}
 		}	
 	}

@@ -50,14 +50,15 @@ import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.SocketHandler;
-import org.gridkit.vicluster.telecontrol.ssh.LoggerPrintStream.Level;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.NamedStreamPair;
 import org.gridkit.zerormi.hub.LegacySpore;
 import org.gridkit.zerormi.hub.MasterHub;
 import org.gridkit.zerormi.hub.RemotingHub;
 import org.gridkit.zerormi.hub.RemotingHub.SessionEventListener;
+import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.ZLogFactory;
+import org.gridkit.zerormi.zlog.ZLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,14 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	private int tunnelPort;
 	private long connectTimeoutMS = DEFAULT_CONN_TIMEOUT;
 	
-	private Logger logger;
+	private ZLogger logger;
+	
+	public TunnellerJvmReplicator() {		
+	}
+	
+	public TunnellerJvmReplicator(ZLogger logger) {
+		this.logger = logger;
+	}
 	
 	@Override
 	public synchronized void configure(Map<String, String> nodeConfig) {
@@ -99,7 +107,9 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			throw new IllegalStateException("Already initialized");
 		}
 		
-		logger = LoggerFactory.getLogger(getClass().getSimpleName() + "." + rconfig.getHost());
+		if (logger == null) {
+			logger = ZLogFactory.getDefaultRootLogger().getLogger(getClass().getSimpleName() + "." + rconfig.getHost());
+		}
 		
 		initialized = true;
 		
@@ -119,7 +129,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			jarCache = new SftFileCache(session, rconfig.getJarCachePath(), 4);
 			initRemoteClasspath();
 			startTunneler();
-			hub = new RemotingHub(ZLogFactory.getDefaultRootLogger());
+			hub = new RemotingHub(logger);
 			initPortForwarding();
 		}
 		catch(Exception e) {
@@ -226,7 +236,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		InputStream cerr = exec.getErrStream();
 		OutputStream cout = exec.getOutputStream();
 		
-		PrintStream out = new LoggerPrintStream(createTunnellerOutputLogger(), Level.INFO);
+		PrintStream out = new LoggerPrintStream(logger.get("diag", LogLevel.WARN));
 
 		// unfortunately Pty will merge out and err, so it should be disabled
 		exec.setPty(false);
@@ -293,14 +303,14 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		InputStream cin = exec.getInputStream();
 		OutputStream cout = exec.getOutputStream();
 		// use std err for diagnostic output
-		OutputStream tunnel = new LoggerPrintStream(createTunnellerOutputLogger(), Level.INFO);
+		OutputStream tunnel = new LoggerPrintStream(logger.get("console", LogLevel.WARN));
 		BackgroundStreamDumper.link(exec.getExtInputStream(), tunnel, false);
 
 		// unfortunately Pty will merge out and err, so it should be disabled
 		exec.setPty(false);
 		exec.connect();
 
-		PrintStream diagLog = new LoggerPrintStream(logger, Level.INFO);
+		PrintStream diagLog = new LoggerPrintStream(logger.get("console", LogLevel.WARN));
 		
 		try {
 			control = new TunnellerConnection(rconfig.getHost(), cin, cout, diagLog, connectTimeoutMS, TimeUnit.MILLISECONDS);
@@ -340,7 +350,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			
 			@Override
 			public void bound(String host, int port) {
-				logger.info("Remote port bound " + host + ":" + port);
+				logger.info().log("Remote port bound " + host + ":" + port);
 				tunnelHost = host;
 				tunnelPort = port;
 				box.setData(null);				
@@ -348,7 +358,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 			
 			@Override
 			public void accepted(String rhost, int rport, InputStream soIn, OutputStream soOut) {
-				logger.info("Inbound connection");
+				logger.info().log("Inbound connection");
 				handleInbound(rhost, rport, soIn, soOut);
 			}
 		});
@@ -457,17 +467,17 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		public void connected(DuplexStream stream) {
 			remoteExecutorService = hub.getExecutionService(sessionId);
 			connected.setData(null);
-			logger.info("Conntected: " + stream);
+			logger.info().log("Conntected: " + stream);
 		}
 
 		@Override
 		public void interrupted(DuplexStream stream) {
-			logger.info("Interrupted: " + stream);
+			logger.info().log("Interrupted: " + stream);
 		}
 
 		@Override
 		public void reconnected(DuplexStream stream) {
-			logger.info("Reconnected: " + stream);
+			logger.info().log("Reconnected: " + stream);
 		}
 
 		@Override

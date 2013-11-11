@@ -20,15 +20,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-class Slf4JLogger implements ZLogger {
+class ZLogToSlf4J implements ZLogger {
 
 	private final String root;
 	
-	public Slf4JLogger() {
+	public ZLogToSlf4J() {
 		this.root = "";
 	}
 
-	public Slf4JLogger(String root) {
+	public ZLogToSlf4J(String root) {
 		this.root = root;
 	}
 
@@ -38,11 +38,14 @@ class Slf4JLogger implements ZLogger {
 		if (path != null && path.length() > 0) {
 			ln += (ln.length() == 0 ? "" : ".") + path;
 		}
-		return new Slf4JLogger(ln);
+		return new ZLogToSlf4J(ln);
 	}
 	
 	@Override
 	public LogStream get(String path, LogLevel level) {
+		if (level == null) {
+			throw new NullPointerException("log level should not be null");
+		}
 		String ln = root;
 		if (path != null && path.length() > 0) {
 			ln += (ln.length() == 0 ? "" : ".") + path;

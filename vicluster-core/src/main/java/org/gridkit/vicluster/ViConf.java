@@ -41,6 +41,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String REMOTE_HOST = "remote:host";
 	public static final String REMOTE_ACCOUNT = "remote:account";
 	public static final String REMOTE_HOST_CONFIG = "remote:host-config";
+
+	public static final String LOG = "log:";
+	public static final String LOG_LOGGER = "log:logger:";
+	public static final String LOG_LOGGER_PROVIDER = "log:logger:provider";
+	public static final String LOG_LOGGER_ROOT = "log:logger:root";
 	
 	public static final String HOOK = "hook:";
 
@@ -51,6 +56,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 	public static final String PRAGMA_HANDLER = "pragma-handler:";
 	public static final String PRAGMA_HANDLER__CONSOLE = "pragma-handler:console";
+	public static final String PRAGMA_HANDLER__LOG = "pragma-handler:log";
 	public static final String PRAGMA_HANDLER__HOOK = "pragma-handler:hook";
 	public static final String PRAGMA_HANDLER__CLASSPATH = "pragma-handler:classpath";
 	public static final String PRAGMA_HANDLER__JVM = "pragma-handler:jvm";
@@ -72,6 +78,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_MANAGED_PROCESS = "#spi:managed-process";
 	public static final String SPI_NODE_FACTORY = "#spi:node-factory";
 	public static final String SPI_NODE_INSTANCE = "#spi:node-instance";
+	public static final String SPI_LOGGER = "#spi:logger";
 	
 	public static final String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";
