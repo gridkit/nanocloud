@@ -31,6 +31,11 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 		super(new LinkedHashMap<String, Object>());
 	}
 
+	@Override
+	public <X> X x(ViExtender<X> extention) {
+		return extention.wrap(this);
+	}	
+	
 	public String getProp(String propName) {
 		return (String)config.get(propName);
 	}
@@ -188,6 +193,11 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 			this.filter = filter;
 		}
 		
+		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
+		
 		protected abstract void setPropInternal(String propName, String value);
 		
 		@Override
@@ -234,6 +244,11 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 	}
 
 	public static abstract class ReplyShutdownHooks implements ViConfigurable {
+		
+		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
 		
 		@Override
 		public void setProp(String propName, String value) {

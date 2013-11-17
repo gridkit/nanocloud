@@ -143,7 +143,7 @@ public class RemoteConsoleInitializer implements InductiveRule {
 			factory.setUser(account);
 
 			// TODO JSch options
-			for(String key: game.getConfigProps(SPI_SSH_JSCH_OPTION + "**").keySet()) {
+			for(String key: game.getConfigProps(SPI_SSH_JSCH_OPTION).keySet()) {
 				String opt = key.substring(SPI_SSH_JSCH_OPTION.length());
 				factory.setConfig(opt, (String)game.get(key));
 			}

@@ -73,7 +73,12 @@ public class ViGroup implements ViNode {
 		hosts.add(host);
 		config.apply(host);
 	}
-	
+
+	@Override
+	public <X> X x(ViExtender<X> extention) {
+		return extention.wrap(this);
+	}
+
 	@Override
 	public synchronized void setProp(String propName, String value) {
 		checkActive();
@@ -82,8 +87,6 @@ public class ViGroup implements ViNode {
 			vh.setProp(propName, value);
 		}
 	}
-	
-	
 	
 	@Override
 	public synchronized void setProps(Map<String, String> props) {

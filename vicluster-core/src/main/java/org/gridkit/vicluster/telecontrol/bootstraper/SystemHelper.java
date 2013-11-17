@@ -54,7 +54,7 @@ public class SystemHelper {
 	}
 	
 	/**
-	 * Transforms and conanize path acording to local system.
+	 * Transforms and conanize path according to local system.
 	 * <li>
 	 * Expands ~/
 	 * </li>

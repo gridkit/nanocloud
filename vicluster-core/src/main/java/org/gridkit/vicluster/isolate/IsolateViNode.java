@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gridkit.vicluster.MassExec;
 import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.vicluster.ViExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.VoidCallable;
@@ -54,6 +55,11 @@ public class IsolateViNode implements ViNode {
 	
 	public IsolateViNode(String name) {
 		setName(this, name);
+	}
+	
+	@Override
+	public <X> X x(ViExtender<X> extention) {
+		return extention.wrap(this);
 	}
 	
 	@Override
@@ -283,6 +289,11 @@ public class IsolateViNode implements ViNode {
 	}
 
 	private class ConfigProxy implements ViConfigurable {
+
+		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
 
 		@Override
 		public void setProp(String propName, String value) {

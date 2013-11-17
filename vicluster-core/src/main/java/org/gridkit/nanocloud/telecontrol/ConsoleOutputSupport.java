@@ -108,7 +108,7 @@ public class ConsoleOutputSupport implements PragmaHandler {
 				mp.bindStdErr(cms);
 			}
 			wc.setProp(mk, cms);
-			wc.setProp(ViConf.ACTIVATED_FINALIZER_HOOK + mk, CloudContext.Helper.reflectionFinalizer(cms, "close"));
+			wc.setProp(ViConf.ACTIVATED_FINALIZER_HOOK + mk, CloudContext.Helper.closeableFinalizer(cms));
 		}
 		return cms;
 	}

@@ -28,6 +28,7 @@ import org.gridkit.vicluster.Hooks;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViExecutor;
+import org.gridkit.vicluster.ViExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -55,10 +56,14 @@ class ViEngineNode implements ViNode {
 	}
 
 	@Override
+	public <X> X x(ViExtender<X> extention) {
+		return extention.wrap(this);
+	}
+	
+	@Override
 	public void touch() {
 		// do nothing
 	}
-	
 	
 	public void exec(Runnable task) {
 		execProxy.exec(task);

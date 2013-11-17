@@ -23,16 +23,12 @@ import java.util.Map;
  */
 public interface ViConfigurable {
 
+	public <X> X x(ViExtender<X> extention);
+	
 	public void setProp(String propName, String value);
 	
 	public void setProps(Map<String, String> props);
 	
-//	/**
-//	 * SPI communication method.<br/>
-//	 * Queries runtime configuration element.
-//	 */
-//	public Object spiGet(String key);
-
 	/**
 	 * SPI communication method.<br/>
 	 * Update runtime configuration element.
@@ -59,4 +55,45 @@ public interface ViConfigurable {
 	 */
 	public void addShutdownHook(String id, Runnable hook, boolean override);
 	
+	
+	public static abstract class Delegate implements ViConfigurable {
+		
+		protected abstract ViConfigurable getConfigurable();
+		
+		public <X> X x(ViExtender<X> extention) {
+			return getConfigurable().x(extention);
+		}
+
+		public void setProp(String propName, String value) {
+			getConfigurable().setProp(propName, value);
+		}
+
+		public void setProps(Map<String, String> props) {
+			getConfigurable().setProps(props);
+		}
+
+		public void setConfigElement(String key, Object value) {
+			getConfigurable().setConfigElement(key, value);
+		}
+
+		public void setConfigElements(Map<String, Object> config) {
+			getConfigurable().setConfigElements(config);
+		}
+
+		public void addStartupHook(String id, Runnable hook) {
+			getConfigurable().addStartupHook(id, hook);
+		}
+
+		public void addShutdownHook(String id, Runnable hook) {
+			getConfigurable().addShutdownHook(id, hook);
+		}
+
+		public void addStartupHook(String id, Runnable hook, boolean override) {
+			getConfigurable().addStartupHook(id, hook, override);
+		}
+
+		public void addShutdownHook(String id, Runnable hook, boolean override) {
+			getConfigurable().addShutdownHook(id, hook, override);
+		}
+	}
 }

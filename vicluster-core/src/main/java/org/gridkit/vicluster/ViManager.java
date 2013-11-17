@@ -282,6 +282,11 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
+		
+		@Override
 		public void setProp(String propName, String value) {
 			ensureAlive();
 			config.setProp(propName, value);
@@ -719,6 +724,11 @@ public class ViManager implements ViNodeSet {
 			this.regEx = GlobHelper.translate(pattern, ".");
 		}
 		
+		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
+		
 		public boolean match(ManagedNode node) {
 			return ViManager.match(regEx, node);
 		}
@@ -901,6 +911,11 @@ public class ViManager implements ViNodeSet {
 		public ProxyViNode(String name, ViNode node) {
 			this.name = name;
 			this.node = node;
+		}
+		
+		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
 		}
 		
 		@Override

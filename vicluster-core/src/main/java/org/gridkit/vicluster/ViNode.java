@@ -64,6 +64,11 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 		}
 		
 		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
+		
+		@Override
 		public void setProp(String propName, String value) {
 			delegate.setProp(propName, value);
 		}

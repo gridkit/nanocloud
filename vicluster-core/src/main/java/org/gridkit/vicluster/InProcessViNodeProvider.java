@@ -55,6 +55,11 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 		}
 
 		@Override
+		public <X> X x(ViExtender<X> extention) {
+			return extention.wrap(this);
+		}
+
+		@Override
 		public String getProp(String propName) {
 			return isolate.getProp(propName);
 		}

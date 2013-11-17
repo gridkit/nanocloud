@@ -2,6 +2,7 @@ package org.gridkit.vicluster;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.util.List;
 import java.util.Map;
 
@@ -10,14 +11,22 @@ import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.vicluster.ViConfigurable.Delegate;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
+import org.gridkit.zeroio.WriterOutputStream;
 
 public class ViConf extends GenericConfig implements ViSpiConfig {
 
+	
 	public static final String NODE_NAME = "node:name";
 	public static final String NODE_TYPE = "node:type";
+	
+	public static final String NODE_TYPE__LOCAL = ViProps.NODE_TYPE_LOCAL;
+	public static final String NODE_TYPE__ISOLATED = ViProps.NODE_TYPE_ISOLATE;
+	public static final String NODE_TYPE__REMOTE = ViProps.NODE_TYPE_REMOTE;
+	
 	public static final String RUNTIME_PID = "runtime:pid";
 	public static final String RUNTIME_HOST = "runtime:host";
 	public static final String RUNTIME_EXIT_CODE = "runtime:exitCode";
@@ -279,5 +288,78 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@SuppressWarnings("unchecked")
 	public <T> T get(String key) {
 		return (T) config.get(key);
+	}
+	
+	public static class Console extends Delegate {
+		
+		private ViConfigurable conf;
+
+		public static Console at(ViConfigurable conf) {
+			return new Console(conf);
+		}
+		
+		public Console(ViConfigurable conf) {
+			this.conf = conf;
+		}
+
+		@Override
+		protected ViConfigurable getConfigurable() {
+			return conf;
+		}
+
+		public Console write(String text) {
+			// TODO not implemented
+			return this;
+		}
+
+		public Console bindOut(OutputStream os) {
+			conf.setConfigElement(CONSOLE_STD_OUT, os);
+			return this;
+		}
+
+		public Console bindOut(Writer writer) {
+			conf.setConfigElement(CONSOLE_STD_OUT, new WriterOutputStream(writer));
+			return this;
+		}
+
+		public Console echoOut(boolean echo) {
+			conf.setConfigElement(CONSOLE_STD_OUT_ECHO, String.valueOf(echo));
+			return this;			
+		}
+		
+		public Console bindErr(OutputStream os) {
+			conf.setConfigElement(CONSOLE_STD_ERR, os);
+			return this;			
+		}
+
+		public Console bindErr(Writer writer) {
+			conf.setConfigElement(CONSOLE_STD_ERR, new WriterOutputStream(writer));
+			return this;			
+		}
+
+		public Console echoErr(boolean echo) {
+			conf.setConfigElement(CONSOLE_STD_ERR_ECHO, String.valueOf(echo));
+			return this;						
+		}
+
+		public Console echoPrefix(String prefix) {
+			conf.setConfigElement(CONSOLE_ECHO_PREFIX, prefix);
+			return this;			
+		}
+
+		public Console flush() {
+			conf.setConfigElement(CONSOLE_FLUSH, "");
+			return this;						
+		}
+
+		public Console closeIn() {
+			// TODO implement
+			return this;						
+		}
+
+		public Console silentShutdown(boolean silent) {
+			conf.setConfigElement(CONSOLE_SILENT_SHUTDOWN, String.valueOf(silent));
+			return this;
+		}
 	}
 }

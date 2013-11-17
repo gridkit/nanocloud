@@ -1,10 +1,11 @@
 package org.gridkit.nanocloud.telecontrol.ssh;
 
+import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
-import org.gridkit.vicluster.telecontrol.LocalNodeTypeHandler;
+import org.gridkit.vicluster.telecontrol.GenericNodeTypeHandler;
 
-public class RemoteNodeTypeHandler extends LocalNodeTypeHandler {
+public class RemoteNodeTypeHandler extends GenericNodeTypeHandler {
 
 	@Override
 	protected String defaultJavaExecCmd(QuorumGame game) {
@@ -16,6 +17,12 @@ public class RemoteNodeTypeHandler extends LocalNodeTypeHandler {
 		super.initExtraConfigurationRules(game);
 		// TODO rule or intercepter?
 		game.rerunOnQuorum(new HostConfigurationInitializer.Runner());
+	}
+
+	@Override
+	protected HostControlConsole createControlConsole(QuorumGame game) {
+		// console would be create via rule
+		return null;
 	}
 
 	@Override
