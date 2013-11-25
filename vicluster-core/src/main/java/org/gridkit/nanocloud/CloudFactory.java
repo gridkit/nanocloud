@@ -1,10 +1,11 @@
 package org.gridkit.nanocloud;
 
+import org.gridkit.nanocloud.telecontrol.LocalNodeTypeHandler;
+import org.gridkit.nanocloud.telecontrol.isolate.IsolateNodeTypeHandler;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConf.Console;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViManager;
-import org.gridkit.vicluster.telecontrol.LocalNodeTypeHandler;
 import org.gridkit.vicluster.telecontrol.jvm.ViEngineNodeProvider;
 
 public class CloudFactory {	
@@ -48,7 +49,7 @@ public class CloudFactory {
 	}
 
 	private static void initIsolateTypeHandler(Cloud cloud) {
-		// TODO Implement		
+		addType(cloud, ViConf.NODE_TYPE__ISOLATE, new IsolateNodeTypeHandler());		
 	}
 
 	private static void initLocalTypeHandler(Cloud cloud) {

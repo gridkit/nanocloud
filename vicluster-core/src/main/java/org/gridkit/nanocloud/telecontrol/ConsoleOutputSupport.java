@@ -54,6 +54,12 @@ public class ConsoleOutputSupport implements PragmaHandler {
 		else if (ViConf.CONSOLE_STD_ERR_ECHO.equals(key)) {
 			setOutputPipeEcho(engine, wc, "err", toBoolean(value));
 		}
+		else if (ViConf.CONSOLE_STD_OUT_ECHO_STREAM.equals(key)) {
+			setOutputPipeEchoStream(engine, wc, "out", new PrintStream((OutputStream) value));
+		}
+		else if (ViConf.CONSOLE_STD_ERR_ECHO_STREAM.equals(key)) {
+			setOutputPipeEchoStream(engine, wc, "err", new PrintStream((OutputStream) value));
+		}
 		else if (ViConf.CONSOLE_ECHO_PREFIX.equals(key)) {
 			setEchoPrefix(engine, wc, "out", (String)value);
 			setEchoPrefix(engine, wc, "err", (String)value);
@@ -82,6 +88,11 @@ public class ConsoleOutputSupport implements PragmaHandler {
 	private void setOutputPipeEcho(ViEngine engine, WritableSpiConfig wc, String stream, boolean enabled) {
 		ConsoleMultiplexorStream cms = ensureStreamMux(engine, wc, stream);
 		((WrapperPrintStream)cms.outs[0]).silence = !enabled;
+	}
+
+	private void setOutputPipeEchoStream(ViEngine engine, WritableSpiConfig wc, String stream, PrintStream ps) {
+		ConsoleMultiplexorStream cms = ensureStreamMux(engine, wc, stream);
+		((WrapperPrintStream)cms.outs[0]).setPrintStream(ps);
 	}
 
 	private void setEchoPrefix(ViEngine engine, WritableSpiConfig wc, String stream, String prefix) {
@@ -300,6 +311,10 @@ public class ConsoleOutputSupport implements PragmaHandler {
 			this.printStream = printStream;
 			this.buffer = new ByteArrayOutputStream();
 			this.ignoreClose = ignoreClose;
+		}
+		
+		public void setPrintStream(PrintStream ps) {
+			this.printStream = ps;
 		}
 		
 		private void dumpBuffer() throws IOException {

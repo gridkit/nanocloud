@@ -24,7 +24,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String NODE_TYPE = "node:type";
 	
 	public static final String NODE_TYPE__LOCAL = ViProps.NODE_TYPE_LOCAL;
-	public static final String NODE_TYPE__ISOLATED = ViProps.NODE_TYPE_ISOLATE;
+	public static final String NODE_TYPE__ISOLATE = ViProps.NODE_TYPE_ISOLATE;
 	public static final String NODE_TYPE__REMOTE = ViProps.NODE_TYPE_REMOTE;
 	
 	public static final String RUNTIME_PID = "runtime:pid";
@@ -33,8 +33,12 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String RUNTIME_EXIT_CODE_FUTURE = "runtime:exitCode.future";
 	public static final String CONSOLE_STD_IN = "console:stdIn";
 	public static final String CONSOLE_STD_OUT_ECHO = "console:stdOut.echo";
+	/** Overrides stream for echo, introduced to support Isolate nodes */
+	public static final String CONSOLE_STD_OUT_ECHO_STREAM = "console:stdOut.echo.stream";
 	public static final String CONSOLE_STD_OUT = "console:stdOut";
 	public static final String CONSOLE_STD_ERR_ECHO = "console:stdErr.echo";
+	/** Overrides stream for echo, introduced to support Isolate nodes */
+	public static final String CONSOLE_STD_ERR_ECHO_STREAM = "console:stdErr.echo.stream";
 	public static final String CONSOLE_STD_ERR = "console:stdErr";
 	public static final String CONSOLE_ECHO_PREFIX = "console:echo-prefix";
 	public static final String CONSOLE_FLUSH = "console:flush";

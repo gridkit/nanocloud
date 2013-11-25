@@ -1,10 +1,9 @@
-package org.gridkit.vicluster.telecontrol;
+package org.gridkit.nanocloud.telecontrol;
 
 import java.io.File;
 
-import org.gridkit.nanocloud.telecontrol.HostControlConsole;
-import org.gridkit.nanocloud.telecontrol.LocalControlConsole;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
+import org.gridkit.vicluster.telecontrol.GenericNodeTypeHandler;
 
 public class LocalNodeTypeHandler extends GenericNodeTypeHandler {
 	
@@ -17,5 +16,4 @@ public class LocalNodeTypeHandler extends GenericNodeTypeHandler {
 	protected HostControlConsole createControlConsole(QuorumGame game) {
 		return getCloudSingleton(game, LocalControlConsole.class, "terminate");
 	}
-
 }

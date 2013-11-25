@@ -116,8 +116,8 @@ public class Isolate {
 					if (i == null) {
 						return rootOut;
 					}
-					else {
-						return i.stdOut;
+					else {						
+						return INSIDE.get() == Boolean.TRUE ? rootOut : i.stdOut;
 					}
 				}
 			};
@@ -130,7 +130,7 @@ public class Isolate {
 						return rootErr;
 					}
 					else {
-						return i.stdErr;
+						return INSIDE.get() == Boolean.TRUE ? rootErr : i.stdErr;
 					}
 				}
 			};
@@ -153,6 +153,14 @@ public class Isolate {
 			System.setErr(mErr);
 			System.setProperties(mProps);
 		}
+	}
+	
+	public static PrintStream getRootStdOut() {
+		return Multiplexer.rootOut;
+	}
+
+	public static PrintStream getRootStdErr() {
+		return Multiplexer.rootErr;
 	}
 	
 	public static Isolate currentIsolate() {
@@ -261,6 +269,23 @@ public class Isolate {
 		return stdErr;
 	}
 	
+	/**
+	 * Replace default wrapper print stream for stdOut.
+	 */
+	public void replaceSdtOut(PrintStream stdOut) {
+		this.stdOut = stdOut;		
+	}
+
+	/**
+	 * Replace default wrapper print stream for stdErr.
+	 */
+	public void replaceSdtErr(PrintStream stdErr) {
+		this.stdErr = stdErr;
+	}
+	
+	/**
+	 * Silence default print streams. Has no effect if print streams were replaced.
+	 */
 	public void disableOutput() {
 		wrpOut.setSilenced(true);
 		wrpErr.setSilenced(true);
@@ -479,7 +504,7 @@ public class Isolate {
 	 */
 	@SuppressWarnings("rawtypes")
 	public void execNoMarshal(Runnable task) {
-		CallableWorkUnit wu = new CallableWorkUnit((Runnable) convertIn(task));
+		CallableWorkUnit wu = new CallableWorkUnit(task);
 		process(wu);
 	}
 	
@@ -533,8 +558,13 @@ public class Isolate {
 		return new IsolateFuture<V>(future);
 	}
 	
+	/**
+	 * Translates object in in-Isolate form.
+	 * 
+	 * @deprecated for advanced use
+	 */
 	@SuppressWarnings("unchecked")
-	protected <T> Object convertIn(T obj) {
+	public <T> Object convertIn(T obj) {
 		if (obj != null && obj.getClass() == VoidCallableWrapper.class) {
 			// special hack for void callable
 			return new VoidCallableWrapper((VoidCallable)convertIn(((VoidCallableWrapper)obj).callable));
@@ -2070,116 +2100,364 @@ public class Isolate {
 	
 	private static abstract class PrintStreamMultiplexor extends PrintStream {
 		
+		protected ThreadLocal<Boolean> INSIDE = new ThreadLocal<Boolean>();
+		
 		protected abstract PrintStream resolve();
 		
 		public PrintStreamMultiplexor() {
 			super(new ByteArrayOutputStream(8));
 		}
 		
-		public int hashCode() {
-			return resolve().hashCode();
-		}
 		public void write(byte[] b) throws IOException {
-			resolve().write(b);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.write(b);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
-		public boolean equals(Object obj) {
-			return resolve().equals(obj);
-		}
-		public String toString() {
-			return resolve().toString();
-		}
+
 		public void flush() {
-			resolve().flush();
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.flush();
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+
 		public void close() {
-			resolve().close();
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.close();
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public boolean checkError() {
-			return resolve().checkError();
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.checkError();
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void write(int b) {
-			resolve().write(b);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.write(b);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void write(byte[] buf, int off, int len) {
-			resolve().write(buf, off, len);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.write(buf, off, len);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(boolean b) {
-			resolve().print(b);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(b);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(char c) {
-			resolve().print(c);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(c);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(int i) {
-			resolve().print(i);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(i);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(long l) {
-			resolve().print(l);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(l);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(float f) {
-			resolve().print(f);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(f);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(double d) {
-			resolve().print(d);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(d);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(char[] s) {
-			resolve().print(s);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(s);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(String s) {
-			resolve().print(s);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(s);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void print(Object obj) {
-			resolve().print(obj);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.print(obj);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println() {
-			resolve().println();
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println();
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(boolean x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(char x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(int x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(long x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(float x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(double x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(char[] x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(String x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public void println(Object x) {
-			resolve().println(x);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				resolve.println(x);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream printf(String format, Object... args) {
-			return resolve().printf(format, args);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.printf(format, args);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream printf(Locale l, String format, Object... args) {
-			return resolve().printf(l, format, args);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.printf(l, format, args);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream format(String format, Object... args) {
-			return resolve().format(format, args);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.format(format, args);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream format(Locale l, String format, Object... args) {
-			return resolve().format(l, format, args);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.format(l, format, args);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream append(CharSequence csq) {
-			return resolve().append(csq);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.append(csq);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream append(CharSequence csq, int start, int end) {
-			return resolve().append(csq, start, end);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.append(csq, start, end);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
+		
 		public PrintStream append(char c) {
-			return resolve().append(c);
+			PrintStream resolve = resolve();
+			INSIDE.set(true);
+			try {
+				return resolve.append(c);
+			}
+			finally {
+				INSIDE.set(false);
+			}
 		}
 	}
 	

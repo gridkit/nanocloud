@@ -253,7 +253,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		
 	}
 	
-	// TODO shutdown sequence is still fish
+	// TODO shutdown sequence is still fishy
 	private static class ControlledSession implements ManagedProcess, ProcessHandler, SocketHandler {
 
 		RemoteExecutionSession session;

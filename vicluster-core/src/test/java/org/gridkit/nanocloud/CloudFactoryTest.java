@@ -13,7 +13,13 @@ import org.junit.Test;
 
 public class CloudFactoryTest {
 
-	private Cloud cloud = CloudFactory.createCloud();
+	public Cloud cloud = initCloud();
+	
+	public Cloud initCloud() {
+		Cloud cloud = CloudFactory.createCloud();
+		ViProps.at(cloud.node("**")).setLocalType();
+		return cloud;
+	}
 	
 	@After
 	public void dropCloud() {
@@ -23,7 +29,6 @@ public class CloudFactoryTest {
 	@Test
 	public void ping_local_node() {
 		ViNode node = cloud.node("test");
-		ViProps.at(node).setLocalType();
 		node.touch();
 		String r = node.exec(new Callable<String>() {
 			@Override
@@ -34,14 +39,11 @@ public class CloudFactoryTest {
 		});
 
 		Assert.assertEquals("ping", r);
-		
-		cloud.shutdown();
 	}
 	
 	@Test
 	public void capture_console_local_node() {
 		ViNode node = cloud.node("test");
-		ViProps.at(node).setLocalType();
 		node.touch();
 		
 		StringWriter outwriter = new StringWriter();
