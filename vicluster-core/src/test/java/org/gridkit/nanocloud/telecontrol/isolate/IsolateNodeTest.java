@@ -29,6 +29,7 @@ public class IsolateNodeTest {
 			@Override
 			public String call() {
 				System.out.println("Hallo world!");
+				System.out.println("My classloader is " + getClass().getClassLoader());
 				return"ping";
 			}
 		});

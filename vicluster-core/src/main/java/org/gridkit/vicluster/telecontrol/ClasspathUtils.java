@@ -57,6 +57,19 @@ public class ClasspathUtils {
 		return listCurrentClasspath(classLoader);
 	}
 
+	public static ClassLoader getNearestSystemClassloader(ClassLoader cl) {
+		while(cl != null) {
+			if (cl instanceof URLClassLoader) {
+				if (cl.getClass().getName().endsWith("$ExtClassLoader")) {
+					return cl;
+				}
+			}
+			cl = cl.getParent();			
+		}
+		
+		return null;
+	}
+	
 	public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
 		List<URL> result = new ArrayList<URL>();
 		while(true) {

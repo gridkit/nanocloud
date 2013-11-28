@@ -244,6 +244,29 @@ public class Isolate {
 		// TODO - remove once proper marshaling is implemented
 		exclude(VoidCallable.class);
 	}
+
+	/** 
+	 * This constructor is added to provide consistent classpath rule semantic across ViNodes.
+	 * 
+	 * URLs from parent classloaders are ignored as resources.
+	 * Resources are searched in
+	 * - provided list of URLs
+	 * - baseResourceClassLoader
+	 *  
+	 * @param name
+	 * @param resourceBaseClassloader
+	 * @param classpath
+	 */
+	public Isolate(String name, ClassLoader resourceBaseClassloader, List<URL> classpath) {
+		this(name);
+		if (resourceBaseClassloader == null) {
+			throw new NullPointerException("resourceBaseClassloader is null");
+		}
+		cl.resourceBaseClassloader = resourceBaseClassloader;
+		for(URL u: classpath) {
+			cl.addToClasspath(u);
+		}
+	}
 	
 	public String getName() {
 		return name;
@@ -1617,22 +1640,23 @@ public class Isolate {
 	
 	private class IsolatedClassloader extends ClassLoader {
 		
-		private ClassLoader baseClassloader;
+		protected ClassLoader baseClassloader;
+		protected ClassLoader resourceBaseClassloader;
 		
-		private IsolationRuleSet rules;
+		protected IsolationRuleSet rules;
 				
-		private List<URL> externalPaths = new ArrayList<URL>();
-		private URLClassLoader cpExtention;
-		private List<String> forbidenPaths = new ArrayList<String>();
+		protected List<URL> externalPaths = new ArrayList<URL>();
+		protected URLClassLoader cpExtention;
+		protected List<String> forbidenPaths = new ArrayList<String>();
 		
-		private ProtectionDomain isolateDomain;
-		private Map<URL, ProtectionDomain> domainCache = new HashMap<URL, ProtectionDomain>();
+		protected ProtectionDomain isolateDomain;
+		protected Map<URL, ProtectionDomain> domainCache = new HashMap<URL, ProtectionDomain>();
 		
-		private boolean shouldDecorateURLs() {
+		protected boolean shouldDecorateURLs() {
 			return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.class-source-decoration"));
 		}
 
-		private boolean shouldTraceIsolation() {
+		protected boolean shouldTraceIsolation() {
 			return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.trace-classes"));
 		}
 		
@@ -1719,7 +1743,12 @@ public class Isolate {
 				}
 			}
 			
-			en = baseClassloader.getResources(name);
+			if (resourceBaseClassloader != null) {
+				en = resourceBaseClassloader.getResources(name);
+			}
+			else {
+				en = baseClassloader.getResources(name);
+			}
 			
 			while(en.hasMoreElements()) {
 				r = en.nextElement();
@@ -2015,6 +2044,10 @@ public class Isolate {
 			} catch (MalformedURLException e) {
 				throw new RuntimeException(e);
 			}
+		}
+		
+		public String toString() {
+			return "IsolateClassloader[" + name + "]";
 		}
 	}
 

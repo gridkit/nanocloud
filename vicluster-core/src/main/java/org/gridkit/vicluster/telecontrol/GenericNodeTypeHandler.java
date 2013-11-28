@@ -69,7 +69,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 	protected abstract String defaultJavaExecCmd(QuorumGame game);
 
 	protected Interceptor createClasspathBuilder(QuorumGame game) {
-		return new JvmClasspathReplicaBuilder();
+		return new ClasspathReplicaBuilder();
 	}
 
 	protected Interceptor createJvmArgumentsBuilder(QuorumGame game) {
@@ -124,9 +124,9 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		}
 	}
 	
-	public static class JvmClasspathReplicaBuilder extends IdempotentConfigBuilder<List<ClasspathEntry>> {
+	public static class ClasspathReplicaBuilder extends IdempotentConfigBuilder<List<ClasspathEntry>> {
 
-		public JvmClasspathReplicaBuilder() {
+		public ClasspathReplicaBuilder() {
 			super(ViConf.SPI_JVM_CLASSPATH);
 		}
 
@@ -143,7 +143,12 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 				else {
 					List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
 					
-					for(String change: tweaks.values()) {
+					for(String k: tweaks.keySet()) {
+						String change = tweaks.get(k);
+// TODO ?
+//						if (change.trim().length() == 0) {
+//							change = k.substring(ViConf.CLASSPATH_TWEAK.length());
+//						}
 						if (change.startsWith("+")) {
 							String cpe = normalize(change.substring(1));
 							addEntry(entries, cpe);

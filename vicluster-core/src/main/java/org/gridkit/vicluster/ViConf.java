@@ -3,6 +3,8 @@ package org.gridkit.vicluster;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -365,5 +367,66 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			conf.setConfigElement(CONSOLE_SILENT_SHUTDOWN, String.valueOf(silent));
 			return this;
 		}
+	}
+	
+	public static class Classpath extends Delegate {
+		
+		private ViConfigurable conf;
+
+		public static Classpath at(ViConfigurable conf) {
+			return new Classpath(conf);
+		}
+		
+		public Classpath(ViConfigurable conf) {
+			this.conf = conf;
+		}
+
+		@Override
+		protected ViConfigurable getConfigurable() {
+			return conf;
+		}
+		
+		public Classpath add(URL url) {
+			return add(defaultName(url), url);
+		}
+
+		public Classpath add(String ruleName, URL url) {
+			checkURL(url);
+			conf.setProp(CLASSPATH_TWEAK + ruleName, "+" + urlToString(url));
+			return this;
+		}
+
+		public Classpath remove(URL url) {			
+			return remove(defaultName(url), url);
+		}
+
+		public Classpath remove(String ruleName, URL url) {
+			checkURL(url);
+			conf.setProp(CLASSPATH_TWEAK + ruleName, "-" + urlToString(url));
+			return this;
+		}
+
+		private String defaultName(URL url) {
+			String name;
+			name = urlToString(url);
+			name = name.replace(':', '_');
+			name = name.replace('/', '_');
+			return name;
+		}
+
+		private String urlToString(URL url) {
+			try {
+				return url.toURI().toASCIIString();
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException(e);
+			}
+		}
+		
+		private void checkURL(URL url) {
+			if (!"file".equals(url.getProtocol())) {
+				throw new IllegalArgumentException("Only file protocol is supporeted for classpath");
+			}
+		}
+	
 	}
 }

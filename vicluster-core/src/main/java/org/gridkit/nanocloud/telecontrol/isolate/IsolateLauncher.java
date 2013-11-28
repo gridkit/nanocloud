@@ -6,6 +6,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
@@ -16,6 +19,8 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViSpiConfig;
 import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamPipe;
 import org.gridkit.zeroio.LookbackOutputStream;
@@ -31,9 +36,20 @@ class IsolateLauncher implements ProcessLauncher {
 		
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
+		List<Classpath.ClasspathEntry> cp = ctx.getJvmClasspath();
 		
-		Isolate i = new Isolate(ctx.getNodeName());
-		// TODO classpath configuration
+		List<URL> urls = new ArrayList<URL>();
+		for(Classpath.ClasspathEntry ce: cp) {
+			urls.add(ce.getUrl());
+		}
+		
+		ClassLoader cl = ClasspathUtils.getNearestSystemClassloader(Thread.currentThread().getContextClassLoader());
+		if (cl == null) {
+			// TODO this most likely a bug, add "secret" property to override this issue
+			throw new RuntimeException("Library classloader is not found!");
+		}
+		
+		Isolate i = new Isolate(ctx.getNodeName(), cl, urls);
 		
 		IsolateSession session = new IsolateSession(i, rmiSession);
 		session.start();
