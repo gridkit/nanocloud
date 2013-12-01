@@ -1,8 +1,10 @@
 package org.gridkit.vicluster;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
@@ -390,20 +392,45 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return add(defaultName(url), url);
 		}
 
+		public Classpath add(String path) {
+			return add(pathToURL(path));
+		}
+
+		private URL pathToURL(String path) {
+			try {
+				File f = new File(path);
+				return f.toURI().toURL();
+			} catch (MalformedURLException e) {
+				throw new IllegalArgumentException(e.getMessage());
+			}
+		}
+
 		public Classpath add(String ruleName, URL url) {
 			checkURL(url);
 			conf.setProp(CLASSPATH_TWEAK + ruleName, "+" + urlToString(url));
 			return this;
 		}
 
+		public Classpath add(String ruleName, String path) {
+			return add(ruleName, path);
+		}
+		
 		public Classpath remove(URL url) {			
 			return remove(defaultName(url), url);
+		}
+
+		public Classpath remove(String path) {
+			return remove(pathToURL(path));
 		}
 
 		public Classpath remove(String ruleName, URL url) {
 			checkURL(url);
 			conf.setProp(CLASSPATH_TWEAK + ruleName, "-" + urlToString(url));
 			return this;
+		}
+
+		public Classpath remove(String ruleName, String path) {
+			return remove(ruleName, pathToURL(path));
 		}
 
 		private String defaultName(URL url) {

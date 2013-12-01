@@ -2,6 +2,7 @@ package org.gridkit.vicluster.telecontrol;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -150,11 +151,11 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 //							change = k.substring(ViConf.CLASSPATH_TWEAK.length());
 //						}
 						if (change.startsWith("+")) {
-							String cpe = normalize(change.substring(1));
+							String cpe = normalize(toURL(change.substring(1)));
 							addEntry(entries, cpe);
 						}
 						else if (change.startsWith("-")) {
-							String cpe = normalize(change.substring(1));
+							String cpe = normalize(toURL(change.substring(1)));
 							removeEntry(entries, cpe);
 						}
 					}
@@ -169,7 +170,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
 			ClasspathEntry entry = Classpath.getLocalEntry(path);
 			if (entry != null) {
-				entries.add(entry);
+				entries.add(0, entry);
 			}
 		}
 
@@ -182,6 +183,14 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 			}
 		}
 				
+		private URL toURL(String path) {
+			try {
+				return new URL(path);
+			} catch (MalformedURLException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
 		private String normalize(String path) {
 			try {
 				// normalize path entry if possible

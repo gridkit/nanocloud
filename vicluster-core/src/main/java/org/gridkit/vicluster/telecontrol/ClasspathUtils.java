@@ -91,6 +91,7 @@ public class ClasspathUtils {
 	}
 	
 	private static void addEntriesFromManifest(List<URL> list, URL url) {
+		// TODO eliminate manifest only classpaths
 		try {
 			InputStream is;
 			try {

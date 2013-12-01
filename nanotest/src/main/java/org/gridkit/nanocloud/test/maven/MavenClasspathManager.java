@@ -15,6 +15,8 @@
  */
 package org.gridkit.nanocloud.test.maven;
 
+import static org.gridkit.vicluster.ViX.CLASSPATH;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +42,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -169,7 +170,7 @@ public class MavenClasspathManager {
 				if (!file.exists()) {
 					throw new IllegalArgumentException("Artifact " + groupId + ":" + artifactId + ":" + version + " is not available");
 				}
-				node.setProp(JvmProps.CP_REMOVE + file.getPath(), file.getPath());
+				node.x(CLASSPATH).remove(file.getPath());
 			}
 			else {
 				throw new IllegalArgumentException("Bad URL " + url.toString());
@@ -196,7 +197,7 @@ public class MavenClasspathManager {
 				if (!file.exists()) {
 					throw new IllegalArgumentException("Artifact " + groupId + ":" + artifactId + ":" + version + " is not available");
 				}
-				node.setProp(JvmProps.CP_REMOVE + file.getPath(), file.getPath());
+				node.x(CLASSPATH).remove(file.getPath());
 			}
 			else {
 				throw new IllegalArgumentException("Bad URL " + url.toString());
@@ -220,7 +221,7 @@ public class MavenClasspathManager {
 				if (!file.exists()) {
 					throw new IllegalArgumentException("Artifact " + groupId + ":" + artifactId + ":" + version + " is not available");
 				}
-				node.setProp(JvmProps.CP_ADD + file.getPath(), file.getPath());
+				node.x(CLASSPATH).add(file.getPath());
 			}
 			else {
 				throw new IllegalArgumentException("Bad URL " + url.toString());
