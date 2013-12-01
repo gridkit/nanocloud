@@ -19,13 +19,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.gridkit.nanocloud.testutil.maven.MavenClasspathManager;
 import org.gridkit.vicluster.ViGroup;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
@@ -329,20 +327,20 @@ public class IsolateFeatureTest {
 		return marker;
 	}
 	
-	@Test(expected = NoClassDefFoundError.class)
-	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
-		ViNode node = createIsolateViHost("test-node");
-		
-		MavenClasspathManager.removeArtifactVersion(node, "junit", "junit");
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				// should throw NoClassDefFoundError because junit was removed from isolate classpath
-				Assert.assertTrue(true);
-			}
-		});		
-	}
+//	@Test(expected = NoClassDefFoundError.class)
+//	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
+//		ViNode node = createIsolateViHost("test-node");
+//		
+//		MavenClasspathManager.removeArtifactVersion(node, "junit", "junit");
+//		
+//		node.exec(new Runnable() {
+//			@Override
+//			public void run() {
+//				// should throw NoClassDefFoundError because junit was removed from isolate classpath
+//				Assert.assertTrue(true);
+//			}
+//		});		
+//	}
 	
 	@Test
 	public void test_annonimous_primitive_in_args() {

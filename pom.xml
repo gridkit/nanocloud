@@ -63,10 +63,17 @@
         <module>vicluster-core</module>
         <module>interceptor</module>
         <module>telecontrol-ssh</module>
+        <module>nanocloud</module>
+        <module>nanotest</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>nanocloud</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>vicluster-core</artifactId>
@@ -79,7 +86,7 @@
             </dependency>
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
-                <artifactId>vicluster-coherence</artifactId>
+                <artifactId>interceptor</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -90,6 +97,11 @@
             <dependency>
                 <groupId>org.gridkit.lab</groupId>
                 <artifactId>telecontrol-ssh</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridkit.lab</groupId>
+                <artifactId>nanotest</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

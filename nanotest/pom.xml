@@ -27,10 +27,10 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>telecontrol-ssh</artifactId>
+    <artifactId>nanotest</artifactId>
     <packaging>jar</packaging>
     <name>${project.groupId}::${project.artifactId}</name>
-    <description>Telecontrol SSH support</description>
+    <description>Main NanoCloud dependency</description>
     <url>http://code.google.com/p/gridkit</url>
 
     <licenses>
@@ -55,29 +55,21 @@
             <groupId>org.gridkit.lab</groupId>
             <artifactId>vicluster-core</artifactId>
         </dependency>
-        
+
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>telecontrol-ssh</artifactId>          
         </dependency>
 
         <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jzlib</artifactId>
-            <version>1.1.1</version>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>interceptor</artifactId>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <scope>provided</scope>
-            <optional>true</optional>            
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridkit.lab</groupId>
-            <artifactId>interceptor</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -2,15 +2,14 @@ package org.gridkit.nanocloud.telecontrol.isolate;
 
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
 
-import org.gridkit.nanocloud.telecontrol.LocalNodeTypeHandler;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConf.Console;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.jvm.ViEngineNodeProvider;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class IsolateNodeTest {

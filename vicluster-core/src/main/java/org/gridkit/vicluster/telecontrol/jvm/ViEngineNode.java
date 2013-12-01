@@ -39,13 +39,11 @@ import org.gridkit.vicluster.telecontrol.ManagedProcess;
  */
 class ViEngineNode implements ViNode {
 
-	private String name;
 	private ViEngine engine;
 	private ViExecutor execProxy;
 	
 	public ViEngineNode(ViEngine engine) {
 		this.engine = engine;
-		this.name = engine.getConfig().getNodeName();
 		
 		ManagedProcess mp = engine.getConfig().getManagedProcess();
 		if (mp == null) {
