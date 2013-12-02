@@ -8,7 +8,7 @@ import org.gridkit.zerormi.zlog.ZLogFactory;
 
 public class TunnelInitiatorTest extends LocalControlConsoleTest {
 
-	private LocalControlConsole lcon = new LocalControlConsole();
+	private LocalControlConsole lcon = new LocalControlConsole("./target/tmp-host");
 	private SimpleTunnelInitiator initiator = new SimpleTunnelInitiator(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java", "./target/tmp", ZLogFactory.getStdErrRootLogger());
 
 	@Override

@@ -171,7 +171,7 @@ public class LocalControlConsole implements HostControlConsole {
 		}
 		int n = 1;
 		while(sb.length() < 40 && n < cmd.length) {
-			sb.append(' ').append(cmd);
+			sb.append(' ').append(cmd[n++]);
 		}
 		if (sb.length() > 40) {
 			sb.setLength(40);
