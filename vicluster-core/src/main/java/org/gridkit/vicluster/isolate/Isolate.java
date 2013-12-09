@@ -99,59 +99,65 @@ public class Isolate {
 		private static Properties rootProperties;
 		
 		static {
-			
+	
 			// initializing LogManager outside of isolate
 			LogManager.getLogManager();
-			
-			System.err.println("Installing java.lang.System multiplexor");
+
+			boolean multiplex = !"true".equalsIgnoreCase(System.getProperty("gridkit.isolate.suppress.multiplexor", "false"));
 			
 			rootOut = System.out;
 			rootErr = System.err;
 			rootProperties = System.getProperties();
+
+			if (multiplex) { 
 			
-			PrintStream mOut = new PrintStreamMultiplexor() {
-				@Override
-				protected PrintStream resolve() {
-					Isolate i = ISOLATE.get();
-					if (i == null) {
-						return rootOut;
+				System.err.println("Installing java.lang.System multiplexor");
+				
+				
+				PrintStream mOut = new PrintStreamMultiplexor() {
+					@Override
+					protected PrintStream resolve() {
+						Isolate i = ISOLATE.get();
+						if (i == null) {
+							return rootOut;
+						}
+						else {						
+							return INSIDE.get() == Boolean.TRUE ? rootOut : i.stdOut;
+						}
 					}
-					else {						
-						return INSIDE.get() == Boolean.TRUE ? rootOut : i.stdOut;
+				};
+				
+				PrintStream mErr = new PrintStreamMultiplexor() {
+					@Override
+					protected PrintStream resolve() {
+						Isolate i = ISOLATE.get();
+						if (i == null) {
+							return rootErr;
+						}
+						else {
+							return INSIDE.get() == Boolean.TRUE ? rootErr : i.stdErr;
+						}
 					}
-				}
-			};
-			
-			PrintStream mErr = new PrintStreamMultiplexor() {
-				@Override
-				protected PrintStream resolve() {
-					Isolate i = ISOLATE.get();
-					if (i == null) {
-						return rootErr;
+				};
+				
+				@SuppressWarnings("serial")
+				Properties mProps = new PropertiesMultiplexor() {
+					@Override
+					protected Properties resolve() {
+						Isolate i = ISOLATE.get();
+						if (i == null) {
+							return rootProperties;
+						}
+						else {
+							return i.sysProps;
+						}
 					}
-					else {
-						return INSIDE.get() == Boolean.TRUE ? rootErr : i.stdErr;
-					}
-				}
-			};
-			
-			@SuppressWarnings("serial")
-			Properties mProps = new PropertiesMultiplexor() {
-				@Override
-				protected Properties resolve() {
-					Isolate i = ISOLATE.get();
-					if (i == null) {
-						return rootProperties;
-					}
-					else {
-						return i.sysProps;
-					}
-				}
-			};
-			
-			System.setOut(mOut);
-			System.setErr(mErr);
-			System.setProperties(mProps);
+				};
+				
+				System.setOut(mOut);
+				System.setErr(mErr);
+				System.setProperties(mProps);
+			}
 		}
 	}
 	

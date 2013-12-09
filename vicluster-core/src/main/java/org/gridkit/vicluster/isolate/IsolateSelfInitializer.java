@@ -34,6 +34,9 @@ public class IsolateSelfInitializer implements Runnable, Serializable {
 	@Override
 	public void run() {
 		Isolate isolate = Isolate.currentIsolate();
+		if (isolate == null) {
+			throw new RuntimeException("No isolate found");
+		}
 		apply(isolate);
 	}
 

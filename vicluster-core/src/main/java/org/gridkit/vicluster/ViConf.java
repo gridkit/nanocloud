@@ -86,6 +86,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_CLOUD_CONTEXT = "#spi:cloud-context";
 	public static final String SPI_KILL_SWITCH = "#spi:kill-switch";
 	public static final String SPI_EPITAPH = "#spi:epitaph";
+	public static final String SPI_ENABLE_INSTRUMENTATION = "#spi:enable-instrumentation";
 	public static final String SPI_REMOTING_SESSION = "#spi:remoting-session";
 	public static final String SPI_JVM_EXEC_CMD = JVM_EXEC_CMD; // TODO "#spi:jvm-exec-cmd";
 	public static final String SPI_JVM_ARGS = "#spi:jvm-args";

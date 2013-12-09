@@ -667,6 +667,12 @@ public interface ViEngine {
 		
 	}
 	
+	public interface BulkPargmaSetter extends PragmaHandler {
+
+		public void setAll(Map<String, Object> settings, ViEngine engine, WritableSpiConfig writableConfig);
+		
+	}
+	
 	public class InitTimePragmaHandler implements PragmaHandler {
 		
 		public Object get(String key, ViEngine engine) {

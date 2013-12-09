@@ -21,28 +21,35 @@ import java.util.concurrent.ExecutionException;
 
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
+import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nanocloud.interceptor.ViHookBuilder;
-import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
+import org.gridkit.vicluster.ViProps;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class InstrumentationFeatureTest {
 
-	ViManager cloud = new ViManager(new IsolateAwareNodeProvider());
+	Cloud cloud;
 	
-	private ViNode createIsolateViHost(String name) {
-		return cloud.node(name);
+	@Before
+	public void initCloud() {
+		cloud = CloudFactory.createCloud();
+		ViProps.at(cloud.node("**")).setIsolateType();
 	}
 	
 	@After
 	public void cleanIsolates() {
 		cloud.shutdown();
-		cloud = new ViManager(new IsolateViNodeProvider());
 	}
 
+	private ViNode createIsolateViHost(String name) {
+		return cloud.node(name);
+	}
+	
 	@Test
 	public void test_instrumentation_return_value() {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
