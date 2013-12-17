@@ -351,7 +351,7 @@ public class Isolate {
 
 	public void addClassRule(String className, boolean isolate) {
 		if (className.indexOf('$') >= 0) {
-			throw new IllegalArgumentException("You should provide top level class name");
+			throw new IllegalArgumentException("You should provide top level class name: " + className);
 		}
 		cl.addClassRule(className, isolate);
 	}

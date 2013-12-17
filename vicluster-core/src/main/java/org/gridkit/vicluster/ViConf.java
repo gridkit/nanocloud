@@ -14,6 +14,7 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViConfigurable.Delegate;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
@@ -86,7 +87,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_CLOUD_CONTEXT = "#spi:cloud-context";
 	public static final String SPI_KILL_SWITCH = "#spi:kill-switch";
 	public static final String SPI_EPITAPH = "#spi:epitaph";
-	public static final String SPI_ENABLE_INSTRUMENTATION = "#spi:enable-instrumentation";
+	public static final String SPI_INSTRUMENTATION_WRAPPER = "#spi:instrumentation_wrapper";
+	public static final String SPI_INSTRUMENTATION_WRAPPER_APPLIED = "#spi:instrumentation_wrapper_applied";
 	public static final String SPI_REMOTING_SESSION = "#spi:remoting-session";
 	public static final String SPI_JVM_EXEC_CMD = JVM_EXEC_CMD; // TODO "#spi:jvm-exec-cmd";
 	public static final String SPI_JVM_ARGS = "#spi:jvm-args";
@@ -249,6 +251,20 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@DefaultNull
 	public RemoteExecutionSession getRemotingSession() {
 		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_INSTRUMENTATION_WRAPPER)
+	@DefaultNull
+	public RemoteExecutionSessionWrapper getInstrumentationWrapper() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_INSTRUMENTATION_WRAPPER_APPLIED)
+	@DefaultNull
+	public boolean isInstrumentationWrapperApplied() {		 
+		return readString() == null ? false : readBoolean();
 	}
 	
 	@Override
@@ -455,6 +471,5 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 				throw new IllegalArgumentException("Only file protocol is supporeted for classpath");
 			}
 		}
-	
 	}
 }

@@ -6,6 +6,7 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
@@ -31,6 +32,10 @@ public interface ViSpiConfig {
 
 	public RemoteExecutionSession getRemotingSession();
 
+	public RemoteExecutionSessionWrapper getInstrumentationWrapper();
+
+	public boolean isInstrumentationWrapperApplied();
+	
 	public ProcessLauncher getProcessLauncher();
 
 	public HostControlConsole getControlConsole();

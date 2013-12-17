@@ -33,7 +33,7 @@ import org.junit.Test;
 
 public class InstrumentationFeatureTest {
 
-	Cloud cloud;
+	protected Cloud cloud;
 	
 	@Before
 	public void initCloud() {
@@ -42,11 +42,11 @@ public class InstrumentationFeatureTest {
 	}
 	
 	@After
-	public void cleanIsolates() {
+	public void dropCloud() {
 		cloud.shutdown();
 	}
 
-	private ViNode createIsolateViHost(String name) {
+	protected ViNode node(String name) {
 		return cloud.node(name);
 	}
 	
@@ -55,7 +55,7 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_return_value");
+		ViNode node = node("test_instrumentation_return_value");
 
 		ViHookBuilder
 			.newCallSiteHook(new LongReturnValueShifter(-111111))
@@ -80,7 +80,7 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_expection_fallthrough");
+		ViNode node = node("test_instrumentation_expection_fallthrough");
 		
 		ViHookBuilder
 		.newCallSiteHook(new LongReturnValueShifter(-111111))
@@ -112,7 +112,7 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_execution_prevention");
+		ViNode node = node("test_instrumentation_execution_prevention");
 		
 		ViHookBuilder
 		.newCallSiteHook()
@@ -135,7 +135,7 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_exception");
+		ViNode node = node("test_instrumentation_exception");
 		
 		ViHookBuilder
 		.newCallSiteHook()
@@ -178,7 +178,7 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = createIsolateViHost("test_instrumentation_exception");
+		ViNode node = node("test_instrumentation_exception");
 
 		addValueRule(node, "A", "a");
 		addValueRule(node, "B", "b");

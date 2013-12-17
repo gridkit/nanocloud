@@ -24,6 +24,7 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.CloudContext.ServiceKey;
@@ -575,6 +576,16 @@ public interface ViEngine {
 		public RemoteExecutionSession getRemotingSession() {
 			return getConfig().getRemotingSession();
 		}
+		
+		@Override
+		public RemoteExecutionSessionWrapper getInstrumentationWrapper() {
+			return getConfig().getInstrumentationWrapper();
+		}
+
+		@Override
+		public boolean isInstrumentationWrapperApplied() {
+			return getConfig().isInstrumentationWrapperApplied();
+		}
 
 		public String getJvmExecCmd() {
 			return getConfig().getJvmExecCmd();
@@ -705,7 +716,7 @@ public interface ViEngine {
 		
 		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
 			Interceptor hook = (Interceptor) value;
-			if (engine.isStarted()) {
+			if (engine.isStarted()) {				
 				ViExecutor exec = null;
 				ManagedProcess mp = engine.getConfig().getManagedProcess();
 				if (mp != null) {

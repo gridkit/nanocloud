@@ -221,8 +221,10 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		}
 	}
 	
-	private static class ConnectSocketConnector implements DuplexStreamConnector {
+	private static class ConnectSocketConnector implements DuplexStreamConnector, Serializable {
 
+		private static final long serialVersionUID = 20131217L;
+		
 		private final SocketAddress address;
 		
 		public ConnectSocketConnector(SocketAddress address) {

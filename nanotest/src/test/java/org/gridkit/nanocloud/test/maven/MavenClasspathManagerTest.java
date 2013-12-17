@@ -1,5 +1,7 @@
 package org.gridkit.nanocloud.test.maven;
 
+import static org.gridkit.nanocloud.test.maven.MavenClasspathConfig.MAVEN;
+
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
@@ -153,8 +155,8 @@ public class MavenClasspathManagerTest {
 		ViProps.at(cloud.node("**")).setLocalType();
 		try {
 			System.out.println("viconcurrent URL: " + MavenClasspathManager.getArtifactClasspathUrl("org.gridkit.lab", "viconcurrent"));				
-			ViNode node =cloud.node("viconcurrent-0.7.15");
-			MavenClasspathManager.replaceArtifactVersion(node, "org.gridkit.lab", "viconcurrent", "0.7.15");
+			ViNode node = cloud.node("viconcurrent-0.7.15");
+			node.x(MAVEN).replace("org.gridkit.lab", "viconcurrent", "0.7.15");
 			String version = node.exec(new Callable<String>() {
 				
 				@Override

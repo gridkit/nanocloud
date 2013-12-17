@@ -14,10 +14,14 @@ import org.gridkit.zerormi.hub.SlaveSpore;
  *  
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class IsolatedRmiSession implements RemoteExecutionSession {
+class IsolatedRemoteSession implements RemoteExecutionSession {
 
 	private RemoteExecutionSession nested;
 	
+	public IsolatedRemoteSession(RemoteExecutionSession nested) {
+		this.nested = nested;
+	}
+
 	@Override
 	public SlaveSpore getMobileSpore() {
 		return new IsolatedSpore(nested.getMobileSpore());
@@ -54,6 +58,7 @@ public class IsolatedRmiSession implements RemoteExecutionSession {
 			Isolate isolate = new Isolate("Spore");
 			isolate.exclude(DuplexStream.class, DuplexStreamConnector.class);
 			final SlaveSpore spore = this.spore;
+			isolate.start();
 			isolate.exec(new Runnable() {
 				@Override
 				public void run() {

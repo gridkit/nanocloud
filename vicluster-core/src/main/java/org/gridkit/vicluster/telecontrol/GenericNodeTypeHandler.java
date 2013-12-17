@@ -14,6 +14,8 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.ProcessSporeLauncher;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.nanocloud.telecontrol.ZeroRmiRemoteSession;
 import org.gridkit.vicluster.CloudContext;
 import org.gridkit.vicluster.CloudContext.Helper;
@@ -36,6 +38,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		initProcessLauncher(game);
 		
 		initRemoting(game);
+		initInstrumentationWrapper(game);
 		initProcessBootstrapper(game);
 		
 		return true;
@@ -50,6 +53,10 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 
 	protected void initRemoting(QuorumGame game) {
 		ViEngine.Core.addRule(game, createRemotingConfigurationRule());
+	}
+
+	protected void initInstrumentationWrapper(QuorumGame game) {
+		ViEngine.Core.addRule(game, createInstrumentationWrapperRule());
 	}
 
 	protected void initProcessLauncher(QuorumGame game) {
@@ -97,6 +104,10 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		return new ZeroRmiConfigurationRule();
 	}
 
+	protected InductiveRule createInstrumentationWrapperRule() {
+		return new InstrumentationWrapperRule();
+	}
+
 	protected InductiveRule createProcessBootstrapperRule() {
 		return new ProcessLauncherRule();
 	}
@@ -116,6 +127,30 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 				String nodeName = game.getStringProp(ViConf.NODE_NAME);
 				ZeroRmiRemoteSession session = new ZeroRmiRemoteSession(nodeName);
 				game.setProp(ViConf.SPI_REMOTING_SESSION, session);
+				game.unsetProp(ViConf.SPI_INSTRUMENTATION_WRAPPER_APPLIED);
+				
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
+	public static class InstrumentationWrapperRule implements InductiveRule {
+
+		@Override
+		public boolean apply(QuorumGame game) {
+			if (	game.getRemotingSession() != null
+				&&	game.getInstrumentationWrapper() != null
+				&&  !game.isInstrumentationWrapperApplied()) {
+			
+				RemoteExecutionSession session = game.getRemotingSession();
+				RemoteExecutionSessionWrapper wrapper = game.getInstrumentationWrapper();
+				RemoteExecutionSession ws = wrapper.wrap(session);
+				
+				game.setProp(ViConf.SPI_REMOTING_SESSION, ws);
+				game.unsetProp(ViConf.SPI_INSTRUMENTATION_WRAPPER_APPLIED);
 				
 				return true;
 			}
@@ -130,7 +165,6 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		public ClasspathReplicaBuilder() {
 			super(ViConf.SPI_JVM_CLASSPATH);
 		}
-
 		
 		@Override
 		protected List<ClasspathEntry> buildState(QuorumGame game) {

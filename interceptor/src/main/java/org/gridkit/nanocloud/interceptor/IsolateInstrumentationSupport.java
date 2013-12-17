@@ -13,6 +13,11 @@ import org.gridkit.lab.interceptor.Interceptor;
 import org.gridkit.nanocloud.instrumentation.ByteCodeTransformer;
 import org.gridkit.vicluster.isolate.Isolate;
 
+/**
+ * This class have to be public because is would be accessed from different classloader (but same package) class.
+ * 
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 public class IsolateInstrumentationSupport implements HookManager, ByteCodeTransformer {
 
 	private List<InstrumentationRule> allRules = new ArrayList<InstrumentationRule>();

@@ -49,7 +49,6 @@ class IsolateLauncher implements ProcessLauncher {
 			throw new RuntimeException("Library classloader is not found!");
 		}
 		
-		System.out.println("Classpath: " + urls);
 		Isolate i = new Isolate(ctx.getNodeName(), cl, urls);
 		
 		IsolateSession session = new IsolateSession(i, rmiSession);

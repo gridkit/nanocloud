@@ -1,9 +1,16 @@
 package org.gridkit.nanocloud.test.maven;
 
-import org.gridkit.vicluster.ViConfigurable;;
+import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.vicluster.ViExtender;
 
 public class MavenClasspathConfig extends ViConfigurable.Delegate {
 
+	public static final ViExtender<MavenClasspathConfig> MAVEN = new ViExtender<MavenClasspathConfig>() {
+		public MavenClasspathConfig wrap(ViConfigurable node) {
+			return new MavenClasspathConfig(node);
+		}
+	};
+	
 	private ViConfigurable delegate;
 	
 	public MavenClasspathConfig(ViConfigurable delegate) {

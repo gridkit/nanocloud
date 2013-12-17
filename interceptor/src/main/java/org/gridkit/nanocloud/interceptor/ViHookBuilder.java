@@ -30,9 +30,9 @@ import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
 import org.gridkit.util.concurrent.BlockingBarrier;
 import org.gridkit.util.concurrent.zerormi.ExportableBarrier;
+import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.isolate.Isolate;
-import org.gridkit.vicluster.isolate.IsolateProps;
 
 public class ViHookBuilder {
 
@@ -165,11 +165,8 @@ public class ViHookBuilder {
 				throw new IllegalArgumentException("You should specify at least target class or method name");
 			}
 			else {
-				// we do not want IsolateInstrumentationSupport to transform it self
-				IsolateProps.at(node).shareClass(IsolateInstrumentationSupport.class);
-				IsolateProps.at(node).shareClass(CutPoint.class);
-				IsolateProps.at(node).shareClass(Interceptor.class);
-				IsolateProps.at(node).shareClass(Interception.class);
+				// we need to setup node properly
+				node.setConfigElement(ViConf.HOOK + InstrumentationInitializer.INITIALIZER_NAME, InstrumentationInitializer.INSTANCE);
 				CallSiteCutPoint cp = new CallSiteCutPoint(makeClassNames(), methodName, makeSignature());
 				InstrumentationHookRule rule = new InstrumentationHookRule(cp, makeInterceptor());
 				node.addStartupHook(rule.toString(), rule);
