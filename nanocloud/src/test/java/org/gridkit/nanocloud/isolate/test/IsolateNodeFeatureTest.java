@@ -15,31 +15,26 @@
  */
 package org.gridkit.nanocloud.isolate.test;
 
+import static org.gridkit.vicluster.ViX.CLASSPATH;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.gridkit.lab.interceptor.Interception;
-import org.gridkit.lab.interceptor.Interceptor;
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.nanocloud.interceptor.ViHookBuilder;
-import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.isolate.IsolateProps;
-import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,7 +43,7 @@ import org.junit.Test;
 
 public class IsolateNodeFeatureTest {
 
-	private ViManager cloud;
+	private Cloud cloud;
 	
 	@Before
 	public void initCloud() {
@@ -305,7 +300,7 @@ public class IsolateNodeFeatureTest {
 		
 		URL jar = getClass().getResource("/marker-override.jar");
 		File path = new File(jar.toURI());
-		JvmProps.at(node).addClassPathElement(path.getAbsolutePath());
+		node.x(CLASSPATH).add(path.getAbsolutePath());
 		
 		node.exec(new Callable<Void>() {
 			
@@ -340,7 +335,7 @@ public class IsolateNodeFeatureTest {
 		String jarUrl = url.toString();
 		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));
 		jarUrl = jarUrl.substring("jar:".length());
-		JvmProps.at(node).removeClassPathElement(new File(new URI(jarUrl)).getAbsolutePath());
+		node.x(CLASSPATH).remove(new File(new URI(jarUrl)).getAbsolutePath());
 		
 		node.exec(new Runnable() {
 			@Override
@@ -382,227 +377,5 @@ public class IsolateNodeFeatureTest {
 
 	private boolean trueConst() {
 		return true & true;
-	}	
-	
-	@Test
-	public void test_instrumentation_return_value() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
-//		System.setProperty("gridkit.interceptor.trace", "true");
-		
-		ViNode node = cloud.node("test_annonimous_primitive_in_args");
-
-		ViHookBuilder
-			.newCallSiteHook(new LongReturnValueShifter(-111111))
-			.onTypes(System.class)
-			.onMethod("currentTimeMillis")
-			.apply(node);
-		
-		long time = System.currentTimeMillis();
-		
-		long itime = node.exec(new Callable<Long>() {
-			@Override
-			public Long call() throws Exception {
-				return System.currentTimeMillis();
-			}
-		});
-		
-		Assert.assertTrue("Time expected to be shifted back", itime < time);
-	}
-
-	@Test
-	public void test_instrumentation_expection_fallthrough() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
-//		System.setProperty("gridkit.interceptor.trace", "true");
-		
-		ViNode node = cloud.node("test_annonimous_primitive_in_args");
-		
-		ViHookBuilder
-		.newCallSiteHook(new LongReturnValueShifter(-111111))
-		.onTypes(IsolateNodeFeatureTest.class)
-		.onMethod("explode")
-		.apply(node);
-		
-		node.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				try {
-					explode("test");
-					Assert.fail("Exception expected");
-				}
-				catch(IllegalStateException e) {
-					Assert.assertEquals("test", e.getMessage());
-				}
-				return null;
-			}
-		});
-	}
-
-	private static long explode(String msg) {
-		throw new IllegalStateException(msg);
-	}
-	
-	@Test
-	public void test_instrumentation_execution_prevention() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
-//		System.setProperty("gridkit.interceptor.trace", "true");
-		
-		ViNode node = cloud.node("test_annonimous_primitive_in_args");
-		
-		ViHookBuilder
-		.newCallSiteHook()
-		.onTypes(System.class)
-		.onMethod("exit")
-		.doReturn(null)
-		.apply(node);
-		
-		node.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				System.exit(0);
-				return null;
-			}
-		});
-	}
-
-	@Test(expected=IllegalStateException.class)
-	public void test_instrumentation_exception() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
-//		System.setProperty("gridkit.interceptor.trace", "true");
-		
-		ViNode node = cloud.node("test_annonimous_primitive_in_args");
-		
-		ViHookBuilder
-		.newCallSiteHook()
-		.onTypes(System.class)
-		.onMethod("exit")
-		.doThrow(new IllegalStateException("Ka-Boom"))
-		.apply(node);
-		
-		node.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				System.exit(0);
-				return null;
-			}
-		});
-	}
-
-	private void addValueRule(ViNode node, Object key, Object value) {
-		ViHookBuilder
-		.newCallSiteHook()
-		.onTypes(IsolateNodeFeatureTest.class)
-		.onMethod("getSomething")
-		.matchParams(key)
-		.doReturn(value)
-		.apply(node);
-	}
-
-	private void addErrorRule(ViNode node, Object key, Throwable e) {
-		ViHookBuilder
-		.newCallSiteHook()
-		.onTypes(IsolateNodeFeatureTest.class)
-		.onMethod("getSomething")
-		.matchParams(key)
-		.doThrow(e)
-		.apply(node);
-	}
-	
-	@Test
-	public void test_instrumentation_handler_staking() {
-		System.setProperty("gridkit.isolate.trace-classes", "true");
-		System.setProperty("gridkit.interceptor.trace", "true");
-		
-		ViNode node = cloud.node("test_annonimous_primitive_in_args");
-
-		addValueRule(node, "A", "a");
-		addValueRule(node, "B", "b");
-		addValueRule(node, "B", "bb");
-		addErrorRule(node, "X", new IllegalStateException("Just for fun"));
-		
-		node.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-
-				Assert.assertEquals("a", getSomething("A"));
-				Assert.assertEquals("bb", getSomething("B"));
-				Assert.assertNull(getSomething("C"));
-				
-				try {
-					getSomething("X");
-					Assert.fail();
-				}
-				catch(IllegalStateException e) {
-					Assert.assertEquals("Just for fun", e.getMessage());
-				}
-				
-				return null;
-			}
-		});
-	}
-	
-	private static Object getSomething(Object key) {
-		return null;
-	}
-	
-	@Test
-	public void test_instrumentation_call_counter() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
-//		System.setProperty("gridkit.interceptor.trace", "true");
-		
-		ViNode node = cloud.node("test_instrumentation_exception");
-
-		AtomicLong callA = new AtomicLong();
-		AtomicLong callB = new AtomicLong();
-		
-		ViHookBuilder.newCallSiteHook()
-		.onTypes(IsolateNodeFeatureTest.class)
-		.onMethod("callA", new Class<?>[0])
-		.doCount(callA)
-		.apply(node);
-
-		ViHookBuilder.newCallSiteHook()
-		.onTypes(IsolateNodeFeatureTest.class)
-		.onMethod("callB", new Class<?>[0])
-		.doCount(callB)
-		.apply(node);
-		
-		node.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				
-				callA();
-				callB();
-				callA();
-				
-				return null;
-			}
-		});
-		
-		Assert.assertEquals(2, callA.get());
-		Assert.assertEquals(1, callB.get());
-	}
-	
-	private static void callA() {};
-
-	private static void callB() {};
-	
-	@SuppressWarnings("serial")
-	public static class LongReturnValueShifter implements Interceptor, Serializable {
-
-		private long shift;
-		
-		public LongReturnValueShifter(long shift) {
-			this.shift = shift;
-		}
-
-		@Override
-		public void handle(Interception hook) {
-			try {
-				Long value = (Long) hook.call();
-				hook.setResult(value + shift);
-			} catch (ExecutionException e) {
-				// fall though
-			}
-		}
-	}
+	}		
 }

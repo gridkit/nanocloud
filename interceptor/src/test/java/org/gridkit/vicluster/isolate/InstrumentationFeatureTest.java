@@ -18,6 +18,7 @@ package org.gridkit.vicluster.isolate;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
@@ -209,6 +210,49 @@ public class InstrumentationFeatureTest {
 	private static Object getSomething(Object key) {
 		return null;
 	}
+	
+	@Test
+	public void test_instrumentation_call_counter() {
+//		System.setProperty("gridkit.isolate.trace-classes", "true");
+//		System.setProperty("gridkit.interceptor.trace", "true");
+		
+		ViNode node = cloud.node("test_instrumentation_exception");
+
+		AtomicLong callA = new AtomicLong();
+		AtomicLong callB = new AtomicLong();
+		
+		ViHookBuilder.newCallSiteHook()
+		.onTypes(InstrumentationFeatureTest.class)
+		.onMethod("callA", new Class<?>[0])
+		.doCount(callA)
+		.apply(node);
+
+		ViHookBuilder.newCallSiteHook()
+		.onTypes(InstrumentationFeatureTest.class)
+		.onMethod("callB", new Class<?>[0])
+		.doCount(callB)
+		.apply(node);
+		
+		node.exec(new Callable<Void>() {
+			@Override
+			public Void call() throws Exception {
+				
+				callA();
+				callB();
+				callA();
+				
+				return null;
+			}
+		});
+		
+		Assert.assertEquals(2, callA.get());
+		Assert.assertEquals(1, callB.get());
+	}
+	
+	private static void callA() {};
+
+	private static void callB() {};
+	
 	
 	@SuppressWarnings("serial")
 	public static class LongReturnValueShifter implements Interceptor, Serializable {

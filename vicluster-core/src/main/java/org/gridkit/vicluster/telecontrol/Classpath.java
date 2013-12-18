@@ -30,8 +30,11 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.WeakHashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,23 +81,114 @@ public class Classpath {
 	}
 	
 	private static void fillClasspath(List<ClasspathEntry> classpath, Collection<URL> urls) {
-		// TODO jars located under JDK/JRE folder should be excluded
 		for(URL url: urls) {
-			try {
-				ClasspathEntry entry = newEntry(url);
-				if (entry == null) {
-					LOGGER.warn("Cannot copy URL content: " + url.toString());
+			if (!isIgnoredJAR(url)) {
+				try {
+					ClasspathEntry entry = newEntry(url);
+					if (entry == null) {
+						LOGGER.warn("Cannot copy URL content: " + url.toString());
+						continue;
+					}
+					classpath.add(entry);
+				}
+				catch(Exception e) {
+					LOGGER.warn("Cannot copy URL content: " + url.toString(), e);
 					continue;
 				}
-				classpath.add(entry);
-			}
-			catch(Exception e) {
-				LOGGER.warn("Cannot copy URL content: " + url.toString(), e);
-				continue;
 			}
 		}		
 	}
 
+	private static boolean isIgnoredJAR(URL url) {
+		try {
+			if ("file".equals(url.getProtocol())) {
+				File f = new File(url.toURI());
+				if (f.isFile()) {
+					if (belongs(JRE_ROOT, url)) {
+						// ignore JRE based jars, e.g. tools.jar
+						return true;
+					}
+					else if (f.getName().startsWith("surefire") && isManifestOnly(f)) {
+						// surefirebooter will interfere with classpath tweaking, exclude it
+						return true;
+					}
+				}
+			}
+		} catch (URISyntaxException e) {
+			// ignore
+		}
+		return false;
+	}
+
+	private static boolean isManifestOnly(File f) {
+		JarFile jar = null;
+		try {
+			jar = new JarFile(f);
+			Enumeration<JarEntry> en = jar.entries();
+			if (!en.hasMoreElements()) {
+				return false;
+			}
+			JarEntry je = en.nextElement();
+			if ("META-INF/".equals(je.getName())) {
+				if (!en.hasMoreElements()) {
+					return false;
+				}
+				je = en.nextElement();
+			}		
+			if (!"META-INF/MANIFEST.MF".equals(je.getName())) {
+				return false;
+			}		
+			return !en.hasMoreElements();
+		} catch (IOException e) {
+			return false;			
+		} finally {
+			if (jar != null) {
+				try {
+					jar.close();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
+		}
+	}
+
+	private static URL JRE_ROOT = getJreRoot();
+	
+	private static boolean belongs(URL base, URL derived) {
+		// TODO not exactly correct, but should work
+		return derived.toString().startsWith(base.toString());				
+	}
+	
+	private static URL getJavaHome() throws MalformedURLException {
+		return new File(System.getProperty("java.home")).toURI().toURL();			
+	}
+
+	// See Isolate
+	private static URL getJreRoot() {
+		try {
+			String jlo = ClassLoader.getSystemResource("java/lang/Object.class").toString();
+			String root = jlo;
+			if (root.startsWith("jar:")) {
+				root = root.substring("jar:".length());
+				int n = root.indexOf('!');
+				root = root.substring(0, n);
+				
+				if (root.endsWith("/rt.jar")) {
+					root = root.substring(0, root.lastIndexOf('/'));
+					if (root.endsWith("/lib")) {
+						root = root.substring(0, root.lastIndexOf('/'));
+						return new URL(root);
+					}
+				}
+			}
+			// fall back
+			return getJavaHome();
+		}
+		catch(MalformedURLException e) {
+			return null;
+		}
+	}
+	
 	private static ClasspathEntry newEntry(URL url) throws IOException, URISyntaxException {
 		ClasspathEntry entry = new ClasspathEntry();
 		entry.url = url;

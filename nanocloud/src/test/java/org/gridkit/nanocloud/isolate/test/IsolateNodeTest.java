@@ -15,8 +15,8 @@
  */
 package org.gridkit.nanocloud.isolate.test;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.isolate.Isolate;
@@ -29,7 +29,7 @@ import org.junit.Test;
 public class IsolateNodeTest {
 
 	
-	private ViManager cloud;
+	private Cloud cloud;
 	
 	@Before
 	public void initCloud() {

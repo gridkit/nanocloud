@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.nanocloud.isolate.test;
+package org.gridkit.vicluster.isolate;
 
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
@@ -21,22 +21,27 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nanocloud.interceptor.ViHookBuilder;
 import org.gridkit.util.concurrent.CyclicBlockingBarrier;
 import org.gridkit.util.concurrent.VectorFuture;
 import org.gridkit.vicluster.ViExecutor;
-import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 public class InstrumentationSymphonizingTest {
 
-	private ViManager cloud;
+	@ClassRule
+	public static Timeout TIMEOUT = new Timeout(600000);
+	
+	private Cloud cloud;
 	
 	@Before
 	public void initCloud() {
