@@ -21,9 +21,11 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 
+import org.gridkit.nanocloud.Cloud;
+
 public class ViHelper {
 	
-	public static void configure(ViManager manager, String filename) throws IOException {
+	public static void configure(Cloud manager, String filename) throws IOException {
 		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
 		if (is == null) {
 			is = new FileInputStream(filename);
@@ -32,7 +34,7 @@ public class ViHelper {
 	}
 
 	@SuppressWarnings("serial")
-	public static void configure(final ViManager manager, InputStream reader) throws IOException {
+	public static void configure(final Cloud manager, InputStream reader) throws IOException {
 		new Properties() {
 			@Override
 			public  Object put(Object key, Object value) {
@@ -52,7 +54,7 @@ public class ViHelper {
 		reader.close();
 	}
 
-	public static void configure(final ViManager manager, Iterable<Map.Entry<String, String>> props) {
+	public static void configure(final Cloud manager, Iterable<Map.Entry<String, String>> props) {
 		for(Map.Entry<String, String> prop : props) {
 			String skey = prop.getKey();
 			String svalue = prop.getValue();

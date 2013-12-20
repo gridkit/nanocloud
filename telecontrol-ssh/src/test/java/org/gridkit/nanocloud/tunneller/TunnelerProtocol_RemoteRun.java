@@ -5,9 +5,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeoutException;
 
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.TunnellerProtocolTest;
 import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
@@ -17,7 +17,7 @@ import org.junit.Test;
 
 public class TunnelerProtocol_RemoteRun {
 
-	public static ViNodeSet cloud = CloudFactory.createSimpleSshCloud();
+	public static Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
 	public static ViNode host;
 	
 	@BeforeClass

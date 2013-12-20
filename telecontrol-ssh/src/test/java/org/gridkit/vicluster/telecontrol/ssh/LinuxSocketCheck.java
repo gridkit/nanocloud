@@ -6,22 +6,21 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.vicluster.ViNodeSet;
+import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.gridkit.vicluster.VoidCallable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-
 import org.junit.Test;
 
 public class LinuxSocketCheck {
 
-	private ViNodeSet cloud;
+	private Cloud cloud;
 	
 	@Before
 	public void initCloud() {
-		cloud = CloudFactory.createSimpleSshCloud();
+		cloud = SimpleCloudFactory.createSimpleSshCloud();
 	}
 
 	@After

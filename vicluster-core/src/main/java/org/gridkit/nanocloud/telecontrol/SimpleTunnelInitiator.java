@@ -43,7 +43,10 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 	public HostControlConsole initTunnel(HostControlConsole console) {
 
 		String jversion = getJavaVersion(console);
-		logger.debug().log("Host JVM version is " + jversion);
+		if (jversion != null) {
+			verifyVersion(jversion);
+			logger.debug().log("Host JVM version is " + jversion);
+		}
 		
 		byte[] bootJar;
 		try {
@@ -105,6 +108,27 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 		return new CosnoleWrapper(new TunnellerControlConsole(conn, cachePath), proc);
 	}
 
+	private void verifyVersion(String jversion) {
+		String[] split = jversion.split("[.]");
+		if (split.length < 2) {
+			throw new IllegalArgumentException("Unsupported remote Java version: " + jversion);
+		}
+		int major = toInt(split[0]);
+		int minor = toInt(split[1]);
+		if (major < 1 || minor < 6) {
+			throw new IllegalArgumentException("Unsupported remote Java version: " + jversion);
+		}
+	}
+
+	private int toInt(String n) {
+		try {
+			return Integer.parseInt(n);
+		}
+		catch(NumberFormatException e) {
+			return -1;
+		}
+	}
+
 	private String[] tunnellerCommand(String jarpath) {
 		String[] cmd = new String[]{javaCmd, "-Xmx32m", "-Xms32m", "-cp", jarpath, Tunneller.class.getName()};
 		return cmd;
@@ -135,7 +159,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 				throw (Error)(e.getCause());
 			} 
 			else {
-				throw new RuntimeException(e.getCause());
+				throw new RuntimeException("Failed to start remote process", e.getCause());
 			}
 		}
 	}

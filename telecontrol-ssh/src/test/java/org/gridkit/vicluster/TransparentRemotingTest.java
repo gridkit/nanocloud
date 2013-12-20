@@ -20,13 +20,14 @@ import java.util.concurrent.Callable;
 
 import junit.framework.Assert;
 
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.junit.After;
 import org.junit.Test;
 
 public class TransparentRemotingTest {
 
-	private ViManager cloud = CloudFactory.createCloud();
+	private Cloud cloud = SimpleCloudFactory.createCloud();
 	
 	@After
 	public void dropCloud() {

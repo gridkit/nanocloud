@@ -23,7 +23,8 @@ import java.util.concurrent.Callable;
 
 import junit.framework.Assert;
 
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -33,7 +34,7 @@ public class CloudFactoryCheck {
 
 	private static String CONFIG = "~/nanocloud-testcluster.viconf";
 	
-	private ViManager manager; 
+	private Cloud manager; 
 
 	@After
 	public void dropNodes() {
@@ -50,7 +51,7 @@ public class CloudFactoryCheck {
 	@Test
 	public void test_ssh_node() throws InterruptedException {
 		
-		manager = CloudFactory.createCloud(CONFIG);
+		manager = SimpleCloudFactory.createCloud(CONFIG);
 		
 		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
 		manager.node("jvm.remote.host1");
@@ -72,35 +73,35 @@ public class CloudFactoryCheck {
 		Thread.sleep(500);
 	}
 
-	@Test
-	@SuppressWarnings("deprecation")
-	public void test_ssh_forced_local() throws InterruptedException {
-		
-		manager = CloudFactory.createLocalCloud(CONFIG);
-		
-		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
-		manager.node("jvm.remote.host1");
-		
-		List<String> ids = manager.node("**.host1").massExec(new Callable<String>(){
-			@Override
-			public String call() throws Exception {
-				System.out.println("This is std out");
-				System.err.println("This is std err");
-				Thread.sleep(500);
-				return ManagementFactory.getRuntimeMXBean().getName();
-			}
-		});
-		ids = new ArrayList<String>(ids);
-		
-		String name = ManagementFactory.getRuntimeMXBean().getName();
-		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
-		
-		Thread.sleep(500);
-	}
+//	@Test
+//	@SuppressWarnings("deprecation")
+//	public void test_ssh_forced_local() throws InterruptedException {
+//		
+//		manager = SimpleCloudFactory.createLocalCloud(CONFIG);
+//		
+//		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
+//		manager.node("jvm.remote.host1");
+//		
+//		List<String> ids = manager.node("**.host1").massExec(new Callable<String>(){
+//			@Override
+//			public String call() throws Exception {
+//				System.out.println("This is std out");
+//				System.err.println("This is std err");
+//				Thread.sleep(500);
+//				return ManagementFactory.getRuntimeMXBean().getName();
+//			}
+//		});
+//		ids = new ArrayList<String>(ids);
+//		
+//		String name = ManagementFactory.getRuntimeMXBean().getName();
+//		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
+//		
+//		Thread.sleep(500);
+//	}
 	
 	@Test
 	public void test_bulk_ssh_nodes() {
-		manager = CloudFactory.createCloud(CONFIG);
+		manager = SimpleCloudFactory.createCloud(CONFIG);
 		
 		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
 
@@ -126,7 +127,7 @@ public class CloudFactoryCheck {
 	
 	@Test
 	public void test_isolate_and_local_node() {
-		manager = CloudFactory.createCloud(CONFIG);
+		manager = SimpleCloudFactory.createCloud(CONFIG);
 		
 		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
 		manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
@@ -154,7 +155,7 @@ public class CloudFactoryCheck {
 
 	@Test
 	public void test_isolate_local_remote_node() {
-		manager = CloudFactory.createCloud(CONFIG);
+		manager = SimpleCloudFactory.createCloud(CONFIG);
 		
 		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
 		manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");

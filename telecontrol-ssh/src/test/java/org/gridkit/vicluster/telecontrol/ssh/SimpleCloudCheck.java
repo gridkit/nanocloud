@@ -18,15 +18,15 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.net.InetAddress;
 import java.util.concurrent.Callable;
 
-import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.vicluster.ViManager;
+import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.junit.Test;
 
 public class SimpleCloudCheck {
 
 	@Test
 	public void verify_cbox_cluster() {
-		ViManager cloud = CloudFactory.createSimpleSshCloud();
+		Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
 		cloud.node("cbox1");
 		
 		cloud.node("**").exec(new Runnable() {
@@ -34,7 +34,7 @@ public class SimpleCloudCheck {
 			public void run() {
 				System.out.println("Hi!");
 				
-				ViManager rcloud = CloudFactory.createSimpleSshCloud();
+				Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
 				rcloud.node("localhost").exec(new Runnable() {
 					@Override
 					public void run() {
@@ -47,7 +47,7 @@ public class SimpleCloudCheck {
 
 	@Test
 	public void verify_cbox_cluster2() throws InterruptedException {
-		ViManager cloud = CloudFactory.createSimpleSshCloud();
+		Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
 		cloud.node("cbox1");
 		
 		cloud.node("**").exec(new Runnable() {
@@ -55,7 +55,7 @@ public class SimpleCloudCheck {
 			public void run() {
 				System.out.println("Hi!");
 				
-				ViManager rcloud = CloudFactory.createSimpleSshCloud();
+				Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
 				rcloud.node("cbox3").exec(new Runnable() {
 					@Override
 					public void run() {
@@ -70,7 +70,7 @@ public class SimpleCloudCheck {
 	
 @Test
 public void remote_hallo_world() throws InterruptedException {
-	ViManager cloud = CloudFactory.createSimpleSshCloud();
+	Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
 	cloud.node("cbox1");
 	
 	cloud.node("**").exec(new Callable<Void>() {
