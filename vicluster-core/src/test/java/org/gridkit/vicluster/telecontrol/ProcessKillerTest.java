@@ -16,7 +16,7 @@
 package org.gridkit.vicluster.telecontrol;
 
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.SimpleCloudFactory;
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViProps;
 import org.junit.Test;
 
@@ -24,7 +24,7 @@ public class ProcessKillerTest {
 
 	@Test
 	public void verify_shutdown_after_kill() throws InterruptedException {
-		Cloud cloud = SimpleCloudFactory.createCloud();
+		Cloud cloud = CloudFactory.createCloud();
 		ViProps.at(cloud.node("**")).setLocalType();
 		
 		cloud.node("node1");

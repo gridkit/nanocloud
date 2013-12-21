@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -127,13 +128,15 @@ public class TunnellerProtocolTest {
 		}		
 	}
 
+	private List<String> IGNORE_VARS = Arrays.asList("SHLVL");
+	
 	@Test 
 	public void test_inherited_environment() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
 		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
 		
 		for(String var: System.getenv().keySet()) {
-			if (isSafeVar(var)) {
+			if (isSafeVar(var) && !IGNORE_VARS.contains(var)) {
 				String val = System.getenv(var);
 				String c = String.format(cmd, var);
 				Assert.assertEquals("Env[" + var + "]", val, matchLine("VAR=", captureCmdOut(c, null).get()));
@@ -147,7 +150,7 @@ public class TunnellerProtocolTest {
 		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
 		
 		for(String var: System.getenv().keySet()) {
-			if (isSafeVar(var)) {
+			if (isSafeVar(var) && !IGNORE_VARS.contains(var)) {
 				String val = System.getenv(var);
 				String c = String.format(cmd, var);
 				Assert.assertEquals("Env[" + var + "]", val, matchLine("VAR=", captureCmdOut(c, Collections.<String, String>emptyMap()).get()));
@@ -186,9 +189,9 @@ public class TunnellerProtocolTest {
 		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
 		
 		Map<String, String> vars = new HashMap<String, String>();
-		vars.put("TERM", "test");
+		vars.put("PROMT", "test");
 		
-		String c = String.format(cmd, "TERM");
+		String c = String.format(cmd, "PROMT");
 		Assert.assertEquals("test", matchLine("VAR=", captureCmdOut(c, vars).get()));
 	}
 
@@ -269,7 +272,6 @@ public class TunnellerProtocolTest {
 		System.out.println("Socket closed");
 		
 		Assert.assertTrue(sock.isClosed());
-		Thread.sleep(1000000);
 	}
 	
 	@Test(timeout = 30000)
