@@ -41,8 +41,10 @@ import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHan
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.FileHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.SocketHandler;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 // TODO
 public class TunnellerProtocolTest {
@@ -55,6 +57,10 @@ public class TunnellerProtocolTest {
 	
 	private Tunneller tunneler;
 	private TunnellerConnection connection;
+	
+	@ClassRule
+	public static Timeout timeout = new Timeout((int)TimeUnit.MINUTES.toMillis(10)); 
+	
 	
 	@Before
 	public void start() throws IOException, InterruptedException, TimeoutException {

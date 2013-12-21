@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.nanocloud.isolate.test;
+package org.gridkit.nanocloud;
 
 import static org.gridkit.vicluster.ViX.CLASSPATH;
 
@@ -43,7 +43,7 @@ import org.junit.Test;
 
 public class IsolateNodeFeatureTest {
 
-	private Cloud cloud;
+	protected Cloud cloud;
 	
 	@Before
 	public void initCloud() {

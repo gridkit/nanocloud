@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.nanocloud.isolate.test;
+package org.gridkit.nanocloud;
 
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
@@ -85,7 +85,7 @@ public class IsolateNodeTest {
 	public void verify_package_isolation() {
 		IsolateProps.at(cloud.node("node1"))
 		.sharePackage("")
-		.isolatePackage("org.gridkit.nanocloud.isolate.test");
+		.isolatePackage("org.gridkit.nanocloud");
 		
 		cloud.node("node1").exec(new Runnable() {
 			@Override
@@ -99,11 +99,11 @@ public class IsolateNodeTest {
 
 	private static void assertIsolated(Class<?> c) {
 		ClassLoader cl = c.getClassLoader();
-		Assert.assertTrue(cl.getClass().getName().startsWith(Isolate.class.getName()));
+		Assert.assertTrue("Class " + c.getSimpleName() + " is expected to be isolated", cl.getClass().getName().startsWith(Isolate.class.getName()));
 	}
 
 	private static void assertShared(Class<?> c) {
 		ClassLoader cl = c.getClassLoader();
-		Assert.assertFalse(cl.getClass().getName().startsWith(Isolate.class.getName()));
+		Assert.assertFalse("Class " + c.getSimpleName() + " is expected to be shared", cl.getClass().getName().startsWith(Isolate.class.getName()));
 	}	
 }

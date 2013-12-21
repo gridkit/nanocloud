@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.nanocloud.isolate.test;
+package org.gridkit.nanocloud;
 
 public class StaticVarHost {
 

@@ -70,10 +70,12 @@ public class LocalControlConsole implements HostControlConsole {
 					else {
 						File f = new File(new File(cacheDir, blob.getContentHash()), blob.getFileName());
 						f.getParentFile().mkdirs();
-						f.deleteOnExit();
-						FileOutputStream fos = new FileOutputStream(f);
+						File tmp = File.createTempFile(f.getName(), "", f.getParentFile());
+						FileOutputStream fos = new FileOutputStream(tmp);
 						StreamHelper.copy(blob.getContent(), fos);
 						fos.close();
+						tmp.renameTo(f);
+						f.deleteOnExit();
 						String path = f.getCanonicalPath();
 						hashCache.put(hashKey, path);
 						return path;
