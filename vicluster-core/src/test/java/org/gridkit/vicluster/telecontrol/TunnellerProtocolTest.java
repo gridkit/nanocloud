@@ -37,14 +37,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import junit.framework.Assert;
-
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.FileHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.SocketHandler;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -128,7 +127,7 @@ public class TunnellerProtocolTest {
 		}		
 	}
 
-	private List<String> IGNORE_VARS = Arrays.asList("SHLVL");
+	private List<String> IGNORE_VARS = Arrays.asList("SHLVL", "OLDPWD");
 	
 	@Test 
 	public void test_inherited_environment() throws IOException, InterruptedException, ExecutionException, TimeoutException {
@@ -192,7 +191,7 @@ public class TunnellerProtocolTest {
 		vars.put("PROMT", "test");
 		
 		String c = String.format(cmd, "PROMT");
-		Assert.assertEquals("test", matchLine("VAR=", captureCmdOut(c, vars).get()));
+		Assert.assertEquals("PROMT expected to be overriden", "test", matchLine("VAR=", captureCmdOut(c, vars).get()));
 	}
 
 	@Test 
@@ -200,15 +199,17 @@ public class TunnellerProtocolTest {
 		
 		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
 		
-		Map<String, String> vars = new HashMap<String, String>();
-		vars.put("TERM", null);
+		String var = isWindows() ? "HOMEPATH" : "HOME";		
 		
-		String c = String.format(cmd, "TERM");
+		Map<String, String> vars = new HashMap<String, String>();
+		vars.put(var, null);
+		
+		String c = String.format(cmd, var);
 		if (isWindows()) {
-			Assert.assertEquals("%TERM%", matchLine("VAR=", captureCmdOut(c, vars).get()));
+			Assert.assertEquals(var + " expected to be erased", "%" + var + "%", matchLine("VAR=", captureCmdOut(c, vars).get()));
 		}
 		else {
-			Assert.assertEquals("", matchLine("VAR=", captureCmdOut(c, vars).get()));
+			Assert.assertEquals(var + " expected to be erased","", matchLine("VAR=", captureCmdOut(c, vars).get()));
 		}
 	}
 	
