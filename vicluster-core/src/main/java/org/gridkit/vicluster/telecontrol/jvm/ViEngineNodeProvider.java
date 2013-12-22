@@ -53,6 +53,7 @@ public class ViEngineNodeProvider implements ViNodeProvider {
 		setDefault(engineConfig, ViConf.PRAGMA_HANDLER__NODE,  new ViEngine.InitTimePragmaHandler());
 		setDefault(engineConfig, ViConf.PRAGMA_HANDLER__RUNTIME,  new ViEngine.ReadOnlyPragmaHandler());
 		setDefault(engineConfig, ViConf.PRAGMA_HANDLER__REMOTE,  new ViEngine.InitTimePragmaHandler());
+		setDefault(engineConfig, ViConf.PRAGMA_HANDLER__REMOTE_RUNTIME,  new ViEngine.InitTimePragmaHandler());
 		
 		setDefault(engineConfig, ViConf.CONSOLE_STD_OUT_ECHO, "true");
 		setDefault(engineConfig, ViConf.CONSOLE_STD_ERR_ECHO, "true");

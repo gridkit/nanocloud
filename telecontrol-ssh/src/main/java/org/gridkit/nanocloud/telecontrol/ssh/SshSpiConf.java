@@ -2,6 +2,11 @@ package org.gridkit.nanocloud.telecontrol.ssh;
 
 public interface SshSpiConf {
 
+//	public static final String REMOTE_BOOTSTRAP_JAR_CACHE = "remote-runtime:bootstrap-jar-cache"; 
+	public static final String REMOTE_JAR_CACHE = "remote-runtime:jar-cache"; 
+
+	public static final String REMOTE_FALLBACK_JVM_EXEC = "remote-runtime:fallback-jvm-exec"; 
+	
 	// TODO sane default managment
 	public static final String SPI_BOOTSTRAP_JVM_EXEC = "#spi:remote-runtime:bootstrap-jvm-exec";
 	public static final String SPI_JAR_CACHE = "#spi:remote-runtime:jar-cache";

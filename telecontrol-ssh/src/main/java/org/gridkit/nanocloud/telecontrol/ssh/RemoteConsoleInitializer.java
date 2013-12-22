@@ -83,6 +83,9 @@ public class RemoteConsoleInitializer implements InductiveRule {
 			cmd = game.get(ViConf.JVM_EXEC_CMD);
 		}
 		if (cmd == null) {
+			cmd = game.get(SshSpiConf.REMOTE_FALLBACK_JVM_EXEC);
+		}
+		if (cmd == null) {
 			throw new RuntimeException("No Java executable configured");
 		}
 		return cmd;
@@ -95,6 +98,12 @@ public class RemoteConsoleInitializer implements InductiveRule {
 
 	protected String resolveCachePath(QuorumGame game) {
 		String path = game.get(SshSpiConf.SPI_JAR_CACHE);
+		if (path == null) {
+			path = game.get(SshSpiConf.REMOTE_JAR_CACHE);
+			if (path != null) {
+				game.setProp(SshSpiConf.SPI_JAR_CACHE, path);
+			}
+		}
 		if (path == null) {
 			throw new RuntimeException("Jar cache path is not configured");
 		}

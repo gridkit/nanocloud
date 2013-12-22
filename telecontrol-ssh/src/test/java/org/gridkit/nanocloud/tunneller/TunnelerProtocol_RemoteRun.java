@@ -1,15 +1,14 @@
 package org.gridkit.nanocloud.tunneller;
 
+import static org.gridkit.nanocloud.RemoteNode.REMOTE;
 import static org.gridkit.vicluster.ViX.CLASSPATH;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.SimpleCloudFactory;
+import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViProps;
-import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,14 +16,13 @@ import org.junit.Test;
 // For manual runs on test zoo 
 public class TunnelerProtocol_RemoteRun {
 
-	public static Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+	public static Cloud cloud = CloudFactory.createCloud();
 	public static ViNode host;
 	
 	@BeforeClass
-	public static void initHost() {
-		host = cloud.node("host");
-		ViProps.at(host).setRemoteType();
-		RemoteNodeProps.at(host).setRemoteHost("cbox1");
+	public static void initHost() {		
+		host = cloud.node("cbox1");
+		host.x(REMOTE).useSimpleRemoting();
 		host.x(CLASSPATH).add("../vicluster-core/target/test-classes");
 	}
 	

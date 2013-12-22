@@ -81,6 +81,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String PRAGMA_HANDLER__NODE = "pragma-handler:node";
 	public static final String PRAGMA_HANDLER__RUNTIME = "pragma-handler:runtime";
 	public static final String PRAGMA_HANDLER__REMOTE = "pragma-handler:remote";
+	public static final String PRAGMA_HANDLER__REMOTE_RUNTIME = "pragma-handler:remote-runtime";
 	
 	public static final String TYPE_HANDLER = "type-handler:";
 
