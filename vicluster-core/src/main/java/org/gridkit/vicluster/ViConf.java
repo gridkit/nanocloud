@@ -51,7 +51,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 	public static final String JVM_EXEC_CMD = "jvm:exec-command";
 	public static final String JVM_ARGUMENT = JvmProps.JVM_XX;
-	public static final String JVM_WORK_DIR = JvmProps.JVM_WORK_DIR;
+	public static final String JVM_WORK_DIR = "jvm:work-dir";
 	public static final String JVM_ENV_VAR = JvmProps.JVM_ENV;
 
 	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
@@ -92,8 +92,9 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_INSTRUMENTATION_WRAPPER_APPLIED = "#spi:instrumentation_wrapper_applied";
 	public static final String SPI_REMOTING_SESSION = "#spi:remoting-session";
 	public static final String SPI_JVM_EXEC_CMD = JVM_EXEC_CMD; // TODO "#spi:jvm-exec-cmd";
-	public static final String SPI_JVM_ARGS = "#spi:jvm-args";
-	public static final String SPI_JVM_CLASSPATH = "#spi:jvm-classpath";
+	public static final String SPI_SLAVE_ARGS = "#spi:jvm-args";
+	public static final String SPI_SLAVE_ENV = "#spi:slave-env";
+	public static final String SPI_SLAVE_CLASSPATH = "#spi:jvm-classpath";
 	public static final String SPI_CONTROL_CONSOLE = "#spi:control-console";
 	public static final String SPI_PROCESS_LAUNCHER = "#spi:process-launcher";
 	public static final String SPI_MANAGED_PROCESS = "#spi:managed-process";
@@ -276,19 +277,33 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	}
 
 	@Override
-	@PropName(SPI_JVM_CLASSPATH)
+	@PropName(SPI_SLAVE_CLASSPATH)
 	@DefaultNull
-	public List<ClasspathEntry> getJvmClasspath() {
+	public List<ClasspathEntry> getSlaveClasspath() {
 		return readObject();
 	}
 	
 	@Override
-	@PropName(SPI_JVM_ARGS)
+	@PropName(SPI_SLAVE_ARGS)
 	@DefaultNull
-	public List<String> getJvmArgs() {
+	public List<String> getSlaveArgs() {
 		return readObject();
 	}
-	
+
+	@Override
+	@PropName(SPI_SLAVE_ENV)
+	@DefaultNull
+	public Map<String, String> getSlaveEnv() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(JVM_WORK_DIR)
+	@DefaultNull
+	public String getSlaveWorkDir() {
+		return readString();
+	}
+
 	@Override
 	@PropName(SPI_MANAGED_PROCESS)
 	@DefaultNull
@@ -314,6 +329,39 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@SuppressWarnings("unchecked")
 	public <T> T get(String key) {
 		return (T) config.get(key);
+	}
+	
+	public static class CommonConfig extends Delegate {
+		
+		private ViConfigurable conf;
+
+		public static CommonConfig at(ViConfigurable conf) {
+			return new CommonConfig(conf);
+		}
+		
+		public CommonConfig(ViConfigurable conf) {
+			this.conf = conf;
+		}
+
+		@Override
+		protected ViConfigurable getConfigurable() {
+			return conf;
+		}
+				
+		public CommonConfig setIsolateNodeType() {
+			conf.setProp(NODE_TYPE, NODE_TYPE__ISOLATE);			
+			return this;
+		}
+
+		public CommonConfig setLocalNodeType() {
+			conf.setProp(NODE_TYPE, NODE_TYPE__LOCAL);			
+			return this;
+		}
+
+		public CommonConfig setRemoteNodeType() {
+			conf.setProp(NODE_TYPE, NODE_TYPE__REMOTE);			
+			return this;
+		}
 	}
 	
 	public static class Console extends Delegate {
@@ -472,5 +520,55 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 				throw new IllegalArgumentException("Only file protocol is supporeted for classpath");
 			}
 		}
+	}
+	
+	public static class ProcessConfig extends Delegate {
+
+		private ViConfigurable conf;
+
+		public static ProcessConfig at(ViConfigurable conf) {
+			return new ProcessConfig(conf);
+		}
+		
+		public ProcessConfig(ViConfigurable conf) {
+			this.conf = conf;
+		}
+
+		@Override
+		protected ViConfigurable getConfigurable() {
+			return conf;
+		}
+		
+		public ProcessConfig addJvmArg(String string) {
+			conf.setProp(JVM_ARGUMENT + "arg:" + string, string);
+			return this;
+		}
+
+		public ProcessConfig addJvmArgs(String... args) {
+			if (args.length == 0) {
+				return this;
+			}
+			else if (args.length == 1) {
+				addJvmArg(args[0]);
+			}
+			else {
+				StringBuilder sb = new StringBuilder();
+				for(String arg: args) {
+					sb.append('|').append(arg);
+				}
+				addJvmArg(sb.toString());
+			}
+			return this;
+		}
+
+		public ProcessConfig setWorkDir(String path) {
+			conf.setProp(JVM_WORK_DIR, path);
+			return this;
+		}		
+
+		public ProcessConfig setEnv(String name, String val) {
+			conf.setProp(JVM_ENV_VAR + name, val == null ? "\00" : val);
+			return this;
+		}		
 	}
 }

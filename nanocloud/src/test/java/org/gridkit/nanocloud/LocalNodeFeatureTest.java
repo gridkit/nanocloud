@@ -15,20 +15,76 @@
  */
 package org.gridkit.nanocloud;
 
-import org.gridkit.vicluster.ViProps;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+
+import org.gridkit.vicluster.ViX;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Test;
 
-public class LocalNodeFeatureTest extends IsolateNodeFeatureTest {
+public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 
 	@Before
 	public void initCloud() {
 		cloud = CloudFactory.createCloud();
-		ViProps.at(cloud.node("**")).setLocalType();
+		cloud.node("**").x(ViX.COMMON).setLocalNodeType();
 	}	
 	
+	@Test
+	@Override
+	public void verify_isolated_static_with_void_callable() {
+		super.verify_isolated_static_with_callable();
+	}
+
+	@Test
+	@Override
+	public void verify_isolated_static_with_callable() {
+		super.verify_isolated_static_with_callable();
+	}
+
+	@Test
+	@Override
+	public void verify_isolated_static_with_runnable() {
+		super.verify_isolated_static_with_runnable();
+	}
+
 	@Ignore
 	public void verify_class_exclusion() {
 		// class sharing is not supported by local nodes, obviously
 	}		
+
+	@Test
+	@Override
+	public void verify_property_isolation() throws Exception {
+		super.verify_property_isolation();
+	}
+	
+	@Ignore("Not working at the moment due to limitation of dynamic proxies")
+	public void verify_exec_stack_trace_locality() {
+	}	
+
+	// TODO expose export feature
+	@Ignore("Feature is missing")
+	public void test_stack_trace2() {
+	}
+
+	@Test
+	@Override
+	public void test_classpath_extention() throws IOException, URISyntaxException {
+		super.test_classpath_extention();
+	}
+
+	@Test(expected = NoClassDefFoundError.class)
+	@Override
+	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
+		super.test_classpath_limiting();
+	}
+
+	@Test
+	@Override
+	public void test_annonimous_primitive_in_args() {
+		super.test_annonimous_primitive_in_args();
+	}
 }

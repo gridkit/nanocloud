@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -85,8 +86,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 	}
 
 	protected Interceptor createJvmEnvironmentBuilder(QuorumGame game) {
-		// TODO
-		return null;
+		return new EnvironmentBuilder();
 	}
 
 	protected <T> T getCloudSingleton(QuorumGame game, Class<T> type, String shutdownMethod) {
@@ -163,7 +163,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 	public static class ClasspathReplicaBuilder extends IdempotentConfigBuilder<List<ClasspathEntry>> {
 
 		public ClasspathReplicaBuilder() {
-			super(ViConf.SPI_JVM_CLASSPATH);
+			super(ViConf.SPI_SLAVE_CLASSPATH);
 		}
 		
 		@Override
@@ -284,7 +284,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 	public static class JvmArgumentBuilder extends IdempotentConfigBuilder<List<String>> {
 
 		public JvmArgumentBuilder() {
-			super(ViConf.SPI_JVM_ARGS);
+			super(ViConf.SPI_SLAVE_ARGS);
 		}
 		
 		@Override
@@ -313,6 +313,28 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 			}
 		}
 	}	
+
+	public static class EnvironmentBuilder extends IdempotentConfigBuilder<Map<String, String>> {
+		
+		public EnvironmentBuilder() {
+			super(ViConf.SPI_SLAVE_ENV);
+		}
+		
+		@Override
+		protected Map<String, String> buildState(QuorumGame game) {
+			Map<String, Object> props = game.getConfigProps(ViConf.JVM_ENV_VAR);
+			Map<String, String> env = new LinkedHashMap<String, String>();
+			for(String k: props.keySet()) {
+				String vn = k.substring(ViConf.JVM_ENV_VAR.length());
+				String vv = (String) props.get(k);
+				if (vv.length() == 1 && vv.charAt(0) == '\00') {
+					vv = null;
+				}
+				env.put(vn, vv);				
+			}
+			return env.isEmpty() ? null : env;
+		}		
+	}	
 	
 	public static class ProcessLauncherRule implements InductiveRule {
 		
@@ -324,8 +346,8 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 				&&  game.getRemotingSession() != null
 				&&  game.getProcessLauncher() != null
 				&&  game.getJvmExecCmd() != null
-				&&  game.getJvmClasspath() != null
-				&&  game.getJvmArgs() != null)
+				&&  game.getSlaveClasspath() != null
+				&&  game.getSlaveArgs() != null)
 			{
 				ProcessLauncher launcher = (ProcessLauncher) game.getProp(ViConf.SPI_PROCESS_LAUNCHER);
 				final ManagedProcess mp = launcher.createProcess(game.getConfigProps(""));

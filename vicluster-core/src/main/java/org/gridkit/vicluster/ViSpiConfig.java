@@ -24,9 +24,13 @@ public interface ViSpiConfig {
 
 	public ManagedProcess getManagedProcess();
 
-	public List<String> getJvmArgs();
+	public List<String> getSlaveArgs();
 
-	public List<ClasspathEntry> getJvmClasspath();
+	public java.util.Map<String, String> getSlaveEnv();
+
+	public String getSlaveWorkDir();
+
+	public List<ClasspathEntry> getSlaveClasspath();
 
 	public String getJvmExecCmd();
 

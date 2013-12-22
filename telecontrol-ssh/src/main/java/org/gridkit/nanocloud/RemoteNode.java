@@ -106,6 +106,14 @@ public class RemoteNode extends ViConfigurable.Delegate {
 		return this;
 	}
 	
+	/**
+	 * @deprecated You should use <b>hosts config file</b> to store passwords
+	 */
+	public RemoteNode setPassword(String password) {
+		config.setProp(SshSpiConf.SSH_PASSWORD, password);
+		return this;
+	}
+	
 	public RemoteNode setRemoteJavaExec(String javaExec) {
 		config.setProp(ViConf.JVM_EXEC_CMD, javaExec);
 		return this;

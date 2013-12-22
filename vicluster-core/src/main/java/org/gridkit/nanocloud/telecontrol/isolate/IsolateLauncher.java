@@ -36,7 +36,7 @@ class IsolateLauncher implements ProcessLauncher {
 		
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
-		List<Classpath.ClasspathEntry> cp = ctx.getJvmClasspath();
+		List<Classpath.ClasspathEntry> cp = ctx.getSlaveClasspath();
 		
 		List<URL> urls = new ArrayList<URL>();
 		for(Classpath.ClasspathEntry ce: cp) {

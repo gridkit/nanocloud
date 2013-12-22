@@ -77,8 +77,8 @@ public class MockedManagedProcessLauncherTest {
 		config.put(ViConf.SPI_CONTROL_CONSOLE, console);
 		config.put(ViConf.SPI_REMOTING_SESSION, session);
 		config.put(ViConf.JVM_EXEC_CMD, new File(new File(System.getProperty("java.home"), "bin"), "java").getPath());
-		config.put(ViConf.SPI_JVM_ARGS, new ArrayList<String>());
-		config.put(ViConf.SPI_JVM_CLASSPATH, Classpath.getClasspath(Thread.currentThread().getContextClassLoader()));
+		config.put(ViConf.SPI_SLAVE_ARGS, new ArrayList<String>());
+		config.put(ViConf.SPI_SLAVE_CLASSPATH, Classpath.getClasspath(Thread.currentThread().getContextClassLoader()));
 		
 		ProcessSporeLauncher launcher = new ProcessSporeLauncher();
 		ManagedProcess slave = launcher.createProcess(config);

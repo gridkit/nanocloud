@@ -70,6 +70,9 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		HostControlConsole console = ctx.getControlConsole();
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
+		List<String> slaveArgs = ctx.getSlaveArgs();
+		Map<String, String> slaveEnv = ctx.getSlaveEnv();
+		String slaveWD = ctx.getSlaveWorkDir();
 		
 		ControlledSession session = new ControlledSession();
 		session.session = rmiSession;
@@ -86,17 +89,21 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		session.binspore = binspore;
 		
 		String javaCmd = ctx.getJvmExecCmd();
-		String classpath = buildBootJar(console, ctx.getJvmClasspath());
+		String bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
 		
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
+		commands.addAll(slaveArgs);
 		commands.add("-jar");
-		commands.add(classpath);
+		commands.add(bootstraper);
 		
-		console.startProcess(".", commands.toArray(new String[0]), null, session);
-//		console.startProcess(".", new String[]{"cat"}, null, session);
+		console.startProcess(isEmpty(slaveWD) ? "." : slaveWD, commands.toArray(new String[0]), slaveEnv, session);
 		
 		return session;
+	}
+	
+	private boolean isEmpty(String s) {
+		return s == null || s.length() == 0;
 	}
 
 	private String buildBootJar(HostControlConsole console, List<ClasspathEntry> jvmClasspath) {

@@ -591,12 +591,22 @@ public interface ViEngine {
 			return getConfig().getJvmExecCmd();
 		}
 
-		public List<ClasspathEntry> getJvmClasspath() {
-			return getConfig().getJvmClasspath();
+		public List<ClasspathEntry> getSlaveClasspath() {
+			return getConfig().getSlaveClasspath();
 		}
 
-		public List<String> getJvmArgs() {
-			return getConfig().getJvmArgs();
+		public List<String> getSlaveArgs() {
+			return getConfig().getSlaveArgs();
+		}
+
+		@Override
+		public Map<String, String> getSlaveEnv() {
+			return getConfig().getSlaveEnv();
+		}
+
+		@Override
+		public String getSlaveWorkDir() {
+			return getConfig().getSlaveWorkDir();
 		}
 
 		public ManagedProcess getManagedProcess() {
