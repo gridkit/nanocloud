@@ -10,12 +10,33 @@ import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 // For manual runs on test zoo 
-public class TunnelerProtocol_RemoteRun {
+public class TunnelerProtocol_LinuxRemoteTest {
 
+	@BeforeClass
+	public static void check_cbox1() {
+		Cloud c = CloudFactory.createCloud();
+		try {
+			c.node("**").x(REMOTE)
+				.useSimpleRemoting()
+				.setRemoteHost("cbox1");
+			
+			c.node("test").touch();
+			c.shutdown();
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			Assume.assumeTrue(false);
+		}
+		finally {
+			c.shutdown();
+		}
+	}
+	
 	public static Cloud cloud = CloudFactory.createCloud();
 	public static ViNode host;
 	

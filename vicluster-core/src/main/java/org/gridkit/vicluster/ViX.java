@@ -1,5 +1,6 @@
 package org.gridkit.vicluster;
 
+import org.gridkit.nanocloud.telecontrol.isolate.IsolateConfig;
 import org.gridkit.vicluster.ViConf.Classpath;
 import org.gridkit.vicluster.ViConf.CommonConfig;
 import org.gridkit.vicluster.ViConf.Console;
@@ -42,6 +43,14 @@ public class ViX {
 		@Override
 		public ProcessConfig wrap(ViConfigurable node) {
 			return ProcessConfig.at(node);
+		}
+	};
+	
+	public static final ViExtender<IsolateConfig> ISOLATE = new ViExtender<IsolateConfig>() {
+		
+		@Override
+		public IsolateConfig wrap(ViConfigurable node) {
+			return IsolateConfig.at(node);
 		}
 	};
 }

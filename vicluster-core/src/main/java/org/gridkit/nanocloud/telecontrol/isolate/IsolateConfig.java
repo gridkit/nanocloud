@@ -1,5 +1,6 @@
 package org.gridkit.nanocloud.telecontrol.isolate;
 
+import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViConfigurable.Delegate;
 import org.gridkit.vicluster.isolate.IsolateProps;
@@ -21,6 +22,11 @@ public class IsolateConfig extends Delegate {
 		return conf;
 	}
 
+	public IsolateConfig setIsolateNodeType() {
+		conf.setProp(ViConf.NODE_TYPE, ViConf.NODE_TYPE__ISOLATE);
+		return this;
+	}
+	
 	public IsolateConfig shareClass(Class<?> c) {
 		shareClass(c.getName());
 		return this;
