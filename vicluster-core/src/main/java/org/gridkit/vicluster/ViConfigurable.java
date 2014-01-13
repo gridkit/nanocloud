@@ -39,22 +39,7 @@ public interface ViConfigurable {
 	 * Update runtime configuration elements.
 	 */
 	public void setConfigElements(Map<String, Object> config);
-	
-	public void addStartupHook(String id, Runnable hook);
-
-	public void addShutdownHook(String id, Runnable hook);
-
-	/**
-	 * @deprecated Override protection is to be remove 
-	 */
-	public void addStartupHook(String id, Runnable hook, boolean override);
-
-	/**
-	 * @deprecated Override protection is to be remove 
-	 */
-	public void addShutdownHook(String id, Runnable hook, boolean override);
-	
-	
+		
 	public static abstract class Delegate implements ViConfigurable {
 		
 		protected abstract ViConfigurable getConfigurable();
@@ -77,22 +62,6 @@ public interface ViConfigurable {
 
 		public void setConfigElements(Map<String, Object> config) {
 			getConfigurable().setConfigElements(config);
-		}
-
-		public void addStartupHook(String id, Runnable hook) {
-			getConfigurable().addStartupHook(id, hook);
-		}
-
-		public void addShutdownHook(String id, Runnable hook) {
-			getConfigurable().addShutdownHook(id, hook);
-		}
-
-		public void addStartupHook(String id, Runnable hook, boolean override) {
-			getConfigurable().addStartupHook(id, hook, override);
-		}
-
-		public void addShutdownHook(String id, Runnable hook, boolean override) {
-			getConfigurable().addShutdownHook(id, hook, override);
 		}
 	}
 }

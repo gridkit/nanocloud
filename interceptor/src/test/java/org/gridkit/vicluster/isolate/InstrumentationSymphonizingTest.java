@@ -23,7 +23,7 @@ import java.util.concurrent.Future;
 
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.nanocloud.interceptor.ViHookBuilder;
+import org.gridkit.nanocloud.interceptor.Intercept;
 import org.gridkit.util.concurrent.CyclicBlockingBarrier;
 import org.gridkit.util.concurrent.VectorFuture;
 import org.gridkit.vicluster.ViExecutor;
@@ -126,7 +126,7 @@ public class InstrumentationSymphonizingTest {
 	}
 
 	private void injectBarrier(ViNode node, String value, CyclicBlockingBarrier barA) {
-		ViHookBuilder.newCallSiteHook()
+		Intercept.callSite()
 		.onTypes(InstrumentationSymphonizingTest.class)
 		.onMethod("pushToList", String.class)
 		.matchParam(0, value)

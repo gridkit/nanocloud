@@ -68,6 +68,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridkit.lab</groupId>
+            <artifactId>nanotest</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>

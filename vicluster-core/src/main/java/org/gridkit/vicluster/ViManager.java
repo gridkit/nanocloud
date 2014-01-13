@@ -323,44 +323,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			ensureAlive();
-			config.addStartupHook(name, hook, override);
-			if (realNode != null) {
-				realNode.addStartupHook(name, hook, override);
-			}			
-		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook) {
-			ensureAlive();
-			config.addStartupHook(name, hook);
-			if (realNode != null) {
-				realNode.addStartupHook(name, hook);
-			}			
-		}
-
-		@Override
-		public synchronized void addShutdownHook(String name, Runnable hook) {
-			ensureAlive();
-			config.addShutdownHook(name, hook);
-			if (realNode != null) {
-				realNode.addShutdownHook(name, hook);
-			}			
-		}
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
-			ensureAlive();
-			config.addShutdownHook(name, hook, override);
-			if (realNode != null) {
-				realNode.addShutdownHook(name, hook, override);
-			}			
-		}
-
-		@Override
 		public void touch() {
 			exec(new Touch());
 		}
@@ -429,36 +391,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		public void suspend() {
-			ensureExecutor();
-			try {
-				initBarrier.get();
-			} catch (Exception e) {
-				LOGGER.warn("Node ["  + name + "], async init failed: " + e.toString());
-				return;
-			}
-			synchronized(this) {
-				ensureStarted();
-				realNode.suspend();
-			}
-		}
-
-		@Override
-		public void resume() {
-			ensureExecutor();
-			try {
-				initBarrier.get();
-			} catch (Exception e) {
-				LOGGER.warn("Node ["  + name + "], async init failed: " + e.toString());
-				return;
-			}
-			synchronized(this) {
-				ensureStarted();
-				realNode.resume();
-			}
-		}
-
-		@Override
 		public synchronized void shutdown() {
 			if (!terminated) {
 				if (realNode != null) {
@@ -500,13 +432,6 @@ public class ViManager implements ViNodeSet {
 				
 				asyncInitThreads.execute(initBarrier);
 			}
-		}
-		
-		private synchronized void ensureStarted() {
-			if (terminated) {
-				throw new IllegalStateException("ViNode[" + name + "] is terminated");
-			}
-			
 		}
 		
 		private synchronized void ensureAlive() {
@@ -580,11 +505,6 @@ public class ViManager implements ViNodeSet {
 			this.barrier = barrier;
 			this.executor = executor;
 			this.target = target;
-		}
-
-		@Override
-		public void touch() {
-			throw new UnsupportedOperationException();
 		}
 
 		@Override
@@ -776,40 +696,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		public void addStartupHook(String name, Runnable hook) {
-			synchronized(ViManager.this) { 
-				rule().addStartupHook(name, hook);
-				select().addStartupHook(name, hook);
-			}
-		}
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			synchronized(ViManager.this) { 
-				rule().addStartupHook(name, hook, override);
-				select().addStartupHook(name, hook, override);
-			}
-		}
-
-		@Override
-		public void addShutdownHook(String name, Runnable hook) {
-			synchronized(ViManager.this) { 
-				rule().addShutdownHook(name, hook);
-				select().addShutdownHook(name, hook);
-			}
-		}
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			synchronized(ViManager.this) { 
-				rule().addShutdownHook(name, hook, override);
-				select().addShutdownHook(name, hook, override);
-			}
-		}
-
-		@Override
 		public void touch() {
 			select().touch();
 		}
@@ -867,16 +753,6 @@ public class ViManager implements ViNodeSet {
 		@Override
 		public String getProp(String propName) {
 			throw new UnsupportedOperationException("Cannot call on group of nodes");
-		}
-
-		@Override
-		public void suspend() {
-			select().suspend();			
-		}
-
-		@Override
-		public void resume() {
-			select().resume();			
 		}
 
 		@Override
@@ -993,38 +869,8 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		public void addStartupHook(String name, Runnable hook) {
-			throw new UnsupportedOperationException();			
-		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			throw new UnsupportedOperationException();			
-		}
-		
-		@Override
-		public void addShutdownHook(String name, Runnable hook) {
-			throw new UnsupportedOperationException();			
-		}
-
-		@Override
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			throw new UnsupportedOperationException();			
-		}
-		
-		@Override
 		public String getProp(String propName) {
 			return node.getProp(propName);
-		}
-		
-		@Override
-		public void suspend() {
-			// ignore TODO ?!
-		}
-		
-		@Override
-		public void resume() {
-			// ignore
 		}
 		
 		@Override

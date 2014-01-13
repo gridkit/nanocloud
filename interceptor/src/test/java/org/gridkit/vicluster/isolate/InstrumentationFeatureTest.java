@@ -24,7 +24,7 @@ import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.nanocloud.interceptor.ViHookBuilder;
+import org.gridkit.nanocloud.interceptor.Intercept;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.junit.After;
@@ -50,6 +50,27 @@ public class InstrumentationFeatureTest {
 	protected ViNode node(String name) {
 		return cloud.node(name);
 	}
+
+	@Test
+	public void test_print_rule() {
+//		System.setProperty("gridkit.isolate.trace-classes", "true");
+//		System.setProperty("gridkit.interceptor.trace", "true");
+		
+		ViNode node = node("test_print_rule");
+
+		Intercept.callSite()
+			.onTypes(System.class)
+			.onMethod("currentTimeMillis")
+			.doPrint("Call time")
+			.apply(node);
+		
+		node.exec(new Callable<Long>() {
+			@Override
+			public Long call() throws Exception {
+				return System.currentTimeMillis();
+			}
+		});
+	}
 	
 	@Test
 	public void test_instrumentation_return_value() {
@@ -58,10 +79,10 @@ public class InstrumentationFeatureTest {
 		
 		ViNode node = node("test_instrumentation_return_value");
 
-		ViHookBuilder
-			.newCallSiteHook(new LongReturnValueShifter(-111111))
+		Intercept.callSite()
 			.onTypes(System.class)
 			.onMethod("currentTimeMillis")
+			.doInvoke(new LongReturnValueShifter(-111111))
 			.apply(node);
 		
 		long time = System.currentTimeMillis();
@@ -83,11 +104,11 @@ public class InstrumentationFeatureTest {
 		
 		ViNode node = node("test_instrumentation_expection_fallthrough");
 		
-		ViHookBuilder
-		.newCallSiteHook(new LongReturnValueShifter(-111111))
-		.onTypes(InstrumentationFeatureTest.class)
-		.onMethod("explode")
-		.apply(node);
+		Intercept.callSite()
+			.onTypes(InstrumentationFeatureTest.class)
+			.onMethod("explode")
+			.doInvoke(new LongReturnValueShifter(-111111))
+			.apply(node);
 		
 		node.exec(new Callable<Void>() {
 			@Override
@@ -115,8 +136,8 @@ public class InstrumentationFeatureTest {
 		
 		ViNode node = node("test_instrumentation_execution_prevention");
 		
-		ViHookBuilder
-		.newCallSiteHook()
+		Intercept
+		.callSite()
 		.onTypes(System.class)
 		.onMethod("exit")
 		.doReturn(null)
@@ -138,8 +159,8 @@ public class InstrumentationFeatureTest {
 		
 		ViNode node = node("test_instrumentation_exception");
 		
-		ViHookBuilder
-		.newCallSiteHook()
+		Intercept
+		.callSite()
 		.onTypes(System.class)
 		.onMethod("exit")
 		.doThrow(new IllegalStateException("Ka-Boom"))
@@ -155,8 +176,8 @@ public class InstrumentationFeatureTest {
 	}
 
 	private void addValueRule(ViNode node, Object key, Object value) {
-		ViHookBuilder
-		.newCallSiteHook()
+		Intercept
+		.callSite()
 		.onTypes(InstrumentationFeatureTest.class)
 		.onMethod("getSomething")
 		.matchParams(key)
@@ -165,8 +186,8 @@ public class InstrumentationFeatureTest {
 	}
 
 	private void addErrorRule(ViNode node, Object key, Throwable e) {
-		ViHookBuilder
-		.newCallSiteHook()
+		Intercept
+		.callSite()
 		.onTypes(InstrumentationFeatureTest.class)
 		.onMethod("getSomething")
 		.matchParams(key)
@@ -179,7 +200,7 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = node("test_instrumentation_exception");
+		ViNode node = node("test_instrumentation_handler_staking");
 
 		addValueRule(node, "A", "a");
 		addValueRule(node, "B", "b");
@@ -216,18 +237,18 @@ public class InstrumentationFeatureTest {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
-		ViNode node = cloud.node("test_instrumentation_exception");
+		ViNode node = cloud.node("test_instrumentation_call_counter");
 
 		AtomicLong callA = new AtomicLong();
 		AtomicLong callB = new AtomicLong();
 		
-		ViHookBuilder.newCallSiteHook()
+		Intercept.callSite()
 		.onTypes(InstrumentationFeatureTest.class)
 		.onMethod("callA", new Class<?>[0])
 		.doCount(callA)
 		.apply(node);
 
-		ViHookBuilder.newCallSiteHook()
+		Intercept.callSite()
 		.onTypes(InstrumentationFeatureTest.class)
 		.onMethod("callB", new Class<?>[0])
 		.doCount(callB)

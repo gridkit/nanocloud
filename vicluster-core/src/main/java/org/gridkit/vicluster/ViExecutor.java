@@ -25,11 +25,6 @@ import java.util.concurrent.Future;
  */
 public interface ViExecutor {
 
-	/**
-	 * Sends empty runnable for sync execution. Usefully to force node initialization.
-	 */
-	public void touch();
-	
 	public void exec(Runnable task);
 	
 	public void exec(VoidCallable task);

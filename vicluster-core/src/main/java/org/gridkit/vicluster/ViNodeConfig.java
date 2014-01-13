@@ -103,30 +103,6 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 			setConfigElement(key, config.get(key));
 		}
 	}
-
-	@Override
-	public void addStartupHook(String name, Runnable hook) {
-		String hn = HOOK + name;
-		setConfigElement(hn, new Hooks.StratupHook(hook));
-	}
-	
-	@Override
-	public void addShutdownHook(String name, Runnable hook) {
-		String hn = HOOK + name;
-		setConfigElement(hn, new Hooks.ShutdownHook(hook));
-	}
-
-	@Override
-	@Deprecated
-	public void addStartupHook(String name, Runnable hook, boolean override) {
-		addStartupHook(name, hook);
-	}
-	
-	@Override
-	@Deprecated
-	public void addShutdownHook(String name, Runnable hook, boolean override) {
-		addShutdownHook(name, hook);
-	}
 	
 	public void apply(ViConfigurable target) {
 		target.setConfigElements(config);
@@ -221,26 +197,6 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 				setProp(key, props.get(key));
 			}
 		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook) {
-			// ignore			
-		}		
-
-		@Override
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			// ignore			
-		}		
-
-		@Override
-		public void addShutdownHook(String name, Runnable hook) {
-			// ignore
-		}
-
-		@Override
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			// ignore
-		}
 	}
 
 	public static abstract class ReplyShutdownHooks implements ViConfigurable {
@@ -268,22 +224,6 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
 			// ignore
-		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook) {
-			// ignore			
-		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			// ignore			
-		}
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public void addShutdownHook(String id, Runnable hook) {
-			addShutdownHook(id, hook, true);
 		}
 	}
 }

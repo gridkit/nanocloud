@@ -17,20 +17,28 @@ package org.gridkit.nanocloud.interceptor;
 
 import java.io.Serializable;
 
-import org.gridkit.nanocloud.interceptor.Intercept.ParamMatcher;
+import org.gridkit.lab.interceptor.Interception;
+import org.gridkit.lab.interceptor.Interceptor;
 
-class LiteralMatcher implements ParamMatcher, Serializable {
+class PrinterStub implements Interceptor, Serializable {
 
-	private static final long serialVersionUID = 20130621L;
+	private static final long serialVersionUID = 20140112L;
 	
-	private final Object value;
-	
-	public LiteralMatcher(Object value) {
-		this.value = value;
+	private String format;
+
+	public PrinterStub(String format) {
+		this.format = format;
 	}
 
 	@Override
-	public boolean matches(Object param) {
-		return (value == null && param == null) || (value != null && value.equals(param));
-	}
+	public void handle(Interception call) {
+		String text;
+		try {
+			text = String.format(format, call.getCallParameters());
+		}
+		catch(Throwable e) {
+			text = "Print interceptor has failed. Template: [" + format + "] Error: " + e.toString();
+		}
+		System.out.println(text);
+	}	
 }

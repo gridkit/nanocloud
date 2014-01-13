@@ -1,5 +1,8 @@
 package org.gridkit.nanocloud.jmx;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
@@ -72,6 +75,59 @@ public interface MBeanRegistrator {
 				return new ObjectName(n);
 			} catch (MalformedObjectNameException e) {
 				throw new RuntimeException(e);
+			}
+		}
+	}	
+
+	public static class MBeanDomainPrefixer extends MBeanRenamer {
+		
+		private String domainPrefix;
+		
+		public MBeanDomainPrefixer(MBeanRegistrator delegate, String domainPrefix) {
+			super(delegate);
+			this.domainPrefix = domainPrefix;
+		}
+		
+		protected ObjectName rename(ObjectName name) {
+			String n = name.toString();
+			n = domainPrefix + n;
+			try {
+				return new ObjectName(n);
+			} catch (MalformedObjectNameException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}	
+
+	public static class DestroyableMBeanRegistrator implements MBeanRegistrator {
+		
+		private MBeanRegistrator target;
+		private Set<ObjectName> beans = new HashSet<ObjectName>();
+		
+		public DestroyableMBeanRegistrator(MBeanRegistrator target) {
+			this.target = target;
+		}
+
+		@Override
+		public synchronized void registerMBean(ObjectName name, Object bean) throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException {
+			target.registerMBean(name, bean);
+			beans.add(name);
+		}
+
+		@Override
+		public synchronized void unregisterMBean(ObjectName name) throws MBeanRegistrationException, InstanceNotFoundException {
+			target.unregisterMBean(name);
+			beans.remove(name);
+		}
+		
+		public synchronized void destroy() {
+			for(ObjectName name: beans) {
+				try {
+					target.unregisterMBean(name);
+				}
+				catch(Exception e) {
+					// ignore
+				}
 			}
 		}
 	}	

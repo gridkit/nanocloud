@@ -1,6 +1,6 @@
 package org.gridkit.nanocloud;
 
-import static org.gridkit.vicluster.ViX.COMMON;
+import static org.gridkit.vicluster.ViX.TYPE;
 import static org.gridkit.vicluster.ViX.PROCESS;
 
 import java.io.File;
@@ -20,7 +20,7 @@ public class ProcessNodeFeatureTest {
 	@Before
 	public void initCloud() {
 		cloud = CloudFactory.createCloud();
-		cloud.node("**").x(COMMON).setLocalNodeType();
+		cloud.node("**").x(TYPE).setLocal();
 	}
 
 	@After

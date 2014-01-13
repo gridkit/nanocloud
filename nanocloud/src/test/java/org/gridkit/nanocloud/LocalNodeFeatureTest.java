@@ -29,7 +29,7 @@ public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 	@Before
 	public void initCloud() {
 		cloud = CloudFactory.createCloud();
-		cloud.node("**").x(ViX.COMMON).setLocalNodeType();
+		cloud.node("**").x(ViX.TYPE).setLocal();
 	}	
 	
 	@Test

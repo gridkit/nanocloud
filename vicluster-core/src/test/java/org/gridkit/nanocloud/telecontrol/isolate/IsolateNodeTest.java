@@ -4,7 +4,7 @@ import java.util.concurrent.Callable;
 
 
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConf.Console;
+import org.gridkit.vicluster.ViConf.ConsoleConf;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
@@ -22,7 +22,7 @@ public class IsolateNodeTest {
 		
 		ViNode node = cloud.node("test");
 		ViProps.at(node).setIsolateType();
-		Console.at(node).echoPrefix("[TEST] ");
+		ConsoleConf.at(node).echoPrefix("[TEST] ");
 		node.touch();
 		String r = node.exec(new Callable<String>() {
 			@Override

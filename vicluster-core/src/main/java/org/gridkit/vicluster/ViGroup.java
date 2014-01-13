@@ -120,57 +120,6 @@ public class ViGroup implements ViNode {
 		}
 	}
 
-	
-	@Override
-	@SuppressWarnings("deprecation")
-	public synchronized void addStartupHook(String name, Runnable hook, boolean override) {
-		checkActive();
-		config.addStartupHook(name, hook, override);
-		for(ViNode vh: hosts) {
-			vh.addStartupHook(name, hook, override);
-		}
-	}
-	
-	@Override
-	@SuppressWarnings("deprecation")
-	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
-		checkActive();
-		config.addShutdownHook(name, hook, override);
-		for(ViNode vh: hosts) {
-			vh.addShutdownHook(name, hook, override);
-		}
-	}
-	
-	@Override
-	public synchronized void addStartupHook(String name, Runnable hook) {
-		checkActive();
-		config.addStartupHook(name, hook);
-		for(ViNode vh: hosts) {
-			vh.addStartupHook(name, hook);
-		}
-	}
-	
-	@Override
-	public synchronized void addShutdownHook(String name, Runnable hook) {
-		checkActive();
-		config.addShutdownHook(name, hook);
-		for(ViNode vh: hosts) {
-			vh.addShutdownHook(name, hook);
-		}
-	}
-	
-	@Override
-	public synchronized void suspend() {
-		checkActive();
-		
-	}
-
-	@Override
-	public synchronized void resume() {
-		checkActive();
-		
-	}
-
 	@Override
 	public void kill() {
 		if (!shutdown) {

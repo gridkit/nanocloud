@@ -24,11 +24,10 @@ import java.util.concurrent.Future;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.AdvExecutor2ViExecutor;
-import org.gridkit.vicluster.Hooks;
 import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViExecutor;
-import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -137,40 +136,8 @@ class ViEngineNode implements ViNode {
 	}
 
 	@Override
-	public void addStartupHook(String name, Runnable hook) {
-		setConfigElement(ViConf.HOOK + name, new Hooks.StratupHook(hook));
-	}
-
-	@Override
-	@Deprecated
-	public void addStartupHook(String name, Runnable hook, boolean override) {
-		setConfigElement(ViConf.HOOK + name, new Hooks.StratupHook(hook));
-	}
-
-	@Override
-	public synchronized void addShutdownHook(String name, Runnable hook) {
-		setConfigElement(ViConf.HOOK + name, new Hooks.ShutdownHook(hook));
-	}
-
-	@Override
-	@Deprecated
-	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
-		setConfigElement(ViConf.HOOK + name, new Hooks.ShutdownHook(hook));
-	}
-
-	@Override
 	public String getProp(final String propName) {
 		return (String)engine.getPragma(propName);
-	}
-
-	@Override
-	public void suspend() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void resume() {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -183,15 +150,10 @@ class ViEngineNode implements ViNode {
 		engine.shutdown();
 	}
 
-
 	private class ExecProxy extends AdvExecutor2ViExecutor {
 
 		public ExecProxy(AdvancedExecutor advExec) {
 			super(advExec);
-		}
-
-		@Override
-		public void touch() {
 		}
 
 		@Override

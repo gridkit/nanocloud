@@ -25,15 +25,15 @@ import java.util.Map;
 import org.gridkit.lab.interceptor.ConstPoolParser.ConstEntry;
 import org.gridkit.lab.interceptor.ConstPoolParser.ConstFieldOrMethod;
 
-public class ViInstrumentation {
+public class BinaryCutPoints {
 	
-	public static CutPoint methodCutPoint(String className, String method, String... arguments) {
+	public static SimpleCutPoint methodCutPoint(String className, String method, String... arguments) {
 		String typeName = className.replace('.', '/');
 		String elementType = buildMethodSpec(arguments);
-		return new CutPoint(HookType.METHOD_CALL_SITE, typeName, method, elementType);
+		return new SimpleCutPoint(HookType.METHOD_CALL_SITE, typeName, method, elementType);
 	}
 
-	public static CutPoint methodCutPoint(Class<?> type, String method, Class<?>... arguments) {
+	public static SimpleCutPoint methodCutPoint(Class<?> type, String method, Class<?>... arguments) {
 		String className = type.getName();
 		String[] tarsg = new String[arguments.length];
 		for(int i = 0; i != arguments.length; ++i) {
@@ -81,13 +81,13 @@ public class ViInstrumentation {
 	 * @param cutPoints - set of cut points
 	 * @return subset of cut points matching class 
 	 */
-	static Collection<CutPoint> match(byte[] classData, Collection<CutPoint> cutPoints) {
-		List<CutPoint> result = new ArrayList<ViInstrumentation.CutPoint>();
-		Map<String, List<CutPoint>> fqns = new HashMap<String, List<CutPoint>>();
-		for (CutPoint cp: cutPoints) {
+	static Collection<SimpleCutPoint> match(byte[] classData, Collection<SimpleCutPoint> cutPoints) {
+		List<SimpleCutPoint> result = new ArrayList<BinaryCutPoints.SimpleCutPoint>();
+		Map<String, List<SimpleCutPoint>> fqns = new HashMap<String, List<SimpleCutPoint>>();
+		for (SimpleCutPoint cp: cutPoints) {
 			String fqn = cp.className + "::" + cp.elementName;
 			if (!fqns.containsKey(fqn)) {
-				fqns.put(fqn, new ArrayList<CutPoint>(4));
+				fqns.put(fqn, new ArrayList<SimpleCutPoint>(4));
 			}
 			fqns.get(fqn).add(cp);
 		}
@@ -104,7 +104,7 @@ public class ViInstrumentation {
 					if (c > 0) {
 						stype = type.substring(0, c + 1);
 					}
-					for (CutPoint cp : fqns.get(fqn)) {
+					for (SimpleCutPoint cp : fqns.get(fqn)) {
 						if (stype.equals(cp.elementType) || type.equals(cp.elementType)) {
 							result.add(cp);
 						}
@@ -116,14 +116,14 @@ public class ViInstrumentation {
 	}
 	
 	@SuppressWarnings("serial")
-	public static class CutPoint implements Serializable {
+	public static class SimpleCutPoint implements Serializable {
 		
 		private HookType type;
 		private String className;
 		private String elementName;
 		private String elementType;
 		
-		CutPoint(HookType type, String className, String elementName, String elementType) {
+		SimpleCutPoint(HookType type, String className, String elementName, String elementType) {
 			this.type = type;
 			this.className = className;
 			this.elementName = elementName;
@@ -153,7 +153,7 @@ public class ViInstrumentation {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			CutPoint other = (CutPoint) obj;
+			SimpleCutPoint other = (SimpleCutPoint) obj;
 			if (className == null) {
 				if (other.className != null)
 					return false;

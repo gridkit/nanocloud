@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
@@ -331,15 +332,15 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 		return (T) config.get(key);
 	}
 	
-	public static class CommonConfig extends Delegate {
+	public static class TypeConf extends Delegate {
 		
 		private ViConfigurable conf;
 
-		public static CommonConfig at(ViConfigurable conf) {
-			return new CommonConfig(conf);
+		public static TypeConf at(ViConfigurable conf) {
+			return new TypeConf(conf);
 		}
 		
-		public CommonConfig(ViConfigurable conf) {
+		public TypeConf(ViConfigurable conf) {
 			this.conf = conf;
 		}
 
@@ -348,31 +349,31 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return conf;
 		}
 				
-		public CommonConfig setIsolateNodeType() {
+		public TypeConf setIsolate() {
 			conf.setProp(NODE_TYPE, NODE_TYPE__ISOLATE);			
 			return this;
 		}
 
-		public CommonConfig setLocalNodeType() {
+		public TypeConf setLocal() {
 			conf.setProp(NODE_TYPE, NODE_TYPE__LOCAL);			
 			return this;
 		}
 
-		public CommonConfig setRemoteNodeType() {
+		public TypeConf setRemote() {
 			conf.setProp(NODE_TYPE, NODE_TYPE__REMOTE);			
 			return this;
 		}
 	}
 	
-	public static class Console extends Delegate {
+	public static class ConsoleConf extends Delegate {
 		
 		private ViConfigurable conf;
 
-		public static Console at(ViConfigurable conf) {
-			return new Console(conf);
+		public static ConsoleConf at(ViConfigurable conf) {
+			return new ConsoleConf(conf);
 		}
 		
-		public Console(ViConfigurable conf) {
+		public ConsoleConf(ViConfigurable conf) {
 			this.conf = conf;
 		}
 
@@ -381,71 +382,71 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return conf;
 		}
 
-		public Console write(String text) {
+		public ConsoleConf write(String text) {
 			// TODO not implemented
 			return this;
 		}
 
-		public Console bindOut(OutputStream os) {
+		public ConsoleConf bindOut(OutputStream os) {
 			conf.setConfigElement(CONSOLE_STD_OUT, os);
 			return this;
 		}
 
-		public Console bindOut(Writer writer) {
+		public ConsoleConf bindOut(Writer writer) {
 			conf.setConfigElement(CONSOLE_STD_OUT, new WriterOutputStream(writer));
 			return this;
 		}
 
-		public Console echoOut(boolean echo) {
+		public ConsoleConf echoOut(boolean echo) {
 			conf.setConfigElement(CONSOLE_STD_OUT_ECHO, String.valueOf(echo));
 			return this;			
 		}
 		
-		public Console bindErr(OutputStream os) {
+		public ConsoleConf bindErr(OutputStream os) {
 			conf.setConfigElement(CONSOLE_STD_ERR, os);
 			return this;			
 		}
 
-		public Console bindErr(Writer writer) {
+		public ConsoleConf bindErr(Writer writer) {
 			conf.setConfigElement(CONSOLE_STD_ERR, new WriterOutputStream(writer));
 			return this;			
 		}
 
-		public Console echoErr(boolean echo) {
+		public ConsoleConf echoErr(boolean echo) {
 			conf.setConfigElement(CONSOLE_STD_ERR_ECHO, String.valueOf(echo));
 			return this;						
 		}
 
-		public Console echoPrefix(String prefix) {
+		public ConsoleConf echoPrefix(String prefix) {
 			conf.setConfigElement(CONSOLE_ECHO_PREFIX, prefix);
 			return this;			
 		}
 
-		public Console flush() {
+		public ConsoleConf flush() {
 			conf.setConfigElement(CONSOLE_FLUSH, "");
 			return this;						
 		}
 
-		public Console closeIn() {
+		public ConsoleConf closeIn() {
 			// TODO implement
 			return this;						
 		}
 
-		public Console silentShutdown(boolean silent) {
+		public ConsoleConf silentShutdown(boolean silent) {
 			conf.setConfigElement(CONSOLE_SILENT_SHUTDOWN, String.valueOf(silent));
 			return this;
 		}
 	}
 	
-	public static class Classpath extends Delegate {
+	public static class ClasspathConf extends Delegate {
 		
 		private ViConfigurable conf;
 
-		public static Classpath at(ViConfigurable conf) {
-			return new Classpath(conf);
+		public static ClasspathConf at(ViConfigurable conf) {
+			return new ClasspathConf(conf);
 		}
 		
-		public Classpath(ViConfigurable conf) {
+		public ClasspathConf(ViConfigurable conf) {
 			this.conf = conf;
 		}
 
@@ -454,11 +455,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return conf;
 		}
 		
-		public Classpath add(URL url) {
+		public ClasspathConf add(URL url) {
 			return add(defaultName(url), url);
 		}
 
-		public Classpath add(String path) {
+		public ClasspathConf add(String path) {
 			return add(pathToURL(path));
 		}
 
@@ -471,31 +472,31 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			}
 		}
 
-		public Classpath add(String ruleName, URL url) {
+		public ClasspathConf add(String ruleName, URL url) {
 			checkURL(url);
 			conf.setProp(CLASSPATH_TWEAK + ruleName, "+" + urlToString(url));
 			return this;
 		}
 
-		public Classpath add(String ruleName, String path) {
+		public ClasspathConf add(String ruleName, String path) {
 			return add(ruleName, path);
 		}
 		
-		public Classpath remove(URL url) {			
+		public ClasspathConf remove(URL url) {			
 			return remove(defaultName(url), url);
 		}
 
-		public Classpath remove(String path) {
+		public ClasspathConf remove(String path) {
 			return remove(pathToURL(path));
 		}
 
-		public Classpath remove(String ruleName, URL url) {
+		public ClasspathConf remove(String ruleName, URL url) {
 			checkURL(url);
 			conf.setProp(CLASSPATH_TWEAK + ruleName, "-" + urlToString(url));
 			return this;
 		}
 
-		public Classpath remove(String ruleName, String path) {
+		public ClasspathConf remove(String ruleName, String path) {
 			return remove(ruleName, pathToURL(path));
 		}
 
@@ -522,15 +523,15 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 		}
 	}
 	
-	public static class ProcessConfig extends Delegate {
+	public static class JvmConf extends Delegate {
 
 		private ViConfigurable conf;
 
-		public static ProcessConfig at(ViConfigurable conf) {
-			return new ProcessConfig(conf);
+		public static JvmConf at(ViConfigurable conf) {
+			return new JvmConf(conf);
 		}
 		
-		public ProcessConfig(ViConfigurable conf) {
+		public JvmConf(ViConfigurable conf) {
 			this.conf = conf;
 		}
 
@@ -539,12 +540,12 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return conf;
 		}
 		
-		public ProcessConfig addJvmArg(String string) {
+		public JvmConf addJvmArg(String string) {
 			conf.setProp(JVM_ARGUMENT + "arg:" + string, string);
 			return this;
 		}
 
-		public ProcessConfig addJvmArgs(String... args) {
+		public JvmConf addJvmArgs(String... args) {
 			if (args.length == 0) {
 				return this;
 			}
@@ -561,14 +562,67 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return this;
 		}
 
-		public ProcessConfig setWorkDir(String path) {
+		public JvmConf setWorkDir(String path) {
 			conf.setProp(JVM_WORK_DIR, path);
 			return this;
 		}		
 
-		public ProcessConfig setEnv(String name, String val) {
+		public JvmConf setEnv(String name, String val) {
 			conf.setProp(JVM_ENV_VAR + name, val == null ? "\00" : val);
 			return this;
 		}		
 	}
+	
+	public static class HookConf extends Delegate {
+
+		private static AtomicLong ANNON_COUNTER = new AtomicLong();
+		
+		private ViConfigurable conf;
+		
+		public static HookConf at(ViConfigurable conf) {
+			return new HookConf(conf);
+		}
+		
+		public HookConf(ViConfigurable conf) {
+			this.conf = conf;
+		}
+
+		@Override
+		protected ViConfigurable getConfigurable() {
+			return conf;
+		}
+		
+		public HookConf addStartupHook(Runnable hook) {
+			setStartupHook("ANNONSTARTUP-" + ANNON_COUNTER.getAndIncrement(), hook);
+			return this;
+		}
+
+		public HookConf setStartupHook(String id, Runnable hook) {
+			String hn = ViConf.HOOK + id;
+			setConfigElement(hn, new Hooks.StratupHook(hook));
+			return this;
+		}
+
+		public HookConf addShutdownHook(Runnable hook) {
+			setShutdownHook("ANNONSHUTDOWN-" + ANNON_COUNTER.getAndIncrement(), hook);
+			return this;
+		}
+		
+		public HookConf setShutdownHook(String id, Runnable hook) {
+			String hn = ViConf.HOOK + id;
+			setConfigElement(hn, new Hooks.ShutdownHook(hook));
+			return this;
+		}
+		
+		public HookConf addPostShutdownHook(Runnable hook) {
+			setPostShutdownHook("ANNONSHUTDOWN-" + ANNON_COUNTER.getAndIncrement(), hook);
+			return this;
+		}
+		
+		public HookConf setPostShutdownHook(String id, Runnable hook) {
+			String hn = ViConf.HOOK + id;
+			setConfigElement(hn, new Hooks.PostShutdownHook(hook));
+			return this;
+		}
+	}	
 }

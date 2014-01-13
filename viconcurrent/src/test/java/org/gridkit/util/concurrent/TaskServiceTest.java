@@ -31,11 +31,17 @@ public class TaskServiceTest {
 		SimplePollTask task2 = new SimplePollTask("task2", taskService);
 		SimplePollTask task3 = new SimplePollTask("task3", taskService);
 		SimplePollTask task4 = new SimplePollTask("task4", taskService);
+		SimplePollTask task5 = new SimplePollTask("task5", taskService);
+		SimplePollTask task6 = new SimplePollTask("task6", taskService);
 		taskService.schedule(task1, 1, TimeUnit.DAYS);
 		taskService.schedule(task2);
 		taskService.schedule(task3);
 		taskService.schedule(task4);
+		taskService.schedule(task5);
+		taskService.schedule(task6);
 		
+		taskService.schedule(new HungTask());
+		taskService.schedule(new HungTask());
 		taskService.schedule(new HungTask());
 		taskService.schedule(new HungTask());
 		taskService.schedule(new HungTask());
@@ -49,11 +55,12 @@ public class TaskServiceTest {
 	
 	public static class HungTask implements Task {
 		
-		private Semaphore lock = new Semaphore(0);
+		private Semaphore lock = new Semaphore(0);		
 
 		@Override
 		public void run() {
 			lock.acquireUninterruptibly();
+			System.out.println("Lock passed");
 		}
 
 		@Override

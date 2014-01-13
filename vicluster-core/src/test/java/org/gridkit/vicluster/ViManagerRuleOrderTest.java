@@ -15,6 +15,8 @@
  */
 package org.gridkit.vicluster;
 
+import static org.gridkit.vicluster.ViX.HOOK;
+
 import java.io.Serializable;
 
 import junit.framework.Assert;
@@ -42,9 +44,9 @@ public class ViManagerRuleOrderTest {
 	public void verify_init_order_specific() {
 		
 		ViNode node = cloud.node("node");
-		node.addStartupHook("A", initProp("test-prop", "A"));
-		node.addStartupHook("B", initProp("test-prop", "B"));
-		node.addStartupHook("C", initProp("test-prop", "C"));
+		node.x(HOOK).setStartupHook("A", initProp("test-prop", "A"));
+		node.x(HOOK).setStartupHook("B", initProp("test-prop", "B"));
+		node.x(HOOK).setStartupHook("C", initProp("test-prop", "C"));
 		
 		node.touch();
 		
@@ -55,9 +57,9 @@ public class ViManagerRuleOrderTest {
 	public void verify_init_order_rule() {
 		
 		ViNode node = cloud.node("node*");
-		node.addStartupHook("A", initProp("test-prop", "A"));
-		node.addStartupHook("B", initProp("test-prop", "B"));
-		node.addStartupHook("C", initProp("test-prop", "C"));
+		node.x(HOOK).setStartupHook("A", initProp("test-prop", "A"));
+		node.x(HOOK).setStartupHook("B", initProp("test-prop", "B"));
+		node.x(HOOK).setStartupHook("C", initProp("test-prop", "C"));
 		
 		cloud.node("node").touch();
 		
@@ -72,12 +74,12 @@ public class ViManagerRuleOrderTest {
 		ViNode r3 = cloud.node("*d*");
 		ViNode r4 = cloud.node("*e");
 		
-		r4.addStartupHook("A", initProp("test-prop", "A"));
-		r3.addStartupHook("B", initProp("test-prop", "B"));
-		r2.addStartupHook("C", initProp("test-prop", "C"));
-		r1.addStartupHook("D", initProp("test-prop", "D"));
-		r2.addStartupHook("E", initProp("test-prop", "E"));
-		r3.addStartupHook("F", initProp("test-prop", "F"));
+		r4.x(HOOK).setStartupHook("A", initProp("test-prop", "A"));
+		r3.x(HOOK).setStartupHook("B", initProp("test-prop", "B"));
+		r2.x(HOOK).setStartupHook("C", initProp("test-prop", "C"));
+		r1.x(HOOK).setStartupHook("D", initProp("test-prop", "D"));
+		r2.x(HOOK).setStartupHook("E", initProp("test-prop", "E"));
+		r3.x(HOOK).setStartupHook("F", initProp("test-prop", "F"));
 		
 		cloud.node("node").touch();
 		
@@ -94,12 +96,12 @@ public class ViManagerRuleOrderTest {
 		ViNode r3 = cloud.node("*d*");
 		ViNode r4 = cloud.node("*e");
 		
-		r4.addStartupHook("A", initProp("test-prop", "A"));
-		r3.addStartupHook("B", initProp("test-prop", "B"));
-		r2.addStartupHook("C", initProp("test-prop", "C"));
-		r1.addStartupHook("D", initProp("test-prop", "D"));
-		r2.addStartupHook("E", initProp("test-prop", "E"));
-		r3.addStartupHook("F", initProp("test-prop", "F"));
+		r4.x(HOOK).setStartupHook("A", initProp("test-prop", "A"));
+		r3.x(HOOK).setStartupHook("B", initProp("test-prop", "B"));
+		r2.x(HOOK).setStartupHook("C", initProp("test-prop", "C"));
+		r1.x(HOOK).setStartupHook("D", initProp("test-prop", "D"));
+		r2.x(HOOK).setStartupHook("E", initProp("test-prop", "E"));
+		r3.x(HOOK).setStartupHook("F", initProp("test-prop", "F"));
 		
 		cloud.node("node").touch();
 		

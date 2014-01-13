@@ -47,7 +47,6 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 	private static class InProcessViNode implements ViNode {
 		
 		private Isolate isolate;
-		private ViNodeConfig config = new ViNodeConfig();
 		
 		public InProcessViNode(String name) {
 			isolate = new Isolate(name);
@@ -86,33 +85,6 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 			}
 		}
 		
-		public void addStartupHook(String name, Runnable hook) {
-			throw new IllegalStateException("Node " + name + " is started already");
-		}
-
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			throw new IllegalStateException("Node " + name + " is started already");
-		}
-
-		public void addShutdownHook(String name, Runnable hook) {
-			config.addShutdownHook(name, hook);
-		}
-
-		@SuppressWarnings("deprecation")
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			config.addShutdownHook(name, hook, override);
-		}
-
-		@Override
-		public void suspend() {
-			isolate.suspend();
-		}
-
-		@Override
-		public void resume() {
-			isolate.resume();
-		}
-
 		@Override
 		public void kill() {
 			isolate.stop();

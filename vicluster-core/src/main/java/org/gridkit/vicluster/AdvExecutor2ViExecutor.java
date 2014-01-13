@@ -25,11 +25,6 @@ public class AdvExecutor2ViExecutor implements ViExecutor {
 	}
 	
 	@Override
-	public void touch() {
-		// do nothing
-	}
-
-	@Override
 	public void exec(Runnable task) {
 		try {
 			submit(task).get();

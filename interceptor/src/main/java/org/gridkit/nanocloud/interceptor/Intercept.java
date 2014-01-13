@@ -15,6 +15,8 @@
  */
 package org.gridkit.nanocloud.interceptor;
 
+import static org.gridkit.vicluster.ViX.HOOK;
+
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.util.Arrays;
@@ -34,13 +36,9 @@ import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.isolate.Isolate;
 
-public class ViHookBuilder {
+public class Intercept {
 
-	public static Builder newCallSiteHook(Interceptor interceptor) {
-		return new Builder(interceptor);
-	}
-
-	public static Builder newCallSiteHook() {
+	public static Builder callSite() {
 		return new Builder(null);
 	}
 	
@@ -157,6 +155,25 @@ public class ViHookBuilder {
 			return this;
 		}
 
+		public Builder doPrint(String format) {
+			if (interceptor != null) {
+				throw new IllegalArgumentException("Interceptor or interception action is already set");
+			}
+			interceptor = new PrinterStub(format);
+			return this;
+		}
+
+		public Builder doInvoke(Interceptor interceptor) {
+			if (interceptor == null) {
+				throw new NullPointerException("interceptor is null");
+			}
+			if (this.interceptor != null) {
+				throw new IllegalArgumentException("Interceptor or interception action is already set");
+			}
+			this.interceptor = interceptor;
+			return this;
+		}
+
 		public void apply(ViConfigurable node) {
 			if (interceptor == null) {
 				throw new IllegalArgumentException("Interceptor or interception action is required");
@@ -169,7 +186,7 @@ public class ViHookBuilder {
 				node.setConfigElement(ViConf.HOOK + InstrumentationInitializer.INITIALIZER_NAME, InstrumentationInitializer.INSTANCE);
 				CallSiteCutPoint cp = new CallSiteCutPoint(makeClassNames(), methodName, makeSignature());
 				InstrumentationHookRule rule = new InstrumentationHookRule(cp, makeInterceptor());
-				node.addStartupHook(rule.toString(), rule);
+				node.x(HOOK).addStartupHook(rule);
 			}
 		}
 		

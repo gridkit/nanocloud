@@ -3,7 +3,7 @@ package org.gridkit.nanocloud;
 import org.gridkit.nanocloud.telecontrol.LocalNodeTypeHandler;
 import org.gridkit.nanocloud.telecontrol.isolate.IsolateNodeTypeHandler;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConf.Console;
+import org.gridkit.vicluster.ViConf.ConsoleConf;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.telecontrol.jvm.ViEngineNodeProvider;
@@ -15,7 +15,7 @@ public class CloudFactory {
 	public static Cloud createCloud() {
 		ViManager cloud = new ViManager(new ViEngineNodeProvider());
 		initDefaultTypeHandlers(cloud);
-		Console.at(cloud.node("**")).echoPrefix("~[%s] !(.*)");
+		ConsoleConf.at(cloud.node("**")).echoPrefix("~[%s] !(.*)");
 		return cloud;
 	}
 	

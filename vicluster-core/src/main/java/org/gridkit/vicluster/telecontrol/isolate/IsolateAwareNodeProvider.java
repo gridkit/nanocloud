@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.ViX;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
@@ -86,7 +87,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 		Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
 		// add Isolate init hook first
 		ViNodeConfig cc = new ViNodeConfig();
-		cc.addStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
+		cc.x(ViX.HOOK).setStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
 		config.apply(cc);
 		
 		return new WrapperNode(super.createViNode(name, cc, process));
@@ -143,10 +144,6 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			node.setConfigElements(config);
 		}
 
-		public void suspend() {
-			node.suspend();
-		}
-
 		public void setProps(Map<String, String> props) {
 			node.setProps(props);
 			Map<String, String> map = new LinkedHashMap<String, String>();
@@ -162,10 +159,6 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			node.touch();
 		}
 
-		public void resume() {
-			node.resume();
-		}
-
 		@Override
 		public void kill() {
 			node.kill();
@@ -173,24 +166,6 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 
 		public void shutdown() {
 			node.shutdown();
-		}
-
-		public void addStartupHook(String name, Runnable hook) {
-			node.addStartupHook(name, hook);
-		}
-
-		@SuppressWarnings("deprecation")
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			node.addStartupHook(name, hook, override);
-		}
-
-		public void addShutdownHook(String name, Runnable hook) {
-			node.addShutdownHook(name, hook);
-		}
-
-		@SuppressWarnings("deprecation")
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			node.addShutdownHook(name, hook, override);
 		}
 
 		public void exec(Runnable task) {

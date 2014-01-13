@@ -1,48 +1,48 @@
 package org.gridkit.vicluster;
 
 import org.gridkit.nanocloud.telecontrol.isolate.IsolateConfig;
-import org.gridkit.vicluster.ViConf.Classpath;
-import org.gridkit.vicluster.ViConf.CommonConfig;
-import org.gridkit.vicluster.ViConf.Console;
-import org.gridkit.vicluster.ViConf.ProcessConfig;
-import org.gridkit.vicluster.ViConfigurable.Delegate;
+import org.gridkit.vicluster.ViConf.ClasspathConf;
+import org.gridkit.vicluster.ViConf.TypeConf;
+import org.gridkit.vicluster.ViConf.ConsoleConf;
+import org.gridkit.vicluster.ViConf.HookConf;
+import org.gridkit.vicluster.ViConf.JvmConf;
 
 public class ViX {
 
-	public static final ViConfExtender<CommonConfig> COMMON = new ViConfExtender<ViConf.CommonConfig>() {
+	public static final ViConfExtender<TypeConf> TYPE = new ViConfExtender<ViConf.TypeConf>() {
 		@Override
-		public CommonConfig wrap(ViConfigurable node) {
-			return CommonConfig.at(node);
+		public TypeConf wrap(ViConfigurable node) {
+			return TypeConf.at(node);
 		}
 	};
 	
 	/**
-	 * @see Console
+	 * @see ConsoleConf
 	 */
-	public static final ViConfExtender<Console> CONSOLE = new ViConfExtender<ViConf.Console>() {
+	public static final ViConfExtender<ConsoleConf> CONSOLE = new ViConfExtender<ViConf.ConsoleConf>() {
 		@Override
-		public Console wrap(ViConfigurable node) {
-			return Console.at(node);
+		public ConsoleConf wrap(ViConfigurable node) {
+			return ConsoleConf.at(node);
 		}
 	};
 
 	/**
-	 * @see Classpath
+	 * @see ClasspathConf
 	 */
-	public static final ViConfExtender<Classpath> CLASSPATH = new ViConfExtender<ViConf.Classpath>() {
+	public static final ViConfExtender<ClasspathConf> CLASSPATH = new ViConfExtender<ViConf.ClasspathConf>() {
 		@Override
-		public Classpath wrap(ViConfigurable node) {
-			return Classpath.at(node);
+		public ClasspathConf wrap(ViConfigurable node) {
+			return ClasspathConf.at(node);
 		}
 	};
 
 	/**
-	 * @see ProcessConfig
+	 * @see JvmConf
 	 */
-	public static final ViConfExtender<ProcessConfig> PROCESS = new ViConfExtender<ProcessConfig>() {
+	public static final ViConfExtender<JvmConf> PROCESS = new ViConfExtender<JvmConf>() {
 		@Override
-		public ProcessConfig wrap(ViConfigurable node) {
-			return ProcessConfig.at(node);
+		public JvmConf wrap(ViConfigurable node) {
+			return JvmConf.at(node);
 		}
 	};
 	
@@ -53,46 +53,12 @@ public class ViX {
 			return IsolateConfig.at(node);
 		}
 	};
-	
-	public static class HookConfig extends Delegate {
 
-		private ViConfigurable conf;
+	public static final ViConfExtender<HookConf> HOOK = new ViConfExtender<HookConf>() {
 		
-		public static HookConfig at(ViConfigurable conf) {
-			return new HookConfig(conf);
-		}
-		
-		public HookConfig(ViConfigurable conf) {
-			this.conf = conf;
-		}
-
 		@Override
-		protected ViConfigurable getConfigurable() {
-			return conf;
+		public HookConf wrap(ViConfigurable node) {
+			return HookConf.at(node);
 		}
-		
-		public HookConfig addStartupHook(Runnable hook) {
-			throw new UnsupportedOperationException();
-		}
-
-		public HookConfig setStartupHook(String id, Runnable hook) {
-			throw new UnsupportedOperationException();			
-		}
-
-		public HookConfig addShutdownHook(Runnable hook) {
-			throw new UnsupportedOperationException();
-		}
-		
-		public HookConfig setShutdownHook(String id, Runnable hook) {
-			throw new UnsupportedOperationException();			
-		}
-		
-		public HookConfig addPostShutdownHook(Runnable hook) {
-			throw new UnsupportedOperationException();
-		}
-		
-		public HookConfig setPostShutdownHook(String id, Runnable hook) {
-			throw new UnsupportedOperationException();			
-		}
-	}
+	};
 }

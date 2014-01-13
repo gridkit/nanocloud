@@ -30,15 +30,10 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 
 	public String getProp(String propName);
 	
-	/** 
-	 * Freezes all thread associated with node. Supported only for embeded nodes.
+	/**
+	 * Same as sending empty runnable to node. Usefully to force node initialization.
 	 */
-	public void suspend();
-	
-	/** 
-	 * Resumes node freezes with {@link #suspend()}.
-	 */
-	public void resume();
+	public void touch();
 	
 	/** 
 	 * Ungracefully terminates remote process (or thread group in embeded node). Unlike {@link #shutdown()} no shutdown hooks will be executed in remote VM.
@@ -87,11 +82,6 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 		}
 
 		@Override
-		public void suspend() {
-			delegate.suspend();
-		}
-
-		@Override
 		public void setProps(Map<String, String> props) {
 			delegate.setProps(props);
 		}
@@ -102,11 +92,6 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 		}
 
 		@Override
-		public void resume() {
-			delegate.resume();
-		}
-
-		@Override
 		public void kill() {
 			delegate.kill();			
 		}
@@ -114,26 +99,6 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 		@Override
 		public void shutdown() {
 			delegate.shutdown();
-		}
-
-		public void addStartupHook(String id, Runnable hook) {
-			delegate.addStartupHook(id, hook);
-		}
-
-		public void addShutdownHook(String id, Runnable hook) {
-			delegate.addShutdownHook(id, hook);
-		}
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			delegate.addStartupHook(name, hook, override);
-		}
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			delegate.addShutdownHook(name, hook, override);
 		}
 
 		@Override

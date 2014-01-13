@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.gridkit.vicluster.CloudContext;
 import org.gridkit.vicluster.ViConf;
@@ -170,6 +171,8 @@ public class ConsoleOutputSupport implements PragmaHandler {
 			} catch (InterruptedException e) {
 				// ignore
 			} catch (ExecutionException e) {
+				// ignore
+			} catch (RejectedExecutionException e) {
 				// ignore
 			}
 		}		

@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.MassExec;
-import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViConfExtender;
+import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
@@ -261,31 +261,6 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
-	public void addStartupHook(String name, Runnable hook) {
-		throw new IllegalStateException("Node " + name + " is started already");
-	}
-
-	@Override
-	public void addStartupHook(String name, Runnable hook, boolean override) {
-		throw new IllegalStateException("Node " + name + " is started already");
-	}
-
-	@Override
-	public synchronized void addShutdownHook(String name, Runnable hook) {
-		if (active) {
-			config.addShutdownHook(name, hook);
-		}
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
-		if (active) {
-			config.addShutdownHook(name, hook, override);
-		}
-	}
-
-	@Override
 	public String getProp(final String propName) {
 		// TODO handling special props
 		return exec(new Callable<String>() {
@@ -294,16 +269,6 @@ class JvmNode implements ViNode {
 				return System.getProperty(propName);
 			}
 		});
-	}
-
-	@Override
-	public void suspend() {
-		// TODO
-	}
-
-	@Override
-	public void resume() {
-		// TODO
 	}
 
 	@Override

@@ -24,27 +24,27 @@ import java.util.Collection;
 
 import junit.framework.Assert;
 
-import org.gridkit.lab.interceptor.ViInstrumentation.CutPoint;
+import org.gridkit.lab.interceptor.BinaryCutPoints.SimpleCutPoint;
 import org.junit.Test;
 
 public class InstrumentationTest {
 
 	@Test
 	public void test_cut_point_match() throws IOException {
-		CutPoint cp_curMillis = ViInstrumentation.methodCutPoint(System.class, "currentTimeMillis");
-		CutPoint cp_println_long = ViInstrumentation.methodCutPoint(PrintStream.class, "println", long.class);
-		CutPoint cp_println_string = ViInstrumentation.methodCutPoint(PrintStream.class, "println", String.class);
-		CutPoint cp_arrays_search = ViInstrumentation.methodCutPoint(Arrays.class, "binarySearch", Object[].class, Object.class);
+		SimpleCutPoint cp_curMillis = BinaryCutPoints.methodCutPoint(System.class, "currentTimeMillis");
+		SimpleCutPoint cp_println_long = BinaryCutPoints.methodCutPoint(PrintStream.class, "println", long.class);
+		SimpleCutPoint cp_println_string = BinaryCutPoints.methodCutPoint(PrintStream.class, "println", String.class);
+		SimpleCutPoint cp_arrays_search = BinaryCutPoints.methodCutPoint(Arrays.class, "binarySearch", Object[].class, Object.class);
 		
-		Collection<CutPoint> cpset = Arrays.asList(cp_curMillis, cp_println_long, cp_println_string, cp_arrays_search);
+		Collection<SimpleCutPoint> cpset = Arrays.asList(cp_curMillis, cp_println_long, cp_println_string, cp_arrays_search);
 		
-		Collection<CutPoint> testA = ViInstrumentation.match(readClass(TestA.class), cpset);
+		Collection<SimpleCutPoint> testA = BinaryCutPoints.match(readClass(TestA.class), cpset);
 		Assert.assertTrue(testA.contains(cp_curMillis));
 		Assert.assertTrue(testA.contains(cp_println_long));
 		Assert.assertFalse(testA.contains(cp_println_string));
 		Assert.assertFalse(testA.contains(cp_arrays_search));
 		
-		Collection<CutPoint> testB = ViInstrumentation.match(readClass(TestB.class), cpset);
+		Collection<SimpleCutPoint> testB = BinaryCutPoints.match(readClass(TestB.class), cpset);
 		Assert.assertFalse(testB.contains(cp_curMillis));
 		Assert.assertFalse(testB.contains(cp_println_long));
 		Assert.assertTrue(testB.contains(cp_println_string));

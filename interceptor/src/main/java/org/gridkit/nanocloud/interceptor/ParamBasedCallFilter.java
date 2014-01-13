@@ -19,7 +19,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import org.gridkit.lab.interceptor.Interception;
-import org.gridkit.nanocloud.interceptor.ViHookBuilder.ParamMatcher;
+import org.gridkit.nanocloud.interceptor.Intercept.ParamMatcher;
 
 class ParamBasedCallFilter implements CallFilter, Serializable {
 

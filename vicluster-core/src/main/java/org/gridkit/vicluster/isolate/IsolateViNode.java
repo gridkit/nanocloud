@@ -109,54 +109,6 @@ public class IsolateViNode implements ViNode {
 	}
 
 	@Override
-	public synchronized void addStartupHook(String name, Runnable hook) {
-		ensureNotDestroyed();
-		if (isolate != null) {
-			throw new IllegalStateException("already started");
-		}
-		config.addStartupHook(name, hook);
-	}
-
-	@Override
-	public synchronized void addStartupHook(String name, Runnable hook, boolean override) {
-		ensureNotDestroyed();
-		if (isolate != null) {
-			throw new IllegalStateException("already started");
-		}
-		config.addStartupHook(name, hook, override);
-	}
-
-	@Override
-	public synchronized void addShutdownHook(String name, Runnable hook) {
-		ensureNotDestroyed();
-		config.addShutdownHook(name, hook);
-		if (isolate != null) {
-			throw new IllegalStateException("already started");
-		}
-	}
-
-	@Override
-	public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
-		ensureNotDestroyed();
-		config.addShutdownHook(name, hook, override);
-		if (isolate != null) {
-			throw new IllegalStateException("already started");
-		}
-	}
-
-	@Override
-	public synchronized void suspend() {
-		ensureStarted();
-		isolate.suspend();
-	}
-
-	@Override
-	public void resume() {
-		ensureStarted();
-		isolate.resume();
-	}
-
-	@Override
 	public void kill() {
 		shutdown();		
 	}
@@ -277,13 +229,7 @@ public class IsolateViNode implements ViNode {
 	}
 	
 	private synchronized void destroy() {
-		config.apply(new ViNodeConfig.ReplyShutdownHooks() {
-			
-			@Override
-			public void addShutdownHook(String name, Runnable hook, boolean override) {
-				isolate.exec(hook);
-			}
-		});
+		// TODO shutdown hooks are not supported
 		isolate.stop();
 		destroyed = true;
 	}
@@ -363,26 +309,6 @@ public class IsolateViNode implements ViNode {
 				setConfigElement(e.getKey(), e.getValue());
 			}
 		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook) {
-			isolate.exec(hook); 
-		}
-
-		@Override
-		public void addStartupHook(String name, Runnable hook, boolean override) {
-			isolate.exec(hook); 
-		}
-	
-		@Override
-		public void addShutdownHook(String name, Runnable hook) {
-			// do nothing
-		}	
-
-		@Override
-		public void addShutdownHook(String name, Runnable hook, boolean override) {
-			// do nothing
-		}	
 	}		
 	
 	private static class AnyThrow {
