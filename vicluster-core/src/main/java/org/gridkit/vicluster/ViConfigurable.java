@@ -18,12 +18,11 @@ package org.gridkit.vicluster;
 import java.util.Map;
 
 /**
- * TODO config calls chaining 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public interface ViConfigurable {
 
-	public <X> X x(ViExtender<X> extention);
+	public <X> X x(ViConfExtender<X> extender);
 	
 	public void setProp(String propName, String value);
 	
@@ -60,7 +59,7 @@ public interface ViConfigurable {
 		
 		protected abstract ViConfigurable getConfigurable();
 		
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return getConfigurable().x(extention);
 		}
 

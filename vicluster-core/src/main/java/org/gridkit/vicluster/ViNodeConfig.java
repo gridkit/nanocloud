@@ -32,7 +32,7 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 	}
 
 	@Override
-	public <X> X x(ViExtender<X> extention) {
+	public <X> X x(ViConfExtender<X> extention) {
 		return extention.wrap(this);
 	}	
 	
@@ -194,7 +194,7 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 		}
 		
 		@Override
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return extention.wrap(this);
 		}
 		
@@ -246,7 +246,7 @@ public class ViNodeConfig extends ViConf implements ViConfigurable, Serializable
 	public static abstract class ReplyShutdownHooks implements ViConfigurable {
 		
 		@Override
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return extention.wrap(this);
 		}
 		

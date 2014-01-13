@@ -1,6 +1,6 @@
 package org.gridkit.vicluster;
 
-public interface ViExtender<X> {
+public interface ViConfExtender<X> {
 
 	public X wrap(ViConfigurable node);
 	

@@ -282,7 +282,7 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return extention.wrap(this);
 		}
 		
@@ -725,7 +725,7 @@ public class ViManager implements ViNodeSet {
 		}
 		
 		@Override
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return extention.wrap(this);
 		}
 		
@@ -914,7 +914,7 @@ public class ViManager implements ViNodeSet {
 		}
 		
 		@Override
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return extention.wrap(this);
 		}
 		

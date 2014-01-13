@@ -75,7 +75,7 @@ public class ViGroup implements ViNode {
 	}
 
 	@Override
-	public <X> X x(ViExtender<X> extention) {
+	public <X> X x(ViConfExtender<X> extention) {
 		return extention.wrap(this);
 	}
 

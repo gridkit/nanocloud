@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.MassExec;
 import org.gridkit.vicluster.ViEngine;
-import org.gridkit.vicluster.ViExtender;
+import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
@@ -130,7 +130,7 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
-	public <X> X x(ViExtender<X> extention) {
+	public <X> X x(ViConfExtender<X> extention) {
 		return extention.wrap(this);
 	}
 	

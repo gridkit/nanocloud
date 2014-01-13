@@ -34,7 +34,7 @@ public class DummyViNode implements ViNode {
 	private ViNodeConfig config = new ViNodeConfig();
 
 	@Override
-	public <X> X x(ViExtender<X> extention) {
+	public <X> X x(ViConfExtender<X> extention) {
 		return extention.wrap(this);
 	}	
 	

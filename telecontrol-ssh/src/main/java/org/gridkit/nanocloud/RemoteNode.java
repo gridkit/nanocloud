@@ -18,7 +18,7 @@ package org.gridkit.nanocloud;
 import org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConfigurable;
-import org.gridkit.vicluster.ViExtender;
+import org.gridkit.vicluster.ViConfExtender;
 
 /**
  * Config properties for remote nodes.
@@ -27,7 +27,7 @@ import org.gridkit.vicluster.ViExtender;
  */
 public class RemoteNode extends ViConfigurable.Delegate {
 
-	public static ViExtender<RemoteNode> REMOTE = new ViExtender<RemoteNode>() {
+	public static ViConfExtender<RemoteNode> REMOTE = new ViConfExtender<RemoteNode>() {
 
 		@Override
 		public RemoteNode wrap(ViConfigurable node) {

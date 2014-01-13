@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
-import org.gridkit.vicluster.ViExtender;
+import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.VoidCallable;
@@ -119,7 +119,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 		}
 
 		@Override
-		public <X> X x(ViExtender<X> extention) {
+		public <X> X x(ViConfExtender<X> extention) {
 			return extention.wrap(this);
 		}
 		
