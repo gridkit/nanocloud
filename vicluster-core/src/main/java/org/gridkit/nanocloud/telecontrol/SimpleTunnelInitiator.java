@@ -238,7 +238,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 			BufferedReader outr = new BufferedReader(new StringReader(new String(stdOut.toByteArray()))); 
 			BufferedReader errr = new BufferedReader(new StringReader(new String(stdErr.toByteArray()))); 
 			
-			Pattern p = Pattern.compile("java version \"([^\"]*)\"");
+			Pattern p = Pattern.compile("(openjdk|java) version \"([^\"]*)\"");
 			
 			while(true) {
 				String line = errr.readLine();
@@ -247,7 +247,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 				}
 				Matcher m = p.matcher(line);
 				if (m.matches()) {
-					return m.group(1);
+					return m.group(2);
 				}
 				logger.critical().log("{java -version} " + line);
 			}
