@@ -28,7 +28,7 @@
 
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.7.25-SNAPSHOT</version>
+    <version>0.7.24-SNAPSHOT</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
     <licenses>
