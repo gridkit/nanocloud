@@ -137,6 +137,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			node.setConfigElements(config);
 		}
 
+		@SuppressWarnings("deprecation")
 		public void suspend() {
 			node.suspend();
 		}
@@ -156,6 +157,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			node.touch();
 		}
 
+		@SuppressWarnings("deprecation")
 		public void resume() {
 			node.resume();
 		}

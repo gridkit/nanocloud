@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings("deprecation")
 public class ViManager implements ViNodeSet {
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(ViNodeSet.class);
@@ -318,7 +319,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			ensureAlive();
 			config.addStartupHook(name, hook, override);
@@ -346,7 +346,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public synchronized void addShutdownHook(String name, Runnable hook, boolean override) {
 			ensureAlive();
 			config.addShutdownHook(name, hook, override);
@@ -774,7 +773,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public void addStartupHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
 				rule().addStartupHook(name, hook, override);
@@ -791,7 +789,6 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
-		@SuppressWarnings("deprecation")
 		public void addShutdownHook(String name, Runnable hook, boolean override) {
 			synchronized(ViManager.this) { 
 				rule().addShutdownHook(name, hook, override);

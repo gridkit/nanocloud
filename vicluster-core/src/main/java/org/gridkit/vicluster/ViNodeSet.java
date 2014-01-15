@@ -17,11 +17,14 @@ package org.gridkit.vicluster;
 
 import java.util.Collection;
 
+import org.gridkit.nanocloud.Cloud;
+
 /**
+ * @deprecated Replaced with {@link Cloud} 
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ViNodeSet {
+public interface ViNodeSet extends Cloud {
 
 	/**
 	 * Return node by name (or group of nodes for pattern).

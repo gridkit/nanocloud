@@ -32,11 +32,13 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 	
 	/** 
 	 * Freezes all thread associated with node. Supported only for embeded nodes.
+	 * @deprecated Use {@link ViHelper#suspend(ViNode)}
 	 */
 	public void suspend();
 	
 	/** 
 	 * Resumes node freezes with {@link #suspend()}.
+	 * @deprecated Use {@link ViHelper#resume(ViNode)}
 	 */
 	public void resume();
 	

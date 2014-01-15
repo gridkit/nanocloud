@@ -23,6 +23,8 @@ import java.util.Properties;
 
 public class ViHelper {
 	
+	
+	
 	public static void configure(ViManager manager, String filename) throws IOException {
 		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
 		if (is == null) {
@@ -65,5 +67,35 @@ public class ViHelper {
 			}
 			manager.node(skey).setProp(pname, pvalue);
 		}
+	}
+
+	/**
+	 * Helper method to accommodate ViNode interface changes 
+	 */
+	public static void addStartupHook(ViConfigurable node, String hookId, Runnable hook) {
+		node.addStartupHook(hookId, hook);
+	}
+
+	/**
+	 * Helper method to accommodate ViNode interface changes 
+	 */
+	public static void addShutdownHook(ViConfigurable node, String hookId, Runnable hook) {
+		node.addShutdownHook(hookId, hook);
+	}
+
+	/**
+	 * Helper method to accommodate ViNode interface changes 
+	 */
+	@SuppressWarnings("deprecation")
+	public static void suspend(ViNode node) {
+		node.suspend();
+	}
+
+	/**
+	 * Helper method to accommodate ViNode interface changes 
+	 */
+	@SuppressWarnings("deprecation")
+	public static void resume(ViNode node) {
+		node.resume();
 	}
 }

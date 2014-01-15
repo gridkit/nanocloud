@@ -19,6 +19,7 @@ import java.io.Serializable;
 
 import junit.framework.Assert;
 
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +27,7 @@ import org.junit.Test;
 
 public class ViManagerRuleOrderTest {
 
-	ViNodeSet cloud;
+	Cloud cloud;
 
 	@Before
 	public void createCloud() {
