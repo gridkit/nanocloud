@@ -7,7 +7,7 @@ import junit.framework.Assert;
 
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
-import org.gridkit.vicluster.ViX;
+import org.gridkit.vicluster.VX;
 import org.junit.After;
 import org.junit.Test;
 
@@ -48,9 +48,9 @@ public class CloudFactoryTest {
 		
 		StringWriter outwriter = new StringWriter();
 		StringWriter errwriter = new StringWriter();
-		node.x(ViX.CONSOLE).bindOut(outwriter);
-		node.x(ViX.CONSOLE).bindOut(outwriter);
-		node.x(ViX.CONSOLE).bindErr(errwriter);
+		node.x(VX.CONSOLE).bindOut(outwriter);
+		node.x(VX.CONSOLE).bindOut(outwriter);
+		node.x(VX.CONSOLE).bindErr(errwriter);
 		
 		String r = node.exec(new Callable<String>() {
 			@Override
@@ -61,13 +61,13 @@ public class CloudFactoryTest {
 			}
 		});
 		
-		node.x(ViX.CONSOLE).flush();
+		node.x(VX.CONSOLE).flush();
 
 		Assert.assertEquals("ping", r);
 		Assert.assertTrue(outwriter.toString().startsWith("ping"));
 		Assert.assertTrue(errwriter.toString().startsWith("pong"));
 
-		node.x(ViX.CONSOLE).echoPrefix("~[%s-xx] !(.*)");
+		node.x(VX.CONSOLE).echoPrefix("~[%s-xx] !(.*)");
 
 		node.exec(new Callable<Void>() {
 			@Override

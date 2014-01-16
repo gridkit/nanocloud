@@ -15,7 +15,7 @@
  */
 package org.gridkit.vicluster;
 
-import static org.gridkit.vicluster.ViX.HOOK;
+import static org.gridkit.vicluster.VX.HOOK;
 
 import java.io.Serializable;
 

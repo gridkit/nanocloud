@@ -7,7 +7,7 @@ import org.gridkit.vicluster.ViConf.ConsoleConf;
 import org.gridkit.vicluster.ViConf.HookConf;
 import org.gridkit.vicluster.ViConf.JvmConf;
 
-public class ViX {
+public class VX {
 
 	public static final ViConfExtender<TypeConf> TYPE = new ViConfExtender<ViConf.TypeConf>() {
 		@Override

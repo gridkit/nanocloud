@@ -15,6 +15,7 @@
  */
 package org.gridkit.nanocloud.interceptor;
 
+import java.io.PrintStream;
 import java.io.Serializable;
 
 import org.gridkit.lab.interceptor.Interception;
@@ -24,12 +25,23 @@ class PrinterStub implements Interceptor, Serializable {
 
 	private static final long serialVersionUID = 20140112L;
 	
+	private boolean errStream;
+	private boolean printStackTrace;
 	private String format;
+	
 
 	public PrinterStub(String format) {
 		this.format = format;
 	}
 
+	public void setPrintToErr(boolean err) {
+		errStream = err;
+	}
+
+	public void setPrintStackTrace(boolean trace) {
+		printStackTrace = trace;
+	}
+	
 	@Override
 	public void handle(Interception call) {
 		String text;
@@ -39,6 +51,10 @@ class PrinterStub implements Interceptor, Serializable {
 		catch(Throwable e) {
 			text = "Print interceptor has failed. Template: [" + format + "] Error: " + e.toString();
 		}
-		System.out.println(text);
+		PrintStream ps = errStream ? System.err : System.out;
+		ps.println(text);
+		if (printStackTrace) {
+			new Exception().printStackTrace(ps);
+		}
 	}	
 }

@@ -1,6 +1,6 @@
 package org.gridkit.nanocloud.jmx;
 
-import static org.gridkit.vicluster.ViX.TYPE;
+import static org.gridkit.vicluster.VX.TYPE;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.UndeclaredThrowableException;

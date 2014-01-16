@@ -15,7 +15,7 @@
  */
 package org.gridkit.nanocloud;
 
-import static org.gridkit.vicluster.ViX.CLASSPATH;
+import static org.gridkit.vicluster.VX.CLASSPATH;
 
 import java.io.BufferedReader;
 import java.io.File;

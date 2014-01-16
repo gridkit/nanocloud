@@ -25,6 +25,30 @@ import org.gridkit.nanocloud.Cloud;
 
 public class ViHelper {
 	
+	/**
+	 * Workaround for incremental migration from 0.7 to 0.8 branch 
+	 * @deprecated
+	 */
+	public static void addStartupHook(ViConfigurable conf, String hookId, Runnable hook) {
+	    conf.x(VX.HOOK).setStartupHook(hookId, hook);
+	}
+
+	/**
+	 * Workaround for incremental migration from 0.7 to 0.8 branch 
+	 * @deprecated
+	 */
+	public static void addShutdownHook(ViConfigurable conf, String hookId, Runnable hook) {
+	    conf.x(VX.HOOK).setShutdownHook(hookId, hook);
+	}
+	
+    public static void suspend(ViNode node) {
+        throw new UnsupportedOperationException();        
+    }
+
+    public static void resume(ViNode node) {
+        throw new UnsupportedOperationException();        
+    }
+	
 	public static void configure(Cloud manager, String filename) throws IOException {
 		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
 		if (is == null) {

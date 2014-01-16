@@ -1665,6 +1665,10 @@ public class Isolate {
 		protected boolean shouldTraceIsolation() {
 			return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.trace-classes"));
 		}
+
+		protected boolean shouldTraceInstrumentation() {
+		    return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.trace-instrumentation"));
+		}
 		
 		IsolatedClassloader(ClassLoader base) {
 			super(null);			
@@ -1921,11 +1925,21 @@ public class Isolate {
 
 		private Class<?> defineClass(URL url, String classname, byte[] cd) throws ClassFormatError {
 			if (shouldTraceIsolation()) {
-				stdOut.println("Isolated class: " + classname);
+				getRootStdOut().println("<" + getName() + "> isolate class - " + classname);
 			}
 			if (classTransformer != null) {
 				// TODO use classhierarchy helper
-				cd = classTransformer.rewriteClassData(classname, cd, null);
+			    try {
+			        byte[] newcd = classTransformer.rewriteClassData(classname, cd, null);
+			        if (shouldTraceInstrumentation() && cd != newcd) {
+			            getRootStdOut().println("<" + getName() + "> instrumented class - " + classname);
+			        }
+			        cd = newcd;
+			    }
+			    catch(Exception e) {
+			        getRootStdErr().println("<" + getName() + "> class transformation failed - " + classname);
+			        e.printStackTrace(getRootStdErr());
+			    }
 			}
 			Class<?> c = defineClass(classname, cd, 0, cd.length, getProtectionDomain(url));
 			ensurePackage(classname, url);

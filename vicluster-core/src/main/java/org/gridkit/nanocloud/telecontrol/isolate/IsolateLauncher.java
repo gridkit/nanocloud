@@ -27,6 +27,7 @@ import org.gridkit.zeroio.LookbackOutputStream;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.NamedStreamPair;
+import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.SlaveSpore;
 
 class IsolateLauncher implements ProcessLauncher {
@@ -87,7 +88,9 @@ class IsolateLauncher implements ProcessLauncher {
 			final InputStream sin = controlIn.getInputStream();
 
 			DuplexStream outter = new NamedStreamPair("[" + isolate.getName() + "]:external", controlOut.getInputStream(), controlIn.getOutputStream());
-			
+
+			// This is required to disable deathwatch thread
+			isolate.setProp(RemotingEndPoint.HEARTBEAT_TIMEOUT, String.valueOf(Integer.MAX_VALUE));
 			isolate.start();
 			
 			isolate.execNoMarshal(new Runnable() {

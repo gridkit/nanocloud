@@ -25,6 +25,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
 
 /**
  * Instance of this class is capable of parsing Java byte code (class file), identify call sites and optionally inject call interception if mandated by {@link HookManager}.
@@ -113,13 +114,20 @@ public class ClassRewriter {
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			className = name;
+			int minVersion = version >> 16;
+			int majVersion = version & 0xFF;
+			if (majVersion < 49) {
+				// minimum supported version
+				version = 49;
+			}
 			writer.visit(version, access, name, signature, superName, interfaces);
 		}
 		
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String desc,	String signature, String[] exceptions) {
-			return new MethodInstrumenter(name, signature, writer.visitMethod(access, name, desc, signature, exceptions));
-			
+			MethodVisitor visitor = new MethodInstrumenter(name, signature, writer.visitMethod(access, name, desc, signature, exceptions));
+			visitor = new JSRInlinerAdapter(visitor, access, name, desc, signature, exceptions);
+			return visitor;			
 		}
 
 		@Override

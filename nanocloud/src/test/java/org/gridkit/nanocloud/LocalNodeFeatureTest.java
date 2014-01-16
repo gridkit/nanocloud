@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
-import org.gridkit.vicluster.ViX;
+import org.gridkit.vicluster.VX;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 	@Before
 	public void initCloud() {
 		cloud = CloudFactory.createCloud();
-		cloud.node("**").x(ViX.TYPE).setLocal();
+		cloud.node("**").x(VX.TYPE).setLocal();
 	}	
 	
 	@Test

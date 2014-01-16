@@ -152,6 +152,31 @@ public class InstrumentationFeatureTest {
 		});
 	}
 
+	@Test
+	public void test_instrumentation_execution_prevention2() {
+//		System.setProperty("gridkit.isolate.trace-classes", "true");
+//		System.setProperty("gridkit.interceptor.trace", "true");
+		
+		ViNode node = node("test_instrumentation_execution_prevention");
+		
+		Intercept
+		.callSite()
+		.onTypes(System.class)
+		.onMethod("exit")
+		.doReturn(null)
+		.apply(node);
+		
+		node.exec(new Callable<Void>() {
+			@Override
+			public Void call() throws Exception {
+				System.exit(0);
+				// May be second time?
+				System.exit(0);
+				return null;
+			}
+		});
+	}
+
 	@Test(expected=IllegalStateException.class)
 	public void test_instrumentation_exception() {
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
@@ -234,7 +259,7 @@ public class InstrumentationFeatureTest {
 	
 	@Test
 	public void test_instrumentation_call_counter() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
+		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 		
 		ViNode node = cloud.node("test_instrumentation_call_counter");

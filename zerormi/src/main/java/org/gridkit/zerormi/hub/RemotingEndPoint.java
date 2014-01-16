@@ -88,7 +88,7 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 				public void run() {
 					try {
 						while(true) {
-							Thread.currentThread().setName("HeatbeatDeathWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
+							Thread.currentThread().setName("HeartbeatDeathWatch-" + SimpleDateFormat.getDateTimeInstance().format(new Date()));
 							long stale = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastHeartBeat);					
 							if (stale > heartBeatTimeout) {
 								System.err.println("Terminating process due to heartbeat timeout");

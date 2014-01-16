@@ -15,7 +15,7 @@
  */
 package org.gridkit.nanocloud.interceptor;
 
-import static org.gridkit.vicluster.ViX.HOOK;
+import static org.gridkit.vicluster.VX.HOOK;
 
 import java.io.Serializable;
 import java.rmi.Remote;
@@ -38,6 +38,20 @@ import org.gridkit.vicluster.isolate.Isolate;
 
 public class Intercept {
 
+	public static MethodRef method(Class<?> c, String name, Class<?>... params) {
+		try {
+			c.getDeclaredMethod(name, params);
+		} catch (SecurityException e) {
+			throw new RuntimeException(e);
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+		SimpleMethodRef ref = new SimpleMethodRef(c, name, params);
+		// null check
+		ref.toString();
+		return  ref;
+	}
+	
 	public static Builder callSite() {
 		return new Builder(null);
 	}
@@ -80,6 +94,12 @@ public class Intercept {
 			this.interceptor = interceptor;
 		}
 
+		public Builder on(MethodRef mref) {
+			onTypes(mref.getTargetClass());
+			onMethod(mref.getMethodName(), mref.getMethodParamTypes());
+			return this;
+		}
+		
 		public Builder onTypes(Class<?>... types) {
 			targetClasses.addAll(Arrays.asList(types));
 			return this;
@@ -163,6 +183,26 @@ public class Intercept {
 			return this;
 		}
 
+		public Builder doPrintStackTrace() {
+			if (interceptor != null) {
+				throw new IllegalArgumentException("Interceptor or interception action is already set");
+			}
+			PrinterStub printerStub = new PrinterStub("");
+			printerStub.setPrintStackTrace(true);
+			interceptor = printerStub;
+			return this;
+		}
+
+		public Builder doPrintStackTrace(String format) {
+			if (interceptor != null) {
+				throw new IllegalArgumentException("Interceptor or interception action is already set");
+			}
+			PrinterStub printerStub = new PrinterStub(format);
+			printerStub.setPrintStackTrace(true);
+			interceptor = printerStub;
+			return this;
+		}
+
 		public Builder doInvoke(Interceptor interceptor) {
 			if (interceptor == null) {
 				throw new NullPointerException("interceptor is null");
@@ -225,6 +265,96 @@ public class Intercept {
 				}
 			}
 			return sig;
+		}
+	}
+	
+	public static interface MethodRef {
+		
+		public Class<?> getTargetClass();
+
+		public String getMethodName();
+		
+		public Class<?>[] getMethodParamTypes();
+		
+	}
+	
+	private static class SimpleMethodRef implements MethodRef {
+		
+		Class<?> targetClass;
+		String methodName;
+		Class<?>[] methodParamTypes;
+		
+		public SimpleMethodRef(Class<?> targetClass, String methodName, Class<?>[] methodParamTypes) {
+			this.targetClass = targetClass;
+			this.methodName = methodName;
+			this.methodParamTypes = methodParamTypes;
+		}
+
+		@Override
+		public Class<?> getTargetClass() {
+			return targetClass;
+		}
+
+		@Override
+		public String getMethodName() {
+			return methodName;
+		}
+
+		@Override
+		public Class<?>[] getMethodParamTypes() {
+			return methodParamTypes;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((methodName == null) ? 0 : methodName.hashCode());
+			result = prime * result + Arrays.hashCode(methodParamTypes);
+			result = prime * result
+					+ ((targetClass == null) ? 0 : targetClass.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			SimpleMethodRef other = (SimpleMethodRef) obj;
+			if (methodName == null) {
+				if (other.methodName != null)
+					return false;
+			} else if (!methodName.equals(other.methodName))
+				return false;
+			if (!Arrays.equals(methodParamTypes, other.methodParamTypes))
+				return false;
+			if (targetClass == null) {
+				if (other.targetClass != null)
+					return false;
+			} else if (!targetClass.equals(other.targetClass))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append(targetClass.getSimpleName());
+			sb.append(methodName);			
+			sb.append('(');
+			for(int i = 0; i != methodParamTypes.length; ++i) {
+				if (i > 0) {
+					sb.append(',');
+				}
+				sb.append(methodParamTypes[i].getSimpleName());
+			}
+			sb.append(')');
+			return sb.toString();
 		}
 	}
 	

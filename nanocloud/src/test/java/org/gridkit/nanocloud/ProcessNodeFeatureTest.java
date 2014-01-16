@@ -1,7 +1,7 @@
 package org.gridkit.nanocloud;
 
-import static org.gridkit.vicluster.ViX.TYPE;
-import static org.gridkit.vicluster.ViX.PROCESS;
+import static org.gridkit.vicluster.VX.TYPE;
+import static org.gridkit.vicluster.VX.PROCESS;
 
 import java.io.File;
 import java.io.IOException;

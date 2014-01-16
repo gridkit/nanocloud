@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
-import org.gridkit.vicluster.ViX;
+import org.gridkit.vicluster.VX;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
@@ -87,7 +87,7 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 		Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
 		// add Isolate init hook first
 		ViNodeConfig cc = new ViNodeConfig();
-		cc.x(ViX.HOOK).setStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
+		cc.x(VX.HOOK).setStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
 		config.apply(cc);
 		
 		return new WrapperNode(super.createViNode(name, cc, process));
