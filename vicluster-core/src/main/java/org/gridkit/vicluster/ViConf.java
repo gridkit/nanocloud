@@ -625,4 +625,36 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return this;
 		}
 	}	
+	
+	public static class RuntimeEx extends ViNode.Delegate {
+
+        public static RuntimeEx at(ViNode node) {
+            return new RuntimeEx(node);
+        }
+        
+        public RuntimeEx(ViNode node) {
+            super(node);
+        }
+	    
+        @Override
+        protected ViNode getDelegate() {
+            return super.getDelegate();
+        }
+	    
+        public FutureEx<Integer> exitCodeFuture() {
+            throw new UnsupportedOperationException();
+        }
+
+        public int exitCode() {
+            throw new UnsupportedOperationException();
+        }	    
+
+        public void suspend() {
+            throw new UnsupportedOperationException();
+        }	    
+
+        public void resume() {
+            throw new UnsupportedOperationException();
+        }	    
+	}
 }

@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
-import org.gridkit.vicluster.VX;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;

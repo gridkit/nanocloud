@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.VX;
 
 public class ViHelper {
 	

@@ -15,7 +15,7 @@
  */
 package org.gridkit.nanocloud.interceptor;
 
-import static org.gridkit.vicluster.VX.HOOK;
+import static org.gridkit.nanocloud.VX.HOOK;
 
 import java.io.Serializable;
 import java.rmi.Remote;

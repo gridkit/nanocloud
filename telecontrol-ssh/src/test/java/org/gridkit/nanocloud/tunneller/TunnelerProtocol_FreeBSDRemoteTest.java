@@ -1,7 +1,7 @@
 package org.gridkit.nanocloud.tunneller;
 
 import static org.gridkit.nanocloud.RemoteNode.REMOTE;
-import static org.gridkit.vicluster.VX.CLASSPATH;
+import static org.gridkit.nanocloud.VX.CLASSPATH;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

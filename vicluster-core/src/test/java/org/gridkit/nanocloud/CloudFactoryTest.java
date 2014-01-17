@@ -7,7 +7,6 @@ import junit.framework.Assert;
 
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
-import org.gridkit.vicluster.VX;
 import org.junit.After;
 import org.junit.Test;
 

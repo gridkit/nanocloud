@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.gridkit.nanocloud.VX;
 import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
-import org.gridkit.vicluster.VX;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;

@@ -15,7 +15,7 @@
  */
 package org.gridkit.nanocloud.test.maven;
 
-import static org.gridkit.vicluster.VX.CLASSPATH;
+import static org.gridkit.nanocloud.VX.CLASSPATH;
 
 import java.io.File;
 import java.io.IOException;
