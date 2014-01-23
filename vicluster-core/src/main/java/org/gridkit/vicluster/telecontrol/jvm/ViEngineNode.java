@@ -29,6 +29,7 @@ import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViExecutor;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViNodeExtender;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
@@ -50,6 +51,11 @@ class ViEngineNode implements ViNode {
 		}
 		execProxy = new ExecProxy(mp.getExecutionService());
 		
+	}
+
+	@Override
+	public <X> X x(ViNodeExtender<X> extention) {
+	    return extention.wrap(this);
 	}
 
 	@Override

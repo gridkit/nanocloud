@@ -30,6 +30,8 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 
 	public String getProp(String propName);
 	
+	public <X> X x(ViNodeExtender<X> extender);
+	
 	/**
 	 * Same as sending empty runnable to node. Usefully to force node initialization.
 	 */
@@ -59,8 +61,13 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 		}
 		
 		@Override
+        public <X> X x(ViNodeExtender<X> extender) {
+            return extender.wrap(delegate);
+        }
+
+        @Override
 		public <X> X x(ViConfExtender<X> extention) {
-			return extention.wrap(this);
+			return extention.wrap(delegate);
 		}
 		
 		@Override

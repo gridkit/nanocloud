@@ -37,6 +37,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String RUNTIME_HOST = "runtime:host";
 	public static final String RUNTIME_EXIT_CODE = "runtime:exitCode";
 	public static final String RUNTIME_EXIT_CODE_FUTURE = "runtime:exitCode.future";
+	public static final String RUNTIME_EXECUTION_SUSPENDED = "runtime:suspended";
+
 	public static final String CONSOLE_STD_IN = "console:stdIn";
 	public static final String CONSOLE_STD_OUT_ECHO = "console:stdOut.echo";
 	/** Overrides stream for echo, introduced to support Isolate nodes */

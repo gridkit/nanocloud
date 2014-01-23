@@ -39,6 +39,11 @@ public class DummyViNode implements ViNode {
 	}	
 	
 	@Override
+    public <X> X x(ViNodeExtender<X> extender) {
+        return extender.wrap(this);
+    }
+
+    @Override
 	public String getProp(String propName) {
 		return config.getProp(propName);
 	}

@@ -29,6 +29,7 @@ import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.ViNodeExtender;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
 
@@ -57,6 +58,11 @@ public class IsolateViNode implements ViNode {
 		setName(this, name);
 	}
 	
+	@Override
+	public <X> X x(ViNodeExtender<X> extention) {
+	    return extention.wrap(this);
+	}
+
 	@Override
 	public <X> X x(ViConfExtender<X> extention) {
 		return extention.wrap(this);

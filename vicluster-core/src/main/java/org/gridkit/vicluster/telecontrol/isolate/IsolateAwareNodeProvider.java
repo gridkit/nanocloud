@@ -28,6 +28,7 @@ import org.gridkit.nanocloud.VX;
 import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.ViNodeExtender;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
@@ -117,6 +118,11 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 
 		public WrapperNode(ViNode node) {
 			this.node = node;
+		}
+
+		@Override
+		public <X> X x(ViNodeExtender<X> extention) {
+		    return extention.wrap(this);
 		}
 
 		@Override

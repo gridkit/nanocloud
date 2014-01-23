@@ -114,6 +114,7 @@ public class ClassRewriter {
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			className = name;
+			@SuppressWarnings("unused")
 			int minVersion = version >> 16;
 			int majVersion = version & 0xFF;
 			if (majVersion < 49) {

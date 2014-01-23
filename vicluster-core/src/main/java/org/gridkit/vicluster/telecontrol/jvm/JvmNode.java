@@ -36,6 +36,7 @@ import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeConfig.ReplyProps;
+import org.gridkit.vicluster.ViNodeExtender;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -127,6 +128,11 @@ class JvmNode implements ViNode {
 		catch(Exception e) {
 			throw new IOException("Node '" + name + "' has failed to initialize", e);
 		}
+	}
+
+	@Override
+	public <X> X x(ViNodeExtender<X> extention) {
+	    return extention.wrap(this);
 	}
 
 	@Override

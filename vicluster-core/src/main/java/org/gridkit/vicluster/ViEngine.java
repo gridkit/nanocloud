@@ -134,7 +134,8 @@ public interface ViEngine {
 			for(String key: coreConfig.keySet()) {
 				if (key.startsWith(ViConf.PRAGMA_HANDLER)) {
 					String pragma = key.substring(ViConf.PRAGMA_HANDLER.length());
-					pragmaHandlers.put(pragma, (PragmaHandler)coreConfig.get(key));
+					PragmaHandler handler = (PragmaHandler)coreConfig.get(key);
+                    pragmaHandlers.put(pragma, handler);
 				}
 			}
 			
@@ -696,7 +697,7 @@ public interface ViEngine {
 	
 	public class InitTimePragmaHandler implements PragmaHandler {
 		
-		public Object get(String key, ViEngine engine) {
+        public Object get(String key, ViEngine engine) {
 			return engine.getConfig().get(key);
 		}
 
@@ -709,7 +710,7 @@ public interface ViEngine {
 
 	public class ReadOnlyPragmaHandler implements PragmaHandler {
 		
-		public Object get(String key, ViEngine engine) {
+        public Object get(String key, ViEngine engine) {
 			return engine.getConfig().get(key);
 		}
 		
@@ -720,7 +721,7 @@ public interface ViEngine {
 
 	public class HookPragmaHandler implements PragmaHandler {
 		
-		public Object get(String key, ViEngine engine) {
+        public Object get(String key, ViEngine engine) {
 			return engine.getConfig().get(key);
 		}
 		
