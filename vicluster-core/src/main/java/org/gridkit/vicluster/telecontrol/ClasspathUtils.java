@@ -35,6 +35,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.slf4j.Logger;
@@ -204,16 +205,43 @@ public class ClasspathUtils {
 	}
 
 	private static void addFiles(ZipOutputStream jarOut, String basePackage, String baseUrl) throws IOException, MalformedURLException {
-		String urlBase = baseUrl.substring(0, baseUrl.lastIndexOf('/'));		
-		InputStream is = new URL(urlBase).openStream();
-		for(String line: StreamHelper.toLines(is)) {
-			String fpath = urlBase + "/" + line;
-			String jpath = basePackage + "/" + line;
-			ZipEntry entry = new ZipEntry(jpath);
-			entry.setTime(0); // this is to facilitate content cache			
-			jarOut.putNextEntry(entry);
-			StreamHelper.copy(new URL(fpath).openStream(), jarOut);
-			jarOut.closeEntry();
-		}		
+	    if (baseUrl.startsWith("jar:")) {
+	        int n = baseUrl.lastIndexOf("!");
+	        if (n < 0) {
+	            throw new IllegalArgumentException("Unexpected classpath URL: " + baseUrl);
+	        }
+	        String fileUrl = baseUrl.substring(4, n);
+	        InputStream is = new URL(fileUrl).openStream();
+	        ZipInputStream zis = new ZipInputStream(is);
+	        while(true) {
+	            ZipEntry ze = zis.getNextEntry();
+	            if (ze != null) {
+    	            if (ze.getName().startsWith(basePackage)) {
+    	                ZipEntry entry = new ZipEntry(ze.getName());
+    	                entry.setTime(0); // this is to facilitate content cache            
+    	                jarOut.putNextEntry(entry);
+    	                StreamHelper.copyNoClose(zis, jarOut);
+    	                jarOut.closeEntry();
+    	            }
+    	            zis.closeEntry();
+	            }
+	            else {
+	                break;
+	            }	            
+	        }
+	    }
+	    else {
+    		String urlBase = baseUrl.substring(0, baseUrl.lastIndexOf('/'));		
+    		InputStream is = new URL(urlBase).openStream();
+    		for(String line: StreamHelper.toLines(is)) {
+    			String fpath = urlBase + "/" + line;
+    			String jpath = basePackage + "/" + line;
+    			ZipEntry entry = new ZipEntry(jpath);
+    			entry.setTime(0); // this is to facilitate content cache			
+    			jarOut.putNextEntry(entry);
+    			StreamHelper.copy(new URL(fpath).openStream(), jarOut);
+    			jarOut.closeEntry();
+    		}
+	    }
 	}	
 }

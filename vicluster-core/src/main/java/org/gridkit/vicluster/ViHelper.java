@@ -49,7 +49,10 @@ public class ViHelper {
     public static void resume(ViNode node) {
         throw new UnsupportedOperationException();        
     }
-	
+
+    /**
+     * Will try to load configuration using provided filename, first from classpath, then from file system.
+     */
 	public static void configure(Cloud manager, String filename) throws IOException {
 		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
 		if (is == null) {

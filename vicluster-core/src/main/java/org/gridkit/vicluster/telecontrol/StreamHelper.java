@@ -143,6 +143,34 @@ class StreamHelper {
 		}
 	}	
 
+	public static void copyNoClose(InputStream in, OutputStream out) throws IOException {
+		boolean doClose = true;
+	    try {
+	        byte[] buf = new byte[1 << 12];
+	        while(true) {
+	            int n = in.read(buf);
+	            if(n >= 0) {
+	                out.write(buf, 0, n);
+	            }
+	            else {
+	                break;
+	            }
+	        }
+	        doClose = false;
+	        
+	    } finally {
+	    	if (doClose) {
+	    		// close if there were exception thrown
+    	        try {
+    	            in.close();
+    	        }
+    	        catch(Exception e) {
+    	            // ignore
+    	        }
+	    	}
+	    }
+	}	
+
 	public static void copyAvailable(InputStream in, OutputStream out) throws IOException {
 		byte[] buf = new byte[in.available()];
 		int n = in.read(buf);
