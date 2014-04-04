@@ -15,6 +15,8 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -89,41 +91,41 @@ public class TunnellerProtocolTest {
 	@Test
 	public void test_vanila_exec() throws InterruptedException, ExecutionException, IOException, TimeoutException {
 		
-		FutureBox<Void> done = exec("echo", "Hallo welt!");
+		FutureBox<Integer> done = exec("echo", "Hallo welt!");
 		
-		done.get();
+		assertEquals(Integer.valueOf(0), done.get());
 	}
 
 	@Test
 	public void test_exec_with_stdErr() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		
-		FutureBox<Void> done = execCmd("echo \"Hallo welt!\" 1>&2\n");
+		FutureBox<Integer> done = execCmd("echo \"Hallo welt!\" 1>&2\n");
 		
-		done.get();
+		assertEquals(Integer.valueOf(0), done.get());
 		
 	}
 
 	@Test
 	public void test_exec_with_redirect() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		
-		FutureBox<Void> done = execCmd("echo \"Hallo welt!\"1> target/test.txt\n");
+		FutureBox<Integer> done = execCmd("echo \"Hallo welt!\"1> target/test.txt\n");
 		
-		done.get();
+		assertEquals(Integer.valueOf(0), done.get());
 		
 	}
 
 	@Test 
 	public void test_exec_resource_leak() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
-		List<Future<Void>> futures = new ArrayList<Future<Void>>();
+		List<Future<Integer>> futures = new ArrayList<Future<Integer>>();
 		for(int i = 0; i != 1000; ++i) {
 			futures.add(exec("echo", "exec-" + String.valueOf(i)));
 			if (i > 4) {
 				futures.remove(0).get();
 			}
 		}
-		for(Future<Void> f: futures) {
-			f.get();
+		for(Future<Integer> f: futures) {
+			assertEquals(Integer.valueOf(0), f.get());
 		}		
 	}
 
@@ -545,8 +547,25 @@ public class TunnellerProtocolTest {
 		}
 	}
 	
-	private FutureBox<Void> exec(String... cmd) throws IOException {
-		final FutureBox<Void> done = new FutureBox<Void>();
+	private String[] ccat(String s, String... ss) {
+	    String[] p = s.split("\\s+");
+	    String[] r = new String[p.length + ss.length];
+	    int n = 0;
+	    for(String sp: p) {
+	        r[n++] = sp;
+	    }
+	    for(String se: ss) {
+	        r[n++] = se;
+	    }
+	    return r;
+	}
+	
+	private FutureBox<Integer> exec(String... cmd) throws IOException {
+		final FutureBox<Integer> done = new FutureBox<Integer>();
+		
+		if (isWindows()) {
+		    cmd = ccat("cmd /c", cmd);
+		}
 		
 		connection.exec(".", cmd, null, new ExecHandler() {
 			
@@ -558,7 +577,7 @@ public class TunnellerProtocolTest {
 				try {
 					stdIn.close();
 				} catch (IOException e) {
-					// ingore
+					// ignore
 				}
 				this.stdOut = stdOut;
 				this.stdErr = stdErr;
@@ -567,10 +586,14 @@ public class TunnellerProtocolTest {
 			@Override
 			public void finished(int exitCode) {
 				try {
-					StreamHelper.copy(stdOut, System.out);
-					StreamHelper.copy(stdErr, System.err);
-					System.out.println("Exit code " + exitCode);
-					done.setData(null);
+				    System.out.println("Exit code " + exitCode);
+				    if (stdOut != null) {
+				        StreamHelper.copy(stdOut, System.out);
+				    }
+				    if (stdErr != null) {
+				        StreamHelper.copy(stdErr, System.err);
+				    }
+					done.setData(exitCode);
 				} catch (IOException e) {
 					done.setError(e);
 				}
@@ -616,8 +639,8 @@ public class TunnellerProtocolTest {
 		return done;
 	}
 	
-	private FutureBox<Void> execCmd(final String cmd) throws IOException {
-		final FutureBox<Void> done = new FutureBox<Void>();
+	private FutureBox<Integer> execCmd(final String cmd) throws IOException {
+		final FutureBox<Integer> done = new FutureBox<Integer>();
 		
 		String sh = isWindows() ? "cmd" : "sh";
 		
@@ -641,14 +664,18 @@ public class TunnellerProtocolTest {
 			
 			@Override
 			public void finished(int exitCode) {
-				try {
-					StreamHelper.copy(stdOut, System.out);
-					StreamHelper.copy(stdErr, System.err);
-					System.out.println("Exit code " + exitCode);
-					done.setData(null);
-				} catch (IOException e) {
-					done.setError(e);
-				}
+                try {
+                    System.out.println("Exit code " + exitCode);
+                    if (stdOut != null) {
+                        StreamHelper.copy(stdOut, System.out);
+                    }
+                    if (stdErr != null) {
+                        StreamHelper.copy(stdErr, System.err);
+                    }
+                    done.setData(exitCode);
+                } catch (IOException e) {
+                    done.setError(e);
+                }
 			}
 		});
 		return done;

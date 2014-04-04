@@ -287,11 +287,25 @@ public class TunnellerConnection extends TunnellerIO {
 		
 		long procId;
 		ExecHandler handler;
+		boolean started;
 		
 		OutputStream stdIn;
 		InputStream stdOut;
-		InputStream stdErr;		
+		InputStream stdErr;	
 		
+		public synchronized void started() {
+		    if (!started) {
+		        started = true;
+		        handler.started(stdIn, stdOut, stdErr);
+		    }
+		}		
+
+		public synchronized void finished(int exitCode) {
+		    if (!started) {
+		        handler.started(stdIn, stdOut, stdErr);
+		    }
+		    handler.finished(exitCode);
+		}		
 	}
 
 	private static class SocketContext {
@@ -438,7 +452,7 @@ public class TunnellerConnection extends TunnellerIO {
 				}
 			}
 			
-			ctx.handler.started(ctx.stdIn, ctx.stdOut, ctx.stdErr);
+			ctx.started();
 		}		
 
 		private void processExitCode() throws IOException {
@@ -452,8 +466,8 @@ public class TunnellerConnection extends TunnellerIO {
 					throw new RuntimeException("Unknown exec ID: " + cmd.procId);
 				}
 			}
-			
-			ctx.handler.finished(cmd.code);
+						
+			ctx.finished(cmd.code);
 		}		
 	}
 	
