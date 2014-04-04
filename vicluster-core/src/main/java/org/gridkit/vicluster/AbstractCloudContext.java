@@ -44,7 +44,7 @@ public abstract class AbstractCloudContext implements CloudContext {
 	}
 
 	@Override
-	public <T> T lookup(ServiceKey<T> key, ServiceProvider<T> provider) {
+	public synchronized <T> T lookup(ServiceKey<T> key, ServiceProvider<T> provider) {
 		T s = lookup(key);
 		if (s == null) {
 			s = provider.getService(this);
