@@ -18,13 +18,17 @@ package org.gridkit.zerormi;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
+import org.gridkit.util.concurrent.FutureEx;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 interface RmiChannel {
 
-	public Object remoteInvocation(RemoteStub remoteStub, Object proxy, Method method,	Object[] args) throws Throwable;
+	public Object remoteInvocation(RemoteStub remoteStub, Object proxy, Method method, Object[] args) throws Throwable;
+
+	public FutureEx<Object> asyncRemoteInvocation(RemoteStub remoteStub, Object proxy, Method method, Object[] args);
 
 	public void close();
 

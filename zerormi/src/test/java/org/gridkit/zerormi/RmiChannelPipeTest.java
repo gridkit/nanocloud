@@ -29,6 +29,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.NamedStreamPair;
 import org.gridkit.zerormi.RmiGateway;
@@ -148,6 +149,21 @@ public class RmiChannelPipeTest {
 	public void verify_auto_export() throws InterruptedException, IOException, ExecutionException {
 		Future<String> task = left.getRemoteExecutorService().submit(new ProxyAdapter<String>(new NotSerializable()));
 		Assert.assertEquals("NotSerializable", task.get());
+	}
+
+	@Test
+	public void verify_async_proxy_call() throws InterruptedException, IOException, ExecutionException, SecurityException, NoSuchMethodException {
+	    ProxyCallable<String> proxy = left.getRemoteExecutorService().submit(new Callable<ProxyCallable<String>>() {
+
+            @Override
+            public ProxyCallable<String> call() throws Exception {
+                return new ProxyAdapter<String>(new NotSerializable());
+            }
+	        
+	    }).get();
+	    
+	    FutureEx<String> result = RemoteStub.remoteSubmit(proxy, Callable.class.getMethod("call"));
+	    Assert.assertEquals("NotSerializable", result.get());
 	}
 	
 	public static class Echo<V> implements Callable<V>, Serializable {

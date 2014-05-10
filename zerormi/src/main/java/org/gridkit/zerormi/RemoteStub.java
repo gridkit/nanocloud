@@ -20,6 +20,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.FutureEx;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -56,6 +59,25 @@ public class RemoteStub implements InvocationHandler  {
 		}
 	}
 	
+	public FutureEx<Object> asyncInvoke(Object proxy, Method method, Object[] args) {
+        if (method.getDeclaringClass() == Object.class) {
+            FutureBox<Object> box = new FutureBox<Object>();
+            try {
+                box.setData(method.invoke(this, args));
+            }
+            catch (IllegalAccessException e) {
+                box.setError(e);
+            }
+            catch(InvocationTargetException e) {
+                box.setError(e.getCause());
+            }
+            return box;
+        }
+        else {
+            return channel.asyncRemoteInvocation(this, proxy, method, args);
+        }	    
+	}
+	
 	@SuppressWarnings("rawtypes")
 	public static Object buildProxy(RemoteInstance remoteInstance, RmiChannel channel) throws ClassNotFoundException {
 		String[] classNames = remoteInstance.interfaces;
@@ -65,6 +87,18 @@ public class RemoteStub implements InvocationHandler  {
 		}
 		
 		return Proxy.newProxyInstance(channel.getClassLoader(), classes, new RemoteStub(remoteInstance, channel));
+	}
+	
+	@SuppressWarnings("unchecked")
+    public static <T> FutureEx<T> remoteSubmit(Object proxy, Method method, Object[]... arguments) {
+	    Object handler = Proxy.getInvocationHandler(proxy);
+	    if (handler instanceof RemoteStub) {
+	        RemoteStub stub = (RemoteStub) handler;
+	        return (FutureEx<T>) stub.asyncInvoke(proxy, method, arguments);
+	    }
+	    else {
+	        throw new IllegalArgumentException("Not a remote proxy");
+	    }
 	}
 	
 	public String toString() {

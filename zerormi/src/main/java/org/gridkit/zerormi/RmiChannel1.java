@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.LogStream;
 import org.gridkit.zerormi.zlog.ZLogger;
@@ -58,6 +60,8 @@ public class RmiChannel1 implements RmiChannel {
     private final Map<Object, String> bean2name = new ConcurrentHashMap<Object, String>();
     
     private final LogStream logCritical;
+    
+    private long debugRpcDelay = 0;
 
     private volatile boolean terminated = false;
 
@@ -66,6 +70,7 @@ public class RmiChannel1 implements RmiChannel {
         this.callDispatcher = callDispatcher;
         this.marshaler = marshaler;
         this.logCritical = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
+        this.debugRpcDelay = Long.getLong("gridkit.zerormi.debug.rpc-delay", 0);
     }
 
     public void registerNamedBean(String name, Object obj) {
@@ -122,8 +127,8 @@ public class RmiChannel1 implements RmiChannel {
             if (context == null) {
                 throw new RuntimeException("Orphaned remote return: " + remoteReturn);
             }
-            context.result = remoteReturn;
-            LockSupport.unpark(context.thread);
+            context.dispatch(remoteReturn);
+            remoteReturnWaiters.remove(id);
         } else {
             throw new RuntimeException("Unknown RemoteMessage type. " + message); //$NON-NLS-1$
         }
@@ -219,24 +224,35 @@ public class RmiChannel1 implements RmiChannel {
     	}
     }
     
-    protected RemoteCallFuture asyncInvoke(final RemoteInstance remoteInstance, final Method method, Object[] args) throws Throwable {
+    protected RemoteCallFuture asyncInvoke(final RemoteInstance remoteInstance, final Method method, Object[] args) {
     	Long id = generateCallId();
     	RemoteCall remoteCall = new RemoteCall(remoteInstance, new RemoteMethodSignature(method), args, id);
     	RemoteCallFuture future = new RemoteCallFuture(remoteCall);
     	
     	registerCall(future);
+
+        try {
+            sendMessage(remoteCall);
+        }
+        catch (IOException e) {
+            remoteReturnWaiters.remove(future.remoteCall.callId);
+            future.setErrorIfWaiting(e);
+        }
     	
     	return future;
-    	
     }
     
     private void registerCall(RemoteCallFuture future) {
-		
+		RemoteCallContext ctx = new RemoteCallContext(future);
+
+        if (terminated) {
+            throw new IllegalStateException("Connection closed");
+        }
+        remoteReturnWaiters.put(future.remoteCall.callId, ctx);
 	}
 
     @Override
 	public Object remoteInvocation(final RemoteStub stub, final Object proxy, final Method method, final Object[] args) throws Throwable {
-
 
         Long id = generateCallId();
         RemoteInstance remoteInstance = stub.getRemoteInstance();
@@ -256,6 +272,10 @@ public class RmiChannel1 implements RmiChannel {
             throw new RemoteException("Call failed", e);
         }
 
+        if (debugRpcDelay > 0) {
+            Thread.sleep(debugRpcDelay);
+        }
+        
         while (true) {
             if (terminated) {
             	throw new RemoteException("Connection closed");
@@ -272,7 +292,6 @@ public class RmiChannel1 implements RmiChannel {
             }
         }
 
-        remoteReturnWaiters.remove(id);
         RemoteReturn ret = context.result;
 
         if (ret.throwing) {
@@ -280,6 +299,11 @@ public class RmiChannel1 implements RmiChannel {
         }
 
         return ret.getRet();
+    }
+
+    @Override
+    public FutureEx<Object> asyncRemoteInvocation(RemoteStub remoteStub, Object proxy, Method method, Object[] args) {
+        return asyncInvoke(remoteStub.getRemoteInstance(), method, args);
     }
 
     private Object getProxyFromRemoteInstance(RemoteInstance remoteInstance) {
@@ -402,16 +426,37 @@ public class RmiChannel1 implements RmiChannel {
 
     private static class RemoteCallContext {
         public final Thread thread;
-        public RemoteReturn result;
+        public final RemoteCallFuture future;
+        public volatile RemoteReturn result;
 
         public RemoteCallContext(Thread thread) {
             this.thread = thread;
+            this.future = null;
+        }
+
+        public RemoteCallContext(RemoteCallFuture future) {
+            this.thread = null;
+            this.future = future;
+        }
+        
+        public void dispatch(RemoteReturn ret) {
+            if (thread != null) {
+                result = ret;
+                LockSupport.unpark(thread);
+            }
+            else {
+                if (ret.isThrowing()) {
+                    future.setError((Throwable) ret.ret);
+                }
+                else {
+                    future.setData(ret.ret);
+                }
+            }
         }
     }
     
     private static class RemoteCallFuture extends FutureBox<Object> {
 
-    	@SuppressWarnings("unused")
 		RemoteCall remoteCall;
 
     	public RemoteCallFuture(RemoteCall remoteCall) {
