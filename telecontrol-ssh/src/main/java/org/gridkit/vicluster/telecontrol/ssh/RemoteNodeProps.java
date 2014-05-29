@@ -39,6 +39,11 @@ public class RemoteNodeProps implements ViNodeProps {
 
 	public static String SSH_AUTH_METHODS = "remote:ssh-auth-methods";
 
+	/**
+	 * Timeout for tunnel initialization in milliseconds
+	 */
+	public static String SSH_TUNNELER_TIMEOUT = "remote:ssh-tunneler-timeout";
+
 	public static String SSH_KEY_FILE = "remote:ssh-key-file";
 
 	public static String SSH_CREDENTIAL_FILE = "remote:ssh-credential-file";

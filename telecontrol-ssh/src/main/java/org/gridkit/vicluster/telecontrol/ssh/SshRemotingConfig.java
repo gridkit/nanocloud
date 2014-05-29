@@ -23,6 +23,7 @@ class SshRemotingConfig {
 	private String account;
 	private String javaExec;
 	private String jarCache;
+	private long tunnelerTimeout;
 	
 	private String password;
 	private String keyfile;
@@ -52,6 +53,9 @@ class SshRemotingConfig {
 		}
 		if (props.containsKey(RemoteNodeProps.SSH_AUTH_METHODS)) {
 			authMethods = props.get(RemoteNodeProps.SSH_AUTH_METHODS);
+		}
+		if (props.containsKey(RemoteNodeProps.SSH_TUNNELER_TIMEOUT)) {
+		    tunnelerTimeout = Long.valueOf(props.get(RemoteNodeProps.SSH_TUNNELER_TIMEOUT));
 		}
 	}
 	
@@ -152,4 +156,12 @@ class SshRemotingConfig {
 	public void setAuthMethods(String authMethods) {
 		this.authMethods = authMethods;
 	}
+
+    public long getTunnellerTimeout() {
+        return tunnelerTimeout;
+    }
+
+    public void setTunnellerTimeout(long tunnellerTimeout) {
+        this.tunnelerTimeout = tunnellerTimeout;
+    }
 }

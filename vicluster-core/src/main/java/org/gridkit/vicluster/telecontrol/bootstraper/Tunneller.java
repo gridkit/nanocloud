@@ -102,6 +102,7 @@ public class Tunneller extends TunnellerIO {
 			diagOut.println("Control thread stopped");
 		} catch (Exception e) {
 			diagOut.println("Error in control thread: " + e.toString());
+			e.printStackTrace(diagOut);
 		}
 	}
 

@@ -15,6 +15,9 @@
  */
 package org.gridkit.vicluster.telecontrol;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,14 +28,16 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import junit.framework.Assert;
 
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
@@ -40,9 +45,12 @@ import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.ExecHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.FileHandler;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection.SocketHandler;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 public class TunnellerProtocolTest {
 
@@ -54,6 +62,9 @@ public class TunnellerProtocolTest {
 	
 	private Tunneller tunneler;
 	private TunnellerConnection connection;
+	
+	@ClassRule
+	public static Timeout timeout = new Timeout((int)TimeUnit.MINUTES.toMillis(10)); 
 	
 	@Before
 	public void start() throws IOException, InterruptedException, TimeoutException {
@@ -80,42 +91,151 @@ public class TunnellerProtocolTest {
 	@Test
 	public void test_vanila_exec() throws InterruptedException, ExecutionException, IOException, TimeoutException {
 		
-		FutureBox<Void> done = exec("echo", "Hallo welt!");
+		FutureBox<Integer> done = exec("echo", "Hallo welt!");
 		
-		done.get();
+		assertEquals(Integer.valueOf(0), done.get());
 	}
 
 	@Test
 	public void test_exec_with_stdErr() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		
-		FutureBox<Void> done = execCmd("echo \"Hallo welt!\" 1>&2\n");
+		FutureBox<Integer> done = execCmd("echo \"Hallo welt!\" 1>&2\n");
 		
-		done.get();
+		assertEquals(Integer.valueOf(0), done.get());
 		
 	}
 
 	@Test
 	public void test_exec_with_redirect() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		
-		FutureBox<Void> done = execCmd("echo \"Hallo welt!\"1> target/test.txt\n");
+		FutureBox<Integer> done = execCmd("echo \"Hallo welt!\"1> target/test.txt\n");
 		
-		done.get();
+		assertEquals(Integer.valueOf(0), done.get());
 		
 	}
-	
+
 	@Test 
 	public void test_exec_resource_leak() throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
-		List<Future<Void>> futures = new ArrayList<Future<Void>>();
+		List<Future<Integer>> futures = new ArrayList<Future<Integer>>();
 		for(int i = 0; i != 1000; ++i) {
 			futures.add(exec("echo", "exec-" + String.valueOf(i)));
 			if (i > 4) {
 				futures.remove(0).get();
 			}
 		}
-		for(Future<Void> f: futures) {
-			f.get();
+		for(Future<Integer> f: futures) {
+			assertEquals(Integer.valueOf(0), f.get());
 		}		
+	}
+
+	private List<String> IGNORE_VARS = Arrays.asList("SHLVL", "OLDPWD");
+	
+	@Ignore("TODO")
+	@Test 
+	public void test_inherited_environment() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+
+		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
+		
+		for(String var: System.getenv().keySet()) {
+			if (isSafeVar(var) && !IGNORE_VARS.contains(var)) {
+				String val = System.getenv(var);
+				String c = String.format(cmd, var);
+				Assert.assertEquals("Env[" + var + "]", val, matchLine("VAR=", captureCmdOut(c, new HashMap<String, String>()).get()));
+			}
+		}		
+	}
+
+    @Ignore("TODO")
+	@Test 
+	public void test_inherited_environment_empty_map() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+		
+		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
+		
+		for(String var: System.getenv().keySet()) {
+			if (isSafeVar(var) && !IGNORE_VARS.contains(var)) {
+				String val = System.getenv(var);
+				String c = String.format(cmd, var);
+				Assert.assertEquals("Env[" + var + "]", val, matchLine("VAR=", captureCmdOut(c, Collections.<String, String>emptyMap()).get()));
+			}
+		}		
+	}
+
+	@Test 
+	public void test_override_path() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+		
+		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
+		
+		Map<String, String> vars = new HashMap<String, String>();
+		String newPath = System.getenv("PATH") + File.pathSeparator + "..";
+		vars.put("PATH", newPath);
+		
+		String c = String.format(cmd, "PATH");
+		Assert.assertEquals(newPath, matchLine("VAR=", captureCmdOut(c, vars).get()));
+	}
+
+	@Test 
+	public void test_set_env_var() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+		
+		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
+		
+		Map<String, String> vars = new HashMap<String, String>();
+		vars.put("NEWVAR", "random value");
+		
+		String c = String.format(cmd, "NEWVAR");
+		Assert.assertEquals("random value", matchLine("VAR=", captureCmdOut(c, vars).get()));
+	}
+
+	@Test 
+	public void test_env_var_override() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+		
+		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
+		
+		Map<String, String> vars = new HashMap<String, String>();
+		vars.put("PROMT", "test");
+		
+		String c = String.format(cmd, "PROMT");
+		Assert.assertEquals("PROMT expected to be overriden", "test", matchLine("VAR=", captureCmdOut(c, vars).get()));
+	}
+
+    @Ignore("TODO")
+	@Test 
+	public void test_env_var_remove() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+		
+		String cmd = isWindows() ? "echo VAR=%%%s%%\n" : "echo VAR=$%s\n";
+		
+		String var = isWindows() ? "HOMEPATH" : "HOME";		
+		
+		Map<String, String> vars = new HashMap<String, String>();
+		vars.put(var, null);
+		
+		String c = String.format(cmd, var);
+		if (isWindows()) {
+			Assert.assertEquals(var + " expected to be erased", "%" + var + "%", matchLine("VAR=", captureCmdOut(c, vars).get()));
+		}
+		else {
+			Assert.assertEquals(var + " expected to be erased","", matchLine("VAR=", captureCmdOut(c, vars).get()));
+		}
+	}
+	
+	private boolean isSafeVar(String var) {
+		for(int i = 0; i != var.length(); ++i) {
+			char ch = var.charAt(i);
+			if (!Character.isJavaIdentifierPart(ch)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private String matchLine(String prefix, String text) {
+		String[] line = text.split("[\\r\\n]+");
+		for(String l: line) {
+			if (l.startsWith(prefix)) {
+				return l.substring(prefix.length());
+			}
+		}
+		return text;		
 	}
 	
 	@Test @Ignore("it has never worked, ugly java sockets to blame")
@@ -158,7 +278,6 @@ public class TunnellerProtocolTest {
 		System.out.println("Socket closed");
 		
 		Assert.assertTrue(sock.isClosed());
-		Thread.sleep(1000000);
 	}
 	
 	@Test(timeout = 30000)
@@ -431,10 +550,68 @@ public class TunnellerProtocolTest {
 		}
 	}
 	
-	private FutureBox<Void> exec(String... cmd) throws IOException {
-		final FutureBox<Void> done = new FutureBox<Void>();
+	private String[] ccat(String s, String... ss) {
+	    String[] p = s.split("\\s+");
+	    String[] r = new String[p.length + ss.length];
+	    int n = 0;
+	    for(String sp: p) {
+	        r[n++] = sp;
+	    }
+	    for(String se: ss) {
+	        r[n++] = se;
+	    }
+	    return r;
+	}
+	
+	private FutureBox<Integer> exec(String... cmd) throws IOException {
+		final FutureBox<Integer> done = new FutureBox<Integer>();
+		
+		if (isWindows()) {
+		    cmd = ccat("cmd /c", cmd);
+		}
 		
 		connection.exec(".", cmd, new String[0], new ExecHandler() {
+			
+			InputStream stdOut;
+			InputStream stdErr;
+			
+			@Override
+			public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr) {
+				try {
+					stdIn.close();
+				} catch (IOException e) {
+					// ignore
+				}
+				this.stdOut = stdOut;
+				this.stdErr = stdErr;
+			}
+			
+			@Override
+			public void finished(int exitCode) {
+				try {
+				    System.out.println("Exit code " + exitCode);
+				    if (stdOut != null) {
+				        StreamHelper.copy(stdOut, System.out);
+				    }
+				    if (stdErr != null) {
+				        StreamHelper.copy(stdErr, System.err);
+				    }
+					done.setData(exitCode);
+				} catch (IOException e) {
+					done.setError(e);
+				}
+			}
+		});
+		return done;
+	}
+
+	@SuppressWarnings("unused")
+	private FutureBox<String> execOutputCapture(Cmd cmd) throws IOException {
+		final FutureBox<String> done = new FutureBox<String>();
+		
+		final ByteArrayOutputStream capture = new ByteArrayOutputStream();
+		
+		connection.exec(".", cmd.commands, cmd.vars, new ExecHandler() {
 			
 			InputStream stdOut;
 			InputStream stdErr;
@@ -453,11 +630,11 @@ public class TunnellerProtocolTest {
 			@Override
 			public void finished(int exitCode) {
 				try {
-					StreamHelper.copy(stdOut, System.out);
-					StreamHelper.copy(stdErr, System.err);
 					System.out.println("Exit code " + exitCode);
-					done.setData(null);
-				} catch (IOException e) {
+					StreamHelper.copy(stdOut, capture);
+					StreamHelper.copy(stdErr, System.err);
+					done.setData(new String(capture.toByteArray()));
+				} catch (Exception e) {
 					done.setError(e);
 				}
 			}
@@ -465,12 +642,60 @@ public class TunnellerProtocolTest {
 		return done;
 	}
 	
-	private FutureBox<Void> execCmd(final String cmd) throws IOException {
-		final FutureBox<Void> done = new FutureBox<Void>();
+	private FutureBox<Integer> execCmd(final String cmd) throws IOException {
+		final FutureBox<Integer> done = new FutureBox<Integer>();
 		
-		String sh = ManagementFactory.getOperatingSystemMXBean().getName().toLowerCase().startsWith("windows") ? "cmd" : "sh";
+		String sh = isWindows() ? "cmd" : "sh";
 		
 		connection.exec(".", new String[]{sh}, new String[0], new ExecHandler() {
+			
+			InputStream stdOut;
+			InputStream stdErr;
+			
+			@Override
+			public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr) {
+				System.out.println("Started");
+				try {					
+					stdIn.write(cmd.getBytes());
+					stdIn.close();
+				} catch (IOException e) {
+					// ingore
+				}
+				this.stdOut = stdOut;
+				this.stdErr = stdErr;
+			}
+			
+			@Override
+			public void finished(int exitCode) {
+                try {
+                    System.out.println("Exit code " + exitCode);
+                    if (stdOut != null) {
+                        StreamHelper.copy(stdOut, System.out);
+                    }
+                    if (stdErr != null) {
+                        StreamHelper.copy(stdErr, System.err);
+                    }
+                    done.setData(exitCode);
+                } catch (IOException e) {
+                    done.setError(e);
+                }
+			}
+		});
+		return done;
+	}
+
+	private FutureBox<String> captureCmdOut(final String cmd, Map<String, String> env) throws IOException {
+		final FutureBox<String> done = new FutureBox<String>();
+		
+		String[] sh = isWindows() ? new String[]{"cmd"} : new String[]{"sh"};
+		
+		String[] aenv = new String[env.size()];
+		int n = 0;
+		for(String key: env.keySet()) {
+		    aenv[n++] = key + "=" + env.get(key);
+		}
+		
+		connection.exec(".", sh, aenv, new ExecHandler() {
 			
 			InputStream stdOut;
 			InputStream stdErr;
@@ -491,16 +716,21 @@ public class TunnellerProtocolTest {
 			@Override
 			public void finished(int exitCode) {
 				try {
-					StreamHelper.copy(stdOut, System.out);
-					StreamHelper.copy(stdErr, System.err);
 					System.out.println("Exit code " + exitCode);
-					done.setData(null);
-				} catch (IOException e) {
+					ByteArrayOutputStream bos = new ByteArrayOutputStream();
+					StreamHelper.copy(stdOut, bos);
+					StreamHelper.copy(stdErr, System.err);
+					done.setData(new String(bos.toByteArray()));
+				} catch (Exception e) {
 					done.setError(e);
 				}
 			}
 		});
 		return done;
+	}
+
+	private boolean isWindows() {
+		return ManagementFactory.getOperatingSystemMXBean().getName().toLowerCase().startsWith("windows");
 	}
 
 	@SuppressWarnings("unused")
@@ -509,7 +739,7 @@ public class TunnellerProtocolTest {
 		
 		String sh = "cat";
 		
-		connection.exec(".", new String[]{sh}, new String[0], new ExecHandler() {
+		connection.exec(".", new String[]{sh}, null, new ExecHandler() {
 			
 			InputStream stdOut;
 			InputStream stdErr;
@@ -628,5 +858,19 @@ public class TunnellerProtocolTest {
 		public boolean markSupported() {
 			return delegate.markSupported();
 		}
+	}
+	
+	@SuppressWarnings("unused")
+	private static Cmd cmd(String... commands) {
+		Cmd c = new Cmd();
+		c.commands = commands;
+		return c;
+	}
+	
+	private static class Cmd {
+		
+		String[] commands;
+		String[] vars;
+		
 	}
 }

@@ -302,7 +302,11 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		PrintStream diagLog = new LoggerPrintStream(logger, Level.INFO);
 		
 		try {
-			control = new TunnellerConnection(rconfig.getHost(), cin, cout, diagLog, connectTimeoutMS, TimeUnit.MILLISECONDS);
+		    long connTimeout = rconfig.getTunnellerTimeout();
+		    if (connTimeout == 0) {
+		        connTimeout = connectTimeoutMS;
+		    }
+			control = new TunnellerConnection(rconfig.getHost(), cin, cout, diagLog, connTimeout, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {
 			killAndDrop(exec);
 			throw new IOException("Connection aborted due to thread interrupt");
