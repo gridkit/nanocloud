@@ -152,6 +152,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			s.password = sshconf.get(s.account + "@" + s.host + "!password");
 			s.keyFile = sshconf.get(s.account + "@" + s.host + "!private-key");
 			s.authMethods = sshconf.get(s.account + "@" + s.host + "!auth-methods");
+			s.tunnellerConnTimeout = sshconf.get(s.account + "@" + s.host + "!tunneler-timeout");
 			String hostOverride = sshconf.get(s.account + "@" + s.host + "!hostname");
 			if (hostOverride != null) {
 				s.host = hostOverride;
@@ -163,6 +164,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		s.keyFile = override(s.keyFile, nodeConfig.getProp(RemoteNodeProps.SSH_KEY_FILE));
 		s.javaExec = override(s.javaExec, nodeConfig.getProp(RemoteNodeProps.JAVA_EXEC));
 		s.jarCachePath = override(s.jarCachePath, nodeConfig.getProp(RemoteNodeProps.JAR_CACHE_PATH));
+		s.tunnellerConnTimeout = override(s.tunnellerConnTimeout, nodeConfig.getProp(RemoteNodeProps.SSH_TUNNELER_TIMEOUT));
 		
 		if (s.host == null) {
 			throw new IllegalArgumentException("Remote host is not specified for node '" + name + "'");
@@ -320,6 +322,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 		String authMethods;
 		String javaExec;
 		String jarCachePath;
+		String tunnellerConnTimeout;
 		
 		public Map<String, String> toConfig() {
 			Map<String, String> config = new HashMap<String, String>();
@@ -330,6 +333,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 			config.put(RemoteNodeProps.SSH_AUTH_METHODS, authMethods);
 			config.put(RemoteNodeProps.JAVA_EXEC, javaExec);
 			config.put(RemoteNodeProps.JAR_CACHE_PATH, jarCachePath);
+			config.put(RemoteNodeProps.SSH_TUNNELER_TIMEOUT, tunnellerConnTimeout);
 			return config;
 		}
 		

@@ -54,7 +54,7 @@ class SshRemotingConfig {
 		if (props.containsKey(RemoteNodeProps.SSH_AUTH_METHODS)) {
 			authMethods = props.get(RemoteNodeProps.SSH_AUTH_METHODS);
 		}
-		if (props.containsKey(RemoteNodeProps.SSH_TUNNELER_TIMEOUT)) {
+		if (props.get(RemoteNodeProps.SSH_TUNNELER_TIMEOUT) != null) {
 		    tunnelerTimeout = Long.valueOf(props.get(RemoteNodeProps.SSH_TUNNELER_TIMEOUT));
 		}
 	}
