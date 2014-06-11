@@ -31,7 +31,6 @@ public class MBeanForwarder {
 	private NotificationListener listener = new NotificationListener() {
 		@Override
 		public void handleNotification(Notification n, Object handback) {
-			System.out.println("JMX event: " + n);
 			if (closed) {
 				return;
 			}
