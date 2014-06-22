@@ -163,7 +163,7 @@ public class ClasspathUtils {
 		ZipOutputStream jarOut = new ZipOutputStream(bos);
 		if (manifest != null) {
 			ZipEntry e = new ZipEntry(JarFile.MANIFEST_NAME);
-			e.setTime(0l); // this to ensure equal hash for equal content
+			e.setTime(0L); // this to ensure equal hash for equal content
 			jarOut.putNextEntry(e);
 			manifest.write(jarOut);
 			jarOut.closeEntry();			
@@ -190,7 +190,13 @@ public class ClasspathUtils {
 		int count = 0;
 		for(File file : path.listFiles()) {
 			if (file.isDirectory()) {
-				count += addFiles(jarOut, base + file.getName() + "/", file);
+                final String dirName = base + file.getName() + "/";
+
+                JarEntry entry = new JarEntry(dirName);
+                entry.setTime(0L);// this to ensure equal hash for equal content
+                jarOut.putNextEntry(entry);
+                jarOut.closeEntry();
+                count += addFiles(jarOut, dirName, file);
 			}
 			else {
 				JarEntry entry = new JarEntry(base + file.getName());
