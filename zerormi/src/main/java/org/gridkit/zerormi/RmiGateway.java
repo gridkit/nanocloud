@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.ExceptionHelper;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.AdvancedExecutorAdapter;
 import org.gridkit.util.concurrent.FutureEx;
@@ -450,9 +451,15 @@ public class RmiGateway {
 		}
 
 		private <T> Callable<T> wrap(final Callable<T> task) {
-			return new Callable<T>() {
+            final StackTraceElement[] currentStackTrace = Thread.currentThread().getStackTrace();
+            return new Callable<T>() {
 				public T call() throws Exception {
-					return remote.remoteCall(task);
+					try {
+                        return remote.remoteCall(task);
+                    }catch (Exception t){
+                        final StackTraceElement middle = new StackTraceElement("------------remote", "remote call", null, -1);
+                        throw ExceptionHelper.addStackElementsAtBottom(t, middle, currentStackTrace);
+                    }
 				}
 			};
 		}

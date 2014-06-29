@@ -25,19 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.gridkit.ExceptionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -508,7 +500,7 @@ public class ViManager implements ViNodeSet {
 		public DeferedNodeExecutor(String name, Future<Void> barrier, ExecutorService executor, ViExecutor target) {
 			this.name = name;
 			this.barrier = barrier;
-			this.executor = executor;
+			this.executor = new DoNotForgetStackExecutor(executor);
 			this.target = target;
 		}
 
@@ -610,6 +602,85 @@ public class ViManager implements ViNodeSet {
 			return MassExec.singleNodeMassSubmit(this, task);
 		}
 	}
+
+    private static class DoNotForgetStackExecutor extends AbstractExecutorService {
+        private final ExecutorService delegate;
+
+        private DoNotForgetStackExecutor(ExecutorService delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void shutdown() {
+            delegate.shutdown();
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            return delegate.shutdownNow();
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return delegate.isShutdown();
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return delegate.isTerminated();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return delegate.awaitTermination(timeout, unit);
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            delegate.execute(command);
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(final Runnable runnable, T value) {
+            final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            return super.newTaskFor(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                      runnable.run();
+                    }catch (Throwable t){
+                        ExceptionHelper.throwUnchecked(
+                                ExceptionHelper.addStackElementsAtBottom(
+                                        t,
+                                        new StackTraceElement("-----submit", "submit", null, -1),
+                                        stackTrace)
+                        );
+                    }
+                }
+            }, value);
+        }
+
+        @Override
+        protected <T> RunnableFuture<T> newTaskFor(final Callable<T> callable) {
+            final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            return super.newTaskFor(new Callable<T>() {
+                @Override
+                public T call() throws Exception {
+                    try{
+                        return callable.call();
+                    }catch (Throwable t){
+                        ExceptionHelper.throwUnchecked(
+                                ExceptionHelper.addStackElementsAtBottom(
+                                        t,
+                                        new StackTraceElement("-----submit", "submit", null, -1),
+                                        stackTrace)
+                        );
+                        throw new IllegalStateException("should never reach here");
+                    }
+                }
+            });
+        }
+    }
 	
 	private static class Rule implements Comparable<Rule> {
 		
