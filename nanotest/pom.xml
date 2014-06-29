@@ -78,6 +78,12 @@
             <artifactId>junit</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.tobedevoured.naether</groupId>
+            <artifactId>core</artifactId>
+            <version>0.13.5</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -106,6 +112,16 @@
                         </goals>
                         <configuration>
                             <artifact>org.gridkit.lab:viconcurrent:0.7.15</artifact>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jmock-junit-2.2.1</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>get</goal>
+                        </goals>
+                        <configuration>
+                            <artifact>org.jmock:jmock-junit4:2.5.1</artifact>
                         </configuration>
                     </execution>
                 </executions>

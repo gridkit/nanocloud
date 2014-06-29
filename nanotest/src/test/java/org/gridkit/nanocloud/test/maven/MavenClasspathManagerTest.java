@@ -12,9 +12,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.VX;
 import org.gridkit.util.concurrent.RecuringTask;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
+import org.gridkit.vicluster.VoidCallable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -176,5 +178,31 @@ public class MavenClasspathManagerTest {
 		finally {
 			cloud.shutdown();
 		}
-	}	
+	}
+
+	@Test
+	public void verify_artifact_and_transitive_dependency_include() throws Exception {
+		Cloud cloud = CloudFactory.createCloud();
+		ViProps.at(cloud.node("**")).setLocalType();
+		try {
+			ViNode node = cloud.node("junit");
+            node.x(VX.CLASSPATH).inheritClasspath(false);
+			node.x(MAVEN).addWithTransitive("org.jmock", "jmock-junit4", "2.5.1");
+			node.exec(new VoidCallable() {
+                @Override
+                public void call() throws Exception {
+                    Class.forName("org.jmock.integration.junit4.JMock");//direct dependency
+                    Class.forName("org.junit.internal.runners.JUnit4ClassRunner");// transitive
+                    Class.forName("org.jmock.api.Action");//transitive
+                    try{
+                        Class.forName("org.junit.runners.JUnit4");
+                        throw new AssertionError("class org.junit.runners.JUnit4 is not in transitive dependency tree for org.jmock:jmock-junit4:2.5.1");
+                    }catch (ClassNotFoundException ignore){}
+                }
+            });
+		}
+		finally {
+			cloud.shutdown();
+		}
+	}
 }
