@@ -29,6 +29,8 @@ import java.util.concurrent.Future;
 public interface ViNode extends ViExecutor, ViConfigurable {
 
 	public String getProp(String propName);
+
+	public Object getPragma(String pragmaName);
 	
 	public <X> X x(ViNodeExtender<X> extender);
 	
@@ -70,14 +72,19 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 			return extention.wrap(delegate);
 		}
 		
+        @Override
+        public String getProp(String propName) {
+        	return delegate.getProp(propName);
+        }
+
 		@Override
-		public void setProp(String propName, String value) {
-			delegate.setProp(propName, value);
+		public Object getPragma(String pragmaName) {
+			return getPragma(pragmaName);
 		}
 
 		@Override
-		public String getProp(String propName) {
-			return delegate.getProp(propName);
+		public void setProp(String propName, String value) {
+			delegate.setProp(propName, value);
 		}
 
 		public void setConfigElement(String key, Object value) {

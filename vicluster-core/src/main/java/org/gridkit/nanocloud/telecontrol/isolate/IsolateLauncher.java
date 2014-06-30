@@ -33,6 +33,31 @@ import org.gridkit.zerormi.hub.SlaveSpore;
 class IsolateLauncher implements ProcessLauncher {
 
 	@Override
+    public ManagedProcess launchProcess(LaunchConfig config) {
+
+	    RemoteExecutionSession rmiSession = config.getRemotingSession();
+        List<Classpath.ClasspathEntry> cp = config.getSlaveClasspath();
+        
+        List<URL> urls = new ArrayList<URL>();
+        for(Classpath.ClasspathEntry ce: cp) {
+            urls.add(ce.getUrl());
+        }
+        
+        ClassLoader cl = ClasspathUtils.getNearestSystemClassloader(Thread.currentThread().getContextClassLoader());
+        if (cl == null) {
+            // TODO this most likely a bug, add "secret" property to override this issue
+            throw new RuntimeException("Library classloader is not found!");
+        }
+        
+        Isolate i = new Isolate(config.getNodeName(), cl, urls);
+        
+        IsolateSession session = new IsolateSession(i, rmiSession);
+        session.start();
+        
+        return session;
+    }
+
+    @Override
 	public ManagedProcess createProcess(Map<String, Object> config) {
 		
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);

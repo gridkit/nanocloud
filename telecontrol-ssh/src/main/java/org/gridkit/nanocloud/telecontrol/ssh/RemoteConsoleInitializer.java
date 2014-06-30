@@ -173,7 +173,7 @@ public class RemoteConsoleInitializer implements InductiveRule {
 			} catch (JSchException e) {
 				throw new RuntimeException(e);
 			}
-			SshHostControlConsole shhConsole = new SshHostControlConsole(session, cachePath, 1);
+			SshHostControlConsole shhConsole = new SshHostControlConsole(session, cachePath, true, 1);
 			// TODO logger configuration
 			TunnellerInitiator initiator = new SimpleTunnelInitiator(bootCmd, cachePath, ZLogFactory.getDefaultRootLogger());
 			console = initiator.initTunnel(shhConsole);

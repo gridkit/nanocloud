@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
@@ -643,12 +644,25 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
             return super.getDelegate();
         }
 	    
-        public FutureEx<Integer> exitCodeFuture() {
-            throw new UnsupportedOperationException();
+        @SuppressWarnings("unchecked")
+		public FutureEx<Integer> exitCodeFuture() {
+        	return (FutureEx<Integer>)getDelegate().getPragma(RUNTIME_EXIT_CODE_FUTURE);
         }
 
-        public int exitCode() {
-            throw new UnsupportedOperationException();
+        public Integer exitCode() {
+            String ec = getDelegate().getProp(RUNTIME_EXIT_CODE);
+            return ec == null ? null : Integer.valueOf(ec);
+        }	    
+
+        public int join() {
+        	try {
+				FutureEx<Integer> ec = exitCodeFuture();
+				return ec.get();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (ExecutionException e) {
+				throw new RuntimeException(e.getCause());
+			}
         }	    
 
         public void suspend() {

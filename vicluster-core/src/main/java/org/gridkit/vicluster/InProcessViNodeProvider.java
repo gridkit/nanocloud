@@ -68,6 +68,11 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 			return isolate.getProp(propName);
 		}
 
+		@Override
+		public Object getPragma(String pragmaName) {
+			return null;
+		}
+
 		public void setProp(String propName, String value) {
 			isolate.setProp(propName, value);
 		}

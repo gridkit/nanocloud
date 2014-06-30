@@ -54,15 +54,17 @@ public class SftFileCache implements RemoteFileCache {
 	
 	private final Session session;
 	private final String jarCachePath;
-	private String absoluteCachPath;
+	private final boolean useRelativePaths;
+	private String absoluteCachePath;
 	private BlockingQueue<ChannelSftp> channels = new LinkedBlockingQueue<ChannelSftp>();
 	private ExecutorService executor;
 
 	private Map<String, String> fileMapping = new ConcurrentHashMap<String, String>();
 
-	public SftFileCache(Session session, String cachePath, int concurency) throws JSchException, InterruptedException, SftpException {
+	public SftFileCache(Session session, String cachePath, boolean useRelativePaths, int concurency) throws JSchException, InterruptedException, SftpException {
 		this.session = session;
 		this.jarCachePath = cachePath;
+		this.useRelativePaths = useRelativePaths;
 		if (concurency < 0) {
 			throw new IllegalArgumentException("concurency should be positive");
 		}
@@ -99,7 +101,7 @@ public class SftFileCache implements RemoteFileCache {
 		sftp.connect();
 		sftpMkdirs(sftp, jarCachePath);
 		sftp.cd(jarCachePath);
-		absoluteCachPath = sftp.pwd();
+		absoluteCachePath = sftp.pwd();
 		release(sftp);
 	}
 	
@@ -109,7 +111,7 @@ public class SftFileCache implements RemoteFileCache {
 		for(ChannelSftp sftp: all) {
 			if (!sftp.isConnected()) {
 				sftp.connect();
-				sftp.cd(absoluteCachPath);
+				sftp.cd(absoluteCachePath);
 			}
 			release(sftp);
 		}
@@ -185,9 +187,10 @@ public class SftFileCache implements RemoteFileCache {
 	}
 
 	private String upload(ChannelSftp sftp, FileBlob blob) {
-		String rname = absoluteCachPath + "/" + blob.getContentHash() + "/" + blob.getFileName();
+	    String blobPath = blob.getContentHash() + "/" + blob.getFileName();
+		String rname = absoluteCachePath + "/" + blobPath;
 		try {
-			sftpMkdirs(sftp, absoluteCachPath + "/" + blob.getContentHash());
+			sftpMkdirs(sftp, absoluteCachePath + "/" + blob.getContentHash());
 		} catch (SftpException e) {
 			new RuntimeException("SFT error: " + e.getMessage());
 		}
@@ -212,6 +215,14 @@ public class SftFileCache implements RemoteFileCache {
 					new RuntimeException("SFT error: " + e.getMessage());
 				}
 			}
+		}
+		if (useRelativePaths) {
+		    if (jarCachePath.length() == 0 || jarCachePath.endsWith("/")) {
+		        rname = jarCachePath + blobPath;
+		    }
+		    else {
+		        rname = jarCachePath + "/" + blobPath;
+		    }
 		}
 		fileMapping.put(blob.getContentHash(), rname);
 		return rname;

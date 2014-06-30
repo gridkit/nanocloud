@@ -39,7 +39,7 @@ public class SftpCacheCheck {
 	
 	@Test
 	public void test_simple_upload() throws JSchException, InterruptedException, SftpException {
-		SftFileCache cache = new SftFileCache(createSession(), "/tmp/.vigrid/.jarcache", 1); 
+		SftFileCache cache = new SftFileCache(createSession(), "/tmp/.vigrid/.jarcache", false, 1); 
 
 		TestBlob blobA = new TestBlob("A", "AAAAAAA".getBytes()); 
 		TestBlob blobB = new TestBlob("B", "BBBBBBB".getBytes()); 
@@ -53,7 +53,7 @@ public class SftpCacheCheck {
 
 	@Test
 	public void test_parallel_upload() throws JSchException, InterruptedException, SftpException {
-		SftFileCache cache = new SftFileCache(createSession(), "/tmp/.vigrid/.jarcache", 4); 
+		SftFileCache cache = new SftFileCache(createSession(), "/tmp/.vigrid/.jarcache", false, 4); 
 		
 		List<TestBlob> blobs = new ArrayList<TestBlob>();
 		Random r = new Random();

@@ -108,6 +108,11 @@ public class ViGroup implements ViNode {
 	}
 
 	@Override
+	public String getPragma(String pragmaName) {
+		throw new UnsupportedOperationException("Unsupported for group");
+	}
+
+	@Override
 	public void setConfigElement(String key, Object value) {
 		checkActive();
 		config.setConfigElement(key, value);

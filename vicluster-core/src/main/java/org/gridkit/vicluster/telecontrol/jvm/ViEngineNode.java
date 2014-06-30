@@ -147,6 +147,11 @@ class ViEngineNode implements ViNode {
 	}
 
 	@Override
+	public Object getPragma(final String pragmaName) {
+		return engine.getPragma(pragmaName);
+	}
+
+	@Override
 	public void kill() {
 		engine.kill();
 	}

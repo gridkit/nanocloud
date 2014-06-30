@@ -22,7 +22,7 @@ public class SshConsoleCheck {
 		
 		Session session = sshFactory.getSession("cbox1", null);
 		
-		SshHostControlConsole console= new SshHostControlConsole(session, "~/.nanocloud/cache", 1);
+		SshHostControlConsole console= new SshHostControlConsole(session, "~/.nanocloud/cache", false, 1);
 
 		final FutureBox<Void> exit = new FutureBox<Void>();
 		

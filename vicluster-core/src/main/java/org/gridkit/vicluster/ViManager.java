@@ -310,6 +310,17 @@ public class ViManager implements ViNodeSet {
 		}
 
 		@Override
+		public Object getPragma(String pragmaName) {
+			ensureExecutor();
+			if (realNode != null) {
+				return realNode.getPragma(pragmaName);
+			}
+			else {
+				return null;
+			}			
+		}
+
+		@Override
 		public void setConfigElement(String key, Object value) {
 			ensureAlive();
 			this.config.setConfigElement(key, value);
@@ -764,6 +775,11 @@ public class ViManager implements ViNodeSet {
 		public String getProp(String propName) {
 			throw new UnsupportedOperationException("Cannot call on group of nodes");
 		}
+		
+		@Override
+		public Object getPragma(String pragmaName) {
+			throw new UnsupportedOperationException("Cannot call on group of nodes");
+		}
 
 		@Override
 		public void kill() {
@@ -887,7 +903,12 @@ public class ViManager implements ViNodeSet {
 		public String getProp(String propName) {
 			return node.getProp(propName);
 		}
-		
+
+		@Override
+		public Object getPragma(String pragmaName) {
+			return node.getPragma(pragmaName);
+		}
+
 		@Override
 		public void kill() {
 			// do nothing

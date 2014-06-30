@@ -64,6 +64,42 @@ import org.gridkit.zerormi.hub.SlaveSpore;
  */
 public class ProcessSporeLauncher implements ProcessLauncher {
 
+    public ManagedProcess launchProcess(LaunchConfig config) {
+        
+        HostControlConsole console = config.getControlConsole();
+        RemoteExecutionSession rmiSession = config.getRemotingSession();
+        List<String> slaveArgs = config.getSlaveArgs();
+        Map<String, String> slaveEnv = config.getSlaveEnv();
+        String slaveWD = config.getSlaveWorkDir();
+        
+        ControlledSession session = new ControlledSession();
+        session.session = rmiSession;
+        
+        SlaveSpore spore = rmiSession.getMobileSpore();
+
+        // TODO single socket per console should be reused or at least it should be closed after use
+        Destroyable socketHandler = console.openSocket(session);
+        session.socketHandle = socketHandler;
+        
+        InetSocketAddress sockAddr = (InetSocketAddress)fget(session.bindAddress);
+        CallbackSporePlanter planter = new CallbackSporePlanter(spore, sockAddr.getHostName(), sockAddr.getPort());
+        byte[] binspore = serialize(planter);
+        session.binspore = binspore;
+        
+        String javaCmd = config.getSlaveJvmExecCmd();
+        String bootstraper = buildBootJar(console, config.getSlaveClasspath());
+        
+        List<String> commands = new ArrayList<String>();
+        commands.add(javaCmd);
+        commands.addAll(slaveArgs);
+        commands.add("-jar");
+        commands.add(bootstraper);
+        
+        console.startProcess(isEmpty(slaveWD) ? "." : slaveWD, commands.toArray(new String[0]), slaveEnv, session);
+        
+        return session;
+    }
+    
 	@Override
 	public ManagedProcess createProcess(Map<String, Object> config) {
 		

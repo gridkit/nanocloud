@@ -126,7 +126,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 				sf.setConfig("PreferredAuthentications", rconfig.getAuthMethods());
 			}
 			session = sf.getSession(rconfig.getHost(), rconfig.getAccount());
-			jarCache = new SftFileCache(session, rconfig.getJarCachePath(), 4);
+			jarCache = new SftFileCache(session, rconfig.getJarCachePath(), false, 4);
 			initRemoteClasspath();
 			startTunneler();
 			hub = new RemotingHub(logger);

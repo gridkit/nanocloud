@@ -14,6 +14,14 @@ import org.gridkit.util.concurrent.AdvancedExecutor;
  */
 public class AdvExecutor2ViExecutor implements ViExecutor {
 	
+    public static <T> T exec(AdvancedExecutor exec, Callable<T> task) {
+        return new AdvExecutor2ViExecutor(exec).exec(task);
+    }
+
+    public static void exec(AdvancedExecutor exec, Runnable task) {
+        new AdvExecutor2ViExecutor(exec).exec(task);
+    }
+    
 	private final AdvancedExecutor advExec;
 
 	public AdvExecutor2ViExecutor(AdvancedExecutor advExec) {

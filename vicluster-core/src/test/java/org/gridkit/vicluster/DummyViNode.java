@@ -48,6 +48,11 @@ public class DummyViNode implements ViNode {
 		return config.getProp(propName);
 	}
 
+    @Override
+    public Object getPragma(String pragmaName) {
+    	return config.getProp(pragmaName);
+    }
+
 	public void setProp(String propName, String value) {
 		config.setProp(propName, value);
 	}

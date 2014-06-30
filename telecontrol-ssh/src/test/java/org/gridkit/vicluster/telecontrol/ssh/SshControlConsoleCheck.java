@@ -47,7 +47,7 @@ public class SshControlConsoleCheck  {
 		
 		Session session = sshFactory.getSession("cbox1", null);
 		
-		console= new SshHostControlConsole(session, "~/.nanocloud/cache", 1);
+		console= new SshHostControlConsole(session, "~/.nanocloud/cache", false, 1);
 	}
 
 	@After

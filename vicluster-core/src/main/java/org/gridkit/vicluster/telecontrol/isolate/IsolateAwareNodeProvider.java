@@ -142,6 +142,11 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 			return node.getProp(propName);
 		}
 
+		@Override
+		public Object getPragma(String pragmaName) {
+			return node.getPragma(pragmaName);
+		}
+
 		public void setConfigElement(String key, Object value) {
 			node.setConfigElement(key, value);
 		}

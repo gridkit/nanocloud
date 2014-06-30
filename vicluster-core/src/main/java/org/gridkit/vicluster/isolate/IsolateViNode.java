@@ -79,6 +79,11 @@ public class IsolateViNode implements ViNode {
 	}
 
 	@Override
+	public Object getPragma(String pragmaName) {
+		return getProp(pragmaName);
+	}
+
+	@Override
 	public synchronized void setProp(String propName, String value) {
 		ensureNotDestroyed();
 		config.setProp(propName, value);

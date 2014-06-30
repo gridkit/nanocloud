@@ -278,6 +278,11 @@ class JvmNode implements ViNode {
 	}
 
 	@Override
+	public Object getPragma(String pragmaName) {
+		return getProp(pragmaName);
+	}
+
+	@Override
 	public void kill() {
 		terminate(false);
 	}

@@ -16,10 +16,10 @@ public class SshHostControlConsole extends LocalControlConsole {
 	private Session session;
 	private SftFileCache fileCache;
 	
-	public SshHostControlConsole(Session session, String cachePath, int sftpParallelFactor) {
+	public SshHostControlConsole(Session session, String cachePath, boolean useRelativePaths, int sftpParallelFactor) {
 		try {
 			this.session = session;
-			this.fileCache = new SftFileCache(session, cachePath, sftpParallelFactor);
+			this.fileCache = new SftFileCache(session, cachePath, useRelativePaths, sftpParallelFactor);
 			register(new CacheKiller(fileCache));
 			register(new SessionKiller(session));
 		} catch (JSchException e) {
