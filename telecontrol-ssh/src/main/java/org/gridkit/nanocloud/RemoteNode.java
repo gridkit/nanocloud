@@ -19,6 +19,7 @@ import org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViConfExtender;
+import org.gridkit.vicluster.ViEngine;
 
 /**
  * Config properties for remote nodes.
@@ -82,6 +83,7 @@ public class RemoteNode extends ViConfigurable.Delegate {
 		config.setProp(SshSpiConf.REMOTE_FALLBACK_JVM_EXEC, "java");
 		setHostsConfigFile("?~/ssh-credentials.prop");
 		setRemoteHost("~%s!(.*)");
+		config.setConfigElement("pragma-handler:ssh",  new ViEngine.InitTimePragmaHandler());
 
 		return this;
 	}
@@ -103,6 +105,7 @@ public class RemoteNode extends ViConfigurable.Delegate {
 
 	public RemoteNode setSshPrivateKey(String path) {
 		config.setProp(SSH_KEY_FILE, path);
+		config.setProp(SshSpiConf.SSH_PRIVATE_KEY_FILE, path);
 		return this;
 	}
 	
