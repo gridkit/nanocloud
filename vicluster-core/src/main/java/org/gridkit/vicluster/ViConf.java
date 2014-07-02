@@ -59,6 +59,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
 
+    public static final String INHERIT_CLASS_PATH = "classpath:inherit:";
+
 	public static final String REMOTE_HOST = "remote:host";
 	public static final String REMOTE_ACCOUNT = "remote:account";
 	public static final String REMOTE_HOST_CONFIG = "remote:host-config";
@@ -501,6 +503,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 		public ClasspathConf remove(String ruleName, String path) {
 			return remove(ruleName, pathToURL(path));
 		}
+
+        public ClasspathConf inheritClasspath(boolean inherit){
+            conf.setProp(INHERIT_CLASS_PATH, ""+inherit);
+            return this;
+        }
 
 		private String defaultName(URL url) {
 			String name;
