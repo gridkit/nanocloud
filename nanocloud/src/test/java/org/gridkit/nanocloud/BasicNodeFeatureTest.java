@@ -304,6 +304,54 @@ public abstract class BasicNodeFeatureTest {
 		Assert.assertEquals("Default marker", readMarkerFromResources());
 	}
 
+    @Test(expected = NoClassDefFoundError.class)
+	public void test_dont_inherit_cp() throws IOException, URISyntaxException {
+
+        ViNode node = cloud.node("test-node");
+
+        node.x(CLASSPATH).inheritClasspath(false);
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                // should throw NoClassDefFoundError because junit should not inherited
+                Assert.assertTrue(true);
+            }
+        });
+	}
+
+    @Test
+	public void test_inherit_cp_true() throws IOException, URISyntaxException {
+
+        ViNode node = cloud.node("test-node");
+
+        node.x(CLASSPATH).inheritClasspath(true);
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                // should NOT throw NoClassDefFoundError because junit should be inherited
+                Assert.assertTrue(true);
+            }
+        });
+	}
+
+    @Test
+	public void test_inherit_cp_default_true() throws IOException, URISyntaxException {
+
+        ViNode node = cloud.node("test-node");
+
+        //this is by default: node.x(CLASSPATH).inheritClasspath(true);
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                // should NOT throw NoClassDefFoundError because junit should be inherited
+                Assert.assertTrue(true);
+            }
+        });
+	}
+
 	private static String readMarkerFromResources() throws IOException {
 		URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
 		Assert.assertNotNull(url);
