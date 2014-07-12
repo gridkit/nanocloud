@@ -16,6 +16,8 @@
 package org.gridkit.nanocloud;
 
 import static org.gridkit.nanocloud.VX.CLASSPATH;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -214,7 +216,7 @@ public abstract class BasicNodeFeatureTest {
 		Assert.assertNull(System.getProperty("local-prop"));
 	}
 	
-	@Test @Ignore("Not working at the moment due to limitation of dynamic proxies")
+	@Test
 	public void verify_exec_stack_trace_locality() {
 
 		ViNode node = cloud.node("node-1");
@@ -226,7 +228,7 @@ public abstract class BasicNodeFeatureTest {
 					throw new IllegalArgumentException("test");
 				}
 			});
-			Assert.assertFalse("Should throw an exception", true);
+			Assert.fail("Should throw an exception");
 		}
 		catch(IllegalArgumentException e) {
 			e.printStackTrace();
@@ -254,12 +256,14 @@ public abstract class BasicNodeFeatureTest {
 		return sb.toString();
 	}
 	
-	// TODO expose export feature
-	@Test @Ignore("Feature is missing")
+	@Test
 	public void test_stack_trace2() {
 
 		Isolate is1 = new Isolate("node-1", "com.tangosol", "org.gridkit");
 		is1.start();
+
+        int lineNumberBeforeRun = 0;
+        int lineNumberAfterRun = 0;
 		
 		try {
 			Runnable r = is1.export(new Callable<Runnable>() {
@@ -273,13 +277,29 @@ public abstract class BasicNodeFeatureTest {
 				}
 			});
 
-			r.run();
-			
-			Assert.assertFalse("Should throw an exception", true);
+            lineNumberBeforeRun = new Throwable().getStackTrace()[0].getLineNumber();
+            try {
+                r.run();
+            } finally {
+                lineNumberAfterRun = new Throwable().getStackTrace()[0].getLineNumber();
+            }
+
+            Assert.fail("Should throw an exception");
 		}
 		catch(IllegalArgumentException e) {
 			e.printStackTrace();
-		}
+            StackTraceElement elementFromCurrentMethod = null;
+            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                if (stackTraceElement.getClassName().equals(BasicNodeFeatureTest.class.getName()) &&
+                        stackTraceElement.getMethodName().equals("test_stack_trace2")){
+                    elementFromCurrentMethod = stackTraceElement;
+                    break;
+                }
+            }
+            assertNotNull("stack trace should contains client-side method", elementFromCurrentMethod);
+            final int lineNumber = elementFromCurrentMethod.getLineNumber();
+            assertTrue("stack trace should contains line where method was invoked", lineNumber > lineNumberBeforeRun && lineNumber < lineNumberAfterRun);
+        }
 	}	
 	
 	public void test_classpath_extention() throws IOException, URISyntaxException {
@@ -296,17 +316,17 @@ public abstract class BasicNodeFeatureTest {
 			public Void call() throws Exception {
 				String marker = readMarkerFromResources();
 				Assert.assertEquals("Marker from jar", marker);
-				return null;
-			}
+                return null;
+            }
 
-		});
-		
-		Assert.assertEquals("Default marker", readMarkerFromResources());
+        });
+
+        Assert.assertEquals("Default marker", readMarkerFromResources());
 	}
 
 	private static String readMarkerFromResources() throws IOException {
-		URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
-		Assert.assertNotNull(url);
+        URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
+		assertNotNull(url);
 		BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
 		String marker = r.readLine();
 		r.close();
@@ -318,7 +338,7 @@ public abstract class BasicNodeFeatureTest {
 		ViNode node = cloud.node("test-node");
 		
 		URL url = getClass().getResource("/org/junit/Assert.class");
-		Assert.assertNotNull(url);
+		assertNotNull(url);
 		
 		String jarUrl = url.toString();
 		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));

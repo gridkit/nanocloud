@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.ExceptionHelper;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 
 /**

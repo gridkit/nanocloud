@@ -62,13 +62,14 @@ public class IsolateNodeFeatureTest extends BasicNodeFeatureTest {
 		super.verify_property_isolation();
 	}
 	
-	@Ignore("Not working at the moment due to limitation of dynamic proxies")
+	@Test
 	public void verify_exec_stack_trace_locality() {
+        super.verify_exec_stack_trace_locality();
 	}	
 
-	// TODO expose export feature
-	@Ignore("Feature is missing")
+	@Test
 	public void test_stack_trace2() {
+        super.test_stack_trace2();
 	}
 
 	@Test
