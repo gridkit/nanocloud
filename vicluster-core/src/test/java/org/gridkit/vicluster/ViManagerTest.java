@@ -23,6 +23,8 @@ import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
+
 public class ViManagerTest {
 
 	private ViManager man = new ViManager(new InProcessViNodeProvider());
@@ -44,6 +46,23 @@ public class ViManagerTest {
 		Assert.assertEquals(4, man.nodes("a*", "*b").massExec(new Echo()).size());
 //		Assert.assertEquals(2, man.nodes("b*", "c*", "d*").massExec(new Echo()).size());
 	}
+
+    @Test
+    public void usableStackTrace(){
+        try {
+            man.node("aa").exec(new ExceptionalRunnable());
+        } catch (Exception e) {
+            ArithmeticException exception = (ArithmeticException) e; //expect that exception not changed
+            boolean found = false;
+            for (StackTraceElement stackTraceElement : exception.getStackTrace()) {
+                if (stackTraceElement.getClassName().equals(this.getClass().getName()) &&
+                        stackTraceElement.getMethodName().equals("usableStackTrace")) {
+                    found = true;
+                }
+            }
+            assertTrue("expected this method in stack trace", found);
+        }
+    }
 
 	@Test(expected = IllegalStateException.class)
 	public void fail_on_empty_pattern() {
@@ -70,4 +89,11 @@ public class ViManagerTest {
 			return echo;
 		}
 	}
+
+    private static class ExceptionalRunnable implements Runnable{
+        @Override
+        public void run() {
+            throw new ArithmeticException("test-exception");
+        }
+    }
 }
