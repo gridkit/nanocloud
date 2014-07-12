@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
@@ -171,8 +173,20 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 			try {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
 				Map<String, String> tweaks = (Map<String, String>) (Map) game.getConfigProps(ViConf.CLASSPATH_TWEAK);
-				List<ClasspathEntry> cp = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
-				if (tweaks.isEmpty()) {
+                final boolean inheritClassPath = !Boolean.FALSE.toString().equals(game.getAllConfigProps().get(ViConf.INHERIT_CLASS_PATH));
+                final List<ClasspathEntry> cp;
+                final List<ClasspathEntry> inheritedClasspath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
+                if (inheritClassPath){
+                    cp = inheritedClasspath;
+                }else {
+                    cp = new ArrayList<ClasspathEntry>();
+                    for (ClasspathEntry classpathEntry : inheritedClasspath) {
+                        if (isGridKitClasses(classpathEntry) || isTestClasses(classpathEntry)){
+                            cp.add(classpathEntry);
+                        }
+                    }
+                }
+                if (tweaks.isEmpty()) {
 					return cp;
 				}
 				else {
@@ -200,8 +214,27 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 				throw new RuntimeException(e);
 			}
 		}
-		
-		private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
+
+        private boolean isGridKitClasses(ClasspathEntry classpathEntry){
+            try {
+                final ZipInputStream zipInputStream = new ZipInputStream(classpathEntry.getContent());
+                ZipEntry entry;
+                while ((entry = zipInputStream.getNextEntry()) != null) {
+                    if (entry.getName().startsWith("org/gridkit/")) {
+                        return true;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        private boolean isTestClasses(ClasspathEntry classpathEntry){
+            return classpathEntry.getFileName().contains("test-classes");
+        }
+
+        private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
 			ClasspathEntry entry = Classpath.getLocalEntry(path);
 			if (entry != null) {
 				entries.add(0, entry);
