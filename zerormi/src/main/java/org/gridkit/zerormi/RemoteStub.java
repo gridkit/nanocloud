@@ -88,9 +88,18 @@ public class RemoteStub implements InvocationHandler  {
 		
 		return Proxy.newProxyInstance(channel.getClassLoader(), classes, new RemoteStub(remoteInstance, channel));
 	}
+
+    public static boolean isRemoteStub(Object proxy) {
+        if (Proxy.isProxyClass(proxy.getClass()) && Proxy.getInvocationHandler(proxy) instanceof RemoteStub) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }	
 	
 	@SuppressWarnings("unchecked")
-    public static <T> FutureEx<T> remoteSubmit(Object proxy, Method method, Object[]... arguments) {
+    public static <T> FutureEx<T> remoteSubmit(Object proxy, Method method, Object... arguments) {
 	    Object handler = Proxy.getInvocationHandler(proxy);
 	    if (handler instanceof RemoteStub) {
 	        RemoteStub stub = (RemoteStub) handler;

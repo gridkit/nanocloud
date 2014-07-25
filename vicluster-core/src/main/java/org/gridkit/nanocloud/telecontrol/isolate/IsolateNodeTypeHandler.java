@@ -15,6 +15,7 @@ public class IsolateNodeTypeHandler extends GenericNodeTypeHandler {
 	
 	@Override
 	public boolean apply(QuorumGame game) {
+//		game.setProp(ViConf.PRAGMA_HANDLER + "isolate", new ViEngine.InitTimePragmaHandler());
 		game.setProp(ViConf.PRAGMA_HANDLER + "isolate", new IsolatePragmaSupport());
 		return super.apply(game);
 	}

@@ -120,7 +120,8 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 			delegate.exec(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public void exec(VoidCallable task) {
 			delegate.exec(task);
 		}
@@ -135,7 +136,8 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 			return delegate.submit(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public Future<Void> submit(VoidCallable task) {
 			return delegate.submit(task);
 		}
@@ -155,7 +157,8 @@ public interface ViNode extends ViExecutor, ViConfigurable {
 			return delegate.massSubmit(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public List<Future<Void>> massSubmit(VoidCallable task) {
 			return delegate.massSubmit(task);
 		}

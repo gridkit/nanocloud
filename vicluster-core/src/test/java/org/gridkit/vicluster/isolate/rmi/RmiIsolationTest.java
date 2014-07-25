@@ -24,15 +24,16 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.Callable;
 
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
 import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.junit.After;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class RmiIsolationTest {
 
 	ViManager cloud = new ViManager(new IsolateAwareNodeProvider());
@@ -41,7 +42,7 @@ public class RmiIsolationTest {
 		return cloud.node(name);
 	}
 	
-	@After
+    @After
 	public void cleanIsolates() {
 		cloud.shutdown();
 		cloud = new ViManager(new IsolateViNodeProvider());
@@ -57,9 +58,9 @@ public class RmiIsolationTest {
 		ViNode node1 = createIsolateViHost("node1");
 		ViNode node2 = createIsolateViHost("node2");
 		
-		node1.exec(new VoidCallable() {
+		node1.exec(new Callable<Void>() {
 			@Override
-			public void call() throws Exception {
+			public Void call() throws Exception {
 				
 				PingServer server = new PingServer();
 				Remote serverStub = UnicastRemoteObject.exportObject(server, 0);
@@ -74,12 +75,13 @@ public class RmiIsolationTest {
 				PingObject ping = new PingObject("pong");
 				System.out.println("Ping: " + ping.getClass().getClassLoader());
 				assertThat(rping.ping(ping), is("pong"));
+				return null;
 			}
 		});
 
-		node2.exec(new VoidCallable() {
+		node2.exec(new Callable<Void>() {
 			@Override
-			public void call() throws Exception {
+			public Void call() throws Exception {
 				
 				Registry reg = LocateRegistry.getRegistry(10000);
 				
@@ -88,6 +90,7 @@ public class RmiIsolationTest {
 				PingObject ping = new PingObject("pong");
 				System.out.println("Ping: " + ping.getClass().getClassLoader());
 				assertThat(rping.ping(ping), is("pong"));
+				return null;
 			}
 		});
 		

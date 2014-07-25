@@ -20,6 +20,7 @@ import org.gridkit.vicluster.VoidCallable;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings("deprecation")
 class ViEngine2Node implements ViNode {
 
 	private ViEngine2 engine;

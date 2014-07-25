@@ -5,10 +5,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.Callable;
 
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.SimpleCloudFactory;
-import org.gridkit.vicluster.VoidCallable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -31,10 +31,10 @@ public class LinuxSocketCheck {
 	@Test
 	public void simple_socket_transfer() throws IOException {
 
-		cloud.node("cbox1").exec(new VoidCallable(){
+		cloud.node("cbox1").exec(new Callable<Void>(){
 
 			@Override
-			public void call() throws Exception {
+			public Void call() throws Exception {
 				ServerSocket ss = new ServerSocket();
 				ss.setReuseAddress(true);
 				ss.bind(null);
@@ -49,6 +49,7 @@ public class LinuxSocketCheck {
 				String result = dis.readUTF();
 				
 				Assert.assertEquals("Hallo world!", result);
+				return null;
 			}
 		});
 	}
@@ -56,10 +57,10 @@ public class LinuxSocketCheck {
 	@Test
 	public void server_socket_close() throws IOException {
 
-		cloud.node("cbox1").exec(new VoidCallable() {
+		cloud.node("cbox1").exec(new Callable<Void>() {
 			
 			@Override
-			public void call() throws Exception {
+			public Void call() throws Exception {
 				ServerSocket ss = new ServerSocket();
 				ss.setReuseAddress(true);
 				ss.bind(null);
@@ -76,6 +77,7 @@ public class LinuxSocketCheck {
 				String result = dis.readUTF();
 				
 				Assert.assertEquals("Hallo world!", result);
+				return null;
 			}
 		});
 	}

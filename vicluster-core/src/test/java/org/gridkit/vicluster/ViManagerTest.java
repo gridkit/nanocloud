@@ -52,6 +52,24 @@ public class ViManagerTest {
 		man.node("d*").exec(new Echo());
 	}
 	
+    @Test
+    public void verify_usable_stack_trace() {
+        try {
+            man.node("aa").exec(new ExceptionalRunnable());
+        } catch (Exception e) {
+            e.printStackTrace();
+            ArithmeticException exception = (ArithmeticException) e; 
+            // expect that exception not changed
+            boolean found = false;
+            for (StackTraceElement stackTraceElement : exception.getStackTrace()) {
+                if (stackTraceElement.getClassName().equals(this.getClass().getName()) && stackTraceElement.getMethodName().equals("verify_usable_stack_trace")) {
+                    found = true;
+                }
+            }
+            Assert.assertTrue("expected this method in stack trace", found);
+        }
+    }
+	
 	@SuppressWarnings("serial")
 	public static class Echo implements Callable<String>, Serializable {
 		
@@ -70,4 +88,11 @@ public class ViManagerTest {
 			return echo;
 		}
 	}
+	
+    private static class ExceptionalRunnable implements Runnable {
+        @Override
+        public void run() {
+            throw new ArithmeticException("test-exception");
+        }
+    }
 }

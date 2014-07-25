@@ -43,7 +43,8 @@ public class AdvExecutor2ViExecutor implements ViExecutor {
 		}
 	}
 
-	@Override
+    @Override
+    @SuppressWarnings("deprecation")
 	public void exec(VoidCallable task) {
 		try {
 			submit(task).get();
@@ -71,7 +72,8 @@ public class AdvExecutor2ViExecutor implements ViExecutor {
 		return (Future<Void>) getExecutor().submit(task);
 	}
 
-	@Override
+    @Override
+    @SuppressWarnings("deprecation")
 	public Future<Void> submit(VoidCallable task) {
 		return getExecutor().submit(new VoidCallable.VoidCallableWrapper(task));
 	}
@@ -91,7 +93,8 @@ public class AdvExecutor2ViExecutor implements ViExecutor {
 		return MassExec.singleNodeMassSubmit(this, task);
 	}
 
-	@Override
+    @Override
+    @SuppressWarnings("deprecation")
 	public List<Future<Void>> massSubmit(VoidCallable task) {
 		return MassExec.singleNodeMassSubmit(this, task);
 	}

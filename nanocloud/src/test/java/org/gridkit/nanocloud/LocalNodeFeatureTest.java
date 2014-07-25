@@ -60,16 +60,25 @@ public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 		super.verify_property_isolation();
 	}
 	
-	@Ignore("Not working at the moment due to limitation of dynamic proxies")
-	public void verify_exec_stack_trace_locality() {
-	}	
-
-	// TODO expose export feature
-	@Ignore("Feature is missing")
-	public void test_stack_trace2() {
-	}
+	@Test
+	@Override
+    public void verify_exec_stack_trace_locality() {
+        super.verify_exec_stack_trace_locality();
+    }
 
 	@Test
+    @Override
+    public void verify_transparent_proxy_stack_trace() {
+        super.verify_transparent_proxy_stack_trace();
+    }
+
+	@Test
+    @Override
+    public void verify_transitive_transparent_proxy_stack_trace() {
+        super.verify_transitive_transparent_proxy_stack_trace();
+    }
+
+    @Test
 	@Override
 	public void test_classpath_extention() throws IOException, URISyntaxException {
 		super.test_classpath_extention();

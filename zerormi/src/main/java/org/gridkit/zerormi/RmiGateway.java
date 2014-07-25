@@ -24,7 +24,9 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -80,11 +82,11 @@ public class RmiGateway {
 	};
 	
 	public RmiGateway(String name) {
-		this(name, ZLogFactory.getDefaultRootLogger().getLogger(RmiGateway.class.getPackage().getName()));
+		this(name, new SmartRmiMarshaler(), ZLogFactory.getDefaultRootLogger().getLogger(RmiGateway.class.getPackage().getName()), Collections.<String, Object>emptyMap());
 	}
 
 	public RmiGateway(String name, ZLogger logger) {
-		this(name, new SmartRmiMarshaler(), logger);
+		this(name, new SmartRmiMarshaler(), logger, Collections.<String, Object>emptyMap());
 	}
 
 	private ExecutorService createRmiExecutor() {
@@ -103,10 +105,10 @@ public class RmiGateway {
 				});
 	}
 
-	public RmiGateway(String name, RmiMarshaler marshaler, ZLogger logger) {
+	public RmiGateway(String name, RmiMarshaler marshaler, ZLogger logger, Map<String, Object> props) {
 		// TODO should include counter agent
 		this.executor = createRmiExecutor();
-		this.channel = new RmiChannel1(new MessageOut(), executor, marshaler, logger);
+		this.channel = new RmiChannel1(name, new MessageOut(), executor, marshaler, logger, props);
 		this.service = new RemoteExecutionService();
 		this.name = name;
 		this.logVerbose = logger.get(getClass().getSimpleName(), LogLevel.VERBOSE);

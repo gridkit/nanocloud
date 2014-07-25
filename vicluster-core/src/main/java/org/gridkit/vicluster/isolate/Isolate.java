@@ -87,7 +87,7 @@ import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
 /**
  *	@author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-@SuppressWarnings("restriction")
+@SuppressWarnings({ "restriction", "deprecation" })
 public class Isolate {
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
@@ -746,12 +746,12 @@ public class Isolate {
 		}
 	}
 	
-	@SuppressWarnings("deprecation")
+//	@SuppressWarnings("deprecation")
 	public void suspend() {
 		threadGroup.suspend();
 	}
 
-	@SuppressWarnings("deprecation")
+//	@SuppressWarnings("deprecation")
 	public void resume() {
 		threadGroup.resume();
 	}
@@ -869,7 +869,7 @@ public class Isolate {
 		return threadCount;
 	}
 	
-	@SuppressWarnings("deprecation")
+//	@SuppressWarnings("deprecation")
 	private void killThread(Thread t, boolean force) {
 		if (!force) {
 			try { t.resume(); }	catch(Exception e) {/* ignore */};
@@ -2603,7 +2603,7 @@ public class Isolate {
 			return resolve().equals(o);
 		}
 
-		@SuppressWarnings("deprecation")
+//		@SuppressWarnings("deprecation")
 		public void save(OutputStream out, String comments) {
 			resolve().save(out, comments);
 		}

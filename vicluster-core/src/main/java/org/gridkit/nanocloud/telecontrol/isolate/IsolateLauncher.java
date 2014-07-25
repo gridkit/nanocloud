@@ -49,8 +49,8 @@ class IsolateLauncher implements ProcessLauncher {
             throw new RuntimeException("Library classloader is not found!");
         }
         
-        Isolate i = new Isolate(config.getNodeName(), cl, urls);
-        
+        Isolate i = new Isolate(config.getNodeName(), cl, urls);        
+                
         IsolateSession session = new IsolateSession(i, rmiSession);
         session.start();
         
@@ -76,6 +76,20 @@ class IsolateLauncher implements ProcessLauncher {
 		}
 		
 		Isolate i = new Isolate(ctx.getNodeName(), cl, urls);
+
+//		Map<String, String> isolateProps = new LinkedHashMap<String, String>();
+//		
+//		for(String key: config.keySet()) {
+//		    if (    key.startsWith(IsolateProps.ISOLATE_PACKAGE)
+//		            || key.startsWith(IsolateProps.SHARE_PACKAGE)
+//		            || key.startsWith(IsolateProps.ISOLATE_CLASS)
+//		            || key.startsWith(IsolateProps.SHARE_CLASS)) {
+//		        
+//		        isolateProps.put(key, (String)config.get(key));
+//		    }		    
+//		}
+//
+//		new IsolateSelfInitializer(isolateProps).apply(i);
 		
 		IsolateSession session = new IsolateSession(i, rmiSession);
 		session.start();

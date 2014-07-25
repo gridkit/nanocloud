@@ -39,6 +39,7 @@ import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 
+@SuppressWarnings("deprecation")
 public class IsolateAwareNodeProvider extends JvmNodeProvider {
 
 	public IsolateAwareNodeProvider() {

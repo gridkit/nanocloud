@@ -25,19 +25,19 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.rmi.Remote;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public abstract class BasicNodeFeatureTest {
 
 	protected Cloud cloud;
@@ -50,7 +50,7 @@ public abstract class BasicNodeFeatureTest {
 		cloud.shutdown();
 	}
 
-	public void verify_isolated_static_with_void_callable() {
+    public void verify_isolated_static_with_void_callable() {
 		
 		ViNode viHost1 = cloud.node("node-1");
 		ViNode viHost2 = cloud.node("node-2");
@@ -214,7 +214,7 @@ public abstract class BasicNodeFeatureTest {
 		Assert.assertNull(System.getProperty("local-prop"));
 	}
 	
-	@Test @Ignore("Not working at the moment due to limitation of dynamic proxies")
+	@Test
 	public void verify_exec_stack_trace_locality() {
 
 		ViNode node = cloud.node("node-1");
@@ -235,13 +235,81 @@ public abstract class BasicNodeFeatureTest {
 		}
 	}
 
-	private void assertLocalStackTrace(IllegalArgumentException e) {
+    @Test
+    public void verify_transparent_proxy_stack_trace() {
+
+        ViNode node = cloud.node("node-1");
+        
+        try {
+            Runnable r = node.exec(new Callable<Runnable>() {
+                public Runnable call() {
+                    return new RemoteRunnable() {
+                        
+                        @Override
+                        public void run() {
+                            throw new IllegalArgumentException("test2");
+                        }
+                    };
+                }
+            });
+
+            r.run();
+            
+            Assert.assertFalse("Should throw an exception", true);
+        }
+        catch(IllegalArgumentException e) {
+            e.printStackTrace();
+            assertLocalStackTrace(e);
+        }
+    }   
+
+    @Test
+    public void verify_transitive_transparent_proxy_stack_trace() {
+
+        ViNode node = cloud.node("node-1");
+        
+        final RemoteRunnable explosive = new RemoteRunnable() {
+            
+            @Override
+            public void run() {
+                throw new IllegalArgumentException("test2");
+            }
+        };
+        
+        try {
+            node.exec(new Callable<Void>() {
+                public Void call() {
+                    explosive.run();
+                    return null;
+                }
+            });
+
+            Assert.assertFalse("Should throw an exception", true);
+        }
+        catch(IllegalArgumentException e) {
+            e.printStackTrace();
+            assertLocalStackTrace(e);
+            assertStackTraceContains(e, "[master] java.lang.Runnable.run(Remote call)");
+            assertStackTraceContains(e, "[node-1] org.gridkit.zerormi.RemoteExecutor.exec(Remote call)");
+        }
+    }       
+    
+	private void assertLocalStackTrace(Exception e) {
 		Exception local = new Exception();
 		int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
 		Assert.assertEquals(
 				printStackTop(new Exception().getStackTrace(), depth), 
 				printStackTop(e.getStackTrace(),depth)
 		);
+	}
+
+	private void assertStackTraceContains(Exception e, String line) {
+	    for(StackTraceElement ee: e.getStackTrace()) {
+	        if (ee.toString().contains(line)) {
+	            return;
+	        }
+	    }
+        Assert.fail("Line: " + line + "\n is not found in stack traces\n" + printStackTop(e.getStackTrace(), e.getStackTrace().length));
 	}
 	
 	private static String printStackTop(StackTraceElement[] stack, int depth) {
@@ -254,33 +322,6 @@ public abstract class BasicNodeFeatureTest {
 		return sb.toString();
 	}
 	
-	// TODO expose export feature
-	@Test @Ignore("Feature is missing")
-	public void test_stack_trace2() {
-
-		Isolate is1 = new Isolate("node-1", "com.tangosol", "org.gridkit");
-		is1.start();
-		
-		try {
-			Runnable r = is1.export(new Callable<Runnable>() {
-				public Runnable call() {
-					return 	new Runnable() {
-						@Override
-						public void run() {
-							throw new IllegalArgumentException("test2");
-						}
-					};
-				}
-			});
-
-			r.run();
-			
-			Assert.assertFalse("Should throw an exception", true);
-		}
-		catch(IllegalArgumentException e) {
-			e.printStackTrace();
-		}
-	}	
 	
 	public void test_classpath_extention() throws IOException, URISyntaxException {
 		
@@ -364,5 +405,9 @@ public abstract class BasicNodeFeatureTest {
 
 	private boolean trueConst() {
 		return true & true;
-	}		
+	}
+	
+    public interface RemoteRunnable extends Runnable, Remote {
+        
+    }	
 }

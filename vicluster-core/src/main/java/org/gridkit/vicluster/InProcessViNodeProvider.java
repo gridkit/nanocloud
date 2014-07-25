@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
+import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.isolate.Isolate;
 
 public class InProcessViNodeProvider implements ViNodeProvider {
@@ -114,7 +114,8 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 			isolate.execNoMarshal(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public void exec(final VoidCallable task) {
 			isolate.execNoMarshal(new Runnable() {
 				@Override
@@ -143,13 +144,27 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 		}
 
 		@Override
-		public Future<Void> submit(Runnable task) {
-			return (Future<Void>) isolate.submitNoMarshal(task);
+		public Future<Void> submit(final Runnable task) {
+		    final FutureBox<Void> box = new FutureBox<Void>();
+			isolate.submitNoMarshal(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        task.run();
+                        box.setData(null);
+                    }
+                    catch(Throwable e) {
+                        box.setErrorIfWaiting(e);
+                    }
+                }
+            });
+			return box;
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public Future<Void> submit(final VoidCallable task) {			
-			return (Future<Void>) isolate.submitNoMarshal(new Runnable(){
+			return submit(new Runnable(){
 				public void run() {
 					try {
 						task.call();
@@ -161,10 +176,20 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 		}
 
 		@Override
-		public <T> Future<T> submit(Callable<T> task) {
-			FutureTask<T> ft = new FutureTask<T>(task);
-			isolate.submitNoMarshal(ft);
-			return ft;
+		public <T> Future<T> submit(final Callable<T> task) {
+            final FutureBox<T> box = new FutureBox<T>();
+            isolate.submitNoMarshal(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        box.setData(task.call());
+                    }
+                    catch(Throwable e) {
+                        box.setErrorIfWaiting(e);
+                    }
+                }
+            });
+            return box;
 		}
 
 		@Override
@@ -177,7 +202,8 @@ public class InProcessViNodeProvider implements ViNodeProvider {
 			return Collections.singletonList(submit(task));
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public List<Future<Void>> massSubmit(VoidCallable task) {
 			return Collections.singletonList(submit(task));
 		}

@@ -22,7 +22,7 @@ import org.gridkit.vicluster.ViNodeProvider;
 /**
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-@SuppressWarnings("deprecation")
+@Deprecated
 public class IsolateViNodeProvider implements ViNodeProvider {
 
 	@Override

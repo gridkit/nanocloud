@@ -160,7 +160,8 @@ public class ViGroup implements ViNode {
 		MassExec.waitAll(massSubmit(task));		
 	}
 	
-	@Override
+    @Override
+    @SuppressWarnings("deprecation")
 	public synchronized void exec(VoidCallable task) {
 		MassExec.waitAll(massSubmit(task));		
 	}
@@ -176,7 +177,8 @@ public class ViGroup implements ViNode {
 		return new GroupFuture<Void>(massSubmit(task));
 	}
 	
-	@Override
+    @Override
+    @SuppressWarnings("deprecation")
 	public synchronized Future<Void> submit(VoidCallable task) {
 		return new GroupFuture<Void>(massSubmit(task));
 	}
@@ -203,7 +205,8 @@ public class ViGroup implements ViNode {
 		return results;
 	}
 	
-	@Override
+    @Override
+    @SuppressWarnings("deprecation")
 	public synchronized List<Future<Void>> massSubmit(VoidCallable task) {
 		checkExecutable();
 		List<Future<Void>> results = new ArrayList<Future<Void>>();

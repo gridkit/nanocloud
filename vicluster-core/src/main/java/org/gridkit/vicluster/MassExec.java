@@ -125,7 +125,8 @@ public class MassExec {
 		return Collections.singletonList(exec.submit(task));
 	}
 	
-	public static List<Future<Void>> singleNodeMassSubmit(ViExecutor exec, VoidCallable task) {
+	@SuppressWarnings("deprecation")
+    public static List<Future<Void>> singleNodeMassSubmit(ViExecutor exec, VoidCallable task) {
 		return Collections.singletonList(exec.submit(task));
 	}
 	
@@ -144,7 +145,8 @@ public class MassExec {
 		}
 	}
 	
-	public static void submitAndWait(ViExecutor exec, VoidCallable task) {
+	@SuppressWarnings("deprecation")
+    public static void submitAndWait(ViExecutor exec, VoidCallable task) {
 		try {
 			exec.submit(task).get();
 		} catch (InterruptedException e) {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.rmi.Remote;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -32,9 +33,9 @@ import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class IsolateFeatureTest {
 
 	ViManager cloud = new ViManager(new IsolateAwareNodeProvider());
@@ -227,7 +228,6 @@ public class IsolateFeatureTest {
 	}
 	
 	@Test
-	@Ignore("Stack traces are broken in generic cloud")
 	public void verify_exec_stack_trace_locality() {
 
 		ViNode node = createIsolateViHost("node-1");
@@ -267,9 +267,8 @@ public class IsolateFeatureTest {
 		return sb.toString();
 	}
 	
-	// TODO expose export feature
-	@Test @Ignore("Feature is missing")
-	public void test_stack_trace2() {
+	@Test
+	public void verify_isolate_native_proxy_stack_trace() {
 
 		Isolate is1 = new Isolate("node-1", "com.tangosol", "org.gridkit");
 		is1.start();
@@ -292,8 +291,37 @@ public class IsolateFeatureTest {
 		}
 		catch(IllegalArgumentException e) {
 			e.printStackTrace();
+			assertLocalStackTrace(e);
 		}
 	}	
+
+    @Test
+    public void verify_transparent_proxy_stack_trace() {
+
+        ViNode node = createIsolateViHost("node-1");
+        
+        try {
+            Runnable r = node.exec(new Callable<Runnable>() {
+                public Runnable call() {
+                    return  new RemoteRunnable() {
+                        
+                        @Override
+                        public void run() {
+                            throw new IllegalArgumentException("test2");
+                        }
+                    };
+                }
+            });
+
+            r.run();
+            
+            Assert.assertFalse("Should throw an exception", true);
+        }
+        catch(IllegalArgumentException e) {
+            e.printStackTrace();
+            assertLocalStackTrace(e);
+        }
+    }   
 	
 	@Test
 	public void test_classpath_extention() throws IOException, URISyntaxException {
@@ -374,4 +402,8 @@ public class IsolateFeatureTest {
 	private boolean trueConst() {
 		return true & true;
 	}	
+	
+	public interface RemoteRunnable extends Runnable, Remote {
+	    
+	}
 }

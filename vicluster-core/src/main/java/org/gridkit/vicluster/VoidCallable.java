@@ -21,6 +21,8 @@ import java.util.concurrent.Callable;
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ * 
+ * @deprecated Interface would be removed, as it doesn't worth its purpose, use {@link Callable}&lt;{@link Void}&gt; 
  */
 public interface VoidCallable {		
 

@@ -27,6 +27,7 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.VoidCallable;
 
+@SuppressWarnings("deprecation")
 public class DummyViNode implements ViNode {
 	
 	private static ExecutorService EXECUTOR = Executors.newCachedThreadPool();

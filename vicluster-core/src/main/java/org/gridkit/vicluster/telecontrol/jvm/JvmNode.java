@@ -45,6 +45,7 @@ import org.gridkit.vicluster.telecontrol.ManagedProcess;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings("deprecation")
 class JvmNode implements ViNode {
 
 	private String name;

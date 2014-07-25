@@ -37,6 +37,7 @@ import org.gridkit.vicluster.telecontrol.ManagedProcess;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings("deprecation")
 class ViEngineNode implements ViNode {
 
 	private ViEngine engine;

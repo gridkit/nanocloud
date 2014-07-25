@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.rmi.RemoteException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -43,9 +44,9 @@ public class RmiChannel1 implements RmiChannel {
 
     private static AtomicLong callId = new AtomicLong(0L);
 
+    private final String name;
     private final OutputChannel messageOut;
     private final Executor callDispatcher;
-
 
     private final Map<Object, RemoteInstance> object2remote = new IdentityHashMap<Object, RemoteInstance>();
     private final Map<RemoteInstance, Object> remote2object = new HashMap<RemoteInstance, Object>();
@@ -65,14 +66,25 @@ public class RmiChannel1 implements RmiChannel {
 
     private volatile boolean terminated = false;
 
-    public RmiChannel1(OutputChannel output, Executor callDispatcher, RmiMarshaler marshaler, ZLogger logger) {
+    public RmiChannel1(String name, OutputChannel output, Executor callDispatcher, RmiMarshaler marshaler, ZLogger logger, Map<String, Object> props) {
+        this.name = name;
         this.messageOut = output;
         this.callDispatcher = callDispatcher;
         this.marshaler = marshaler;
         this.logCritical = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
-        this.debugRpcDelay = Long.getLong("gridkit.zerormi.debug.rpc-delay", 0);
+        this.debugRpcDelay = readPropLong(props, "gridkit.zerormi.debug.rpc-delay", 0);
     }
 
+    private long readPropLong(Map<String, Object> props, String key, long defaultValue) {
+        if (props.get(key) != null) {
+            Object v = props.get(key);
+            return Long.valueOf(String.valueOf(v));
+        }
+        else {
+            return Long.getLong(key, defaultValue);
+        }
+    }
+    
     public void registerNamedBean(String name, Object obj) {
         name2bean.put(name, obj);
         bean2name.put(obj, name);
@@ -194,7 +206,7 @@ public class RmiChannel1 implements RmiChannel {
             remoteReturn = new RemoteReturn(true, new RemoteException("Invocation failed", e), callId);
         }
 
-        return remoteReturn;
+       return remoteReturn;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -269,7 +281,7 @@ public class RmiChannel1 implements RmiChannel {
             sendMessage(remoteCall);
         }
         catch (IOException e) {
-            throw new RemoteException("Call failed", e);
+            throw decorateException(method, new RemoteException("Call failed", e));
         }
 
         if (debugRpcDelay > 0) {
@@ -278,29 +290,144 @@ public class RmiChannel1 implements RmiChannel {
         
         while (true) {
             if (terminated) {
-            	throw new RemoteException("Connection closed");
+            	throw decorateException(method, new RemoteException("Connection closed"));
             }
             long period = TimeUnit.SECONDS.toNanos(5);
             LockSupport.parkNanos(period);
             if (context.result != null) {
                 break;
             } else if (terminated) {
-                throw new RemoteException("Connection closed");
+                throw decorateException(method, new RemoteException("Connection closed"));
             } else if (Thread.interrupted()) {
                 // TODO handle interruption
-                throw new InterruptedException();
+                throw decorateException(method, new InterruptedException());
             }
         }
 
         RemoteReturn ret = context.result;
 
         if (ret.throwing) {
-            throw (Throwable) ret.getRet();
+            throw decorateException(method, modifyStackTrace(method, (Throwable) ret.getRet()));
         }
 
         return ret.getRet();
     }
 
+    private Throwable modifyStackTrace(Method m, Throwable receiver) {
+        if (receiver instanceof UndeclaredRemoteException) {
+            receiver = receiver.getCause();
+        }
+//        StackTraceElement pboundary = new StackTraceElement("[" + name + "]", "<remote-call>", "", -1);
+        StackTraceElement mframe = new StackTraceElement("[" + name + "] " + m.getDeclaringClass().getName(), m.getName(), "Remote call", -1);
+        Exception donnor = new Exception();
+        
+        StackTraceElement[] rtrace = receiver.getStackTrace();
+        StackTraceElement[] dtrace = donnor.getStackTrace();
+        
+        StackTraceElement[] result = new StackTraceElement[rtrace.length + dtrace.length + 2];
+        
+        
+        int dr = findHighestStackMatch(dtrace);
+        int rr = findLowestStackMatch(rtrace);
+
+        int n = 0;
+        
+        for(int i = 0; i < rr; ++i) {
+            result[n++] = rtrace[i];
+        }
+        
+//        result[n++] = pboundary;
+        result[n++] = mframe;
+
+        for(int i = 0; i != dtrace.length; ++i) {
+            if (i > dr) {
+                result[n++] = dtrace[i];
+            }
+        }
+
+        result = Arrays.copyOf(result, n);
+        
+        try {
+            receiver.setStackTrace(result);
+        } catch (Exception e) {
+            // ignore
+        }
+        
+        return receiver;
+    }
+    
+    private int findLowestStackMatch(StackTraceElement[] trace) {
+        boolean matched = false;
+        for(int i = trace.length; i != 0;) {
+            --i;
+            if (matchStackFrame(trace[i])) {
+                matched = true;
+            }
+            else if (matched) {
+                return i + 1;
+            }
+            
+        }
+        return matched ? 0 : -1;
+    }
+
+    private int findHighestStackMatch(StackTraceElement[] trace) {
+        boolean matched = false;
+        for(int i = 0; i != trace.length; ++i) {
+            if (matchStackFrame(trace[i])) {
+                matched = true;
+            }
+            else if (matched) {
+                return i - 1;
+            }
+        }
+        return matched ? trace.length - 1 : trace.length;
+    }
+    
+    
+    private boolean matchStackFrame(StackTraceElement stackTraceElement) {
+        if (stackTraceElement.getClassName().startsWith("org.gridkit.zerormi.RmiChannel")) {
+            return true;
+        }
+        if (stackTraceElement.getClassName().startsWith("org.gridkit.zerormi.RmiGateway")) {
+            return true;
+        }
+        if (stackTraceElement.getClassName().startsWith("org.gridkit.zerormi.RemoteStub")) {
+            return true;
+        }
+        if (stackTraceElement.getClassName().startsWith("sun.reflect.")) {
+            return true;
+        }
+        if (stackTraceElement.getClassName().startsWith("com.sun.proxy.")) {
+            return true;
+        }
+        if (stackTraceElement.getClassName().startsWith("java.lang.reflect.Method")) {
+            return true;
+        }
+        return false;
+    }
+
+    private Throwable decorateException(Method m, Throwable e) {
+        boolean wrap = true;
+        if (e instanceof RuntimeException || e instanceof Error) {
+            wrap = false;
+        }
+        else {
+            for(Class<?> c: m.getExceptionTypes()) {
+                if (c.isInstance(e)) {
+                    wrap = false;
+                    break;
+                }
+            }
+        }
+        if (wrap) {
+            return new UndeclaredRemoteException(e);
+        }
+        else {
+            return e;
+        }
+    }
+    
     @Override
     public FutureEx<Object> asyncRemoteInvocation(RemoteStub remoteStub, Object proxy, Method method, Object[] args) {
         return asyncInvoke(remoteStub.getRemoteInstance(), method, args);

@@ -38,6 +38,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.gridkit.nanocloud.NodeExecutionException;
+import org.gridkit.util.concurrent.Box;
+import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.zerormi.RemoteExecutorAsynAdapter;
+import org.gridkit.zerormi.RemoteExecutor;
+import org.gridkit.zerormi.RemoteStub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -267,14 +274,24 @@ public class ViManager implements ViNodeSet {
 			}
 		}
 	}
-	
+
+    private static void throwUncheked(Throwable e) {
+        ViManager.<RuntimeException>throwAny(e);
+    }
+   
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void throwAny(Throwable e) throws E {
+        throw (E)e;
+    }
+
 	private class ManagedNode implements ViNode {
 
 		private String name;
 		private ViNodeConfig config = new ViNodeConfig();
-		private ViExecutor nodeExecutor;
+//		private ViExecutor nodeExecutor;
 		private ViNode realNode;
-		private FutureTask<Void> initBarrier = new FutureTask<Void>(new InitTask(), null);
+		private FutureTask<Void> initTask;
+		private FutureBox<NodeExecutor> activeNode = new FutureBox<NodeExecutor>();
 		private boolean terminated;
 		
 		public ManagedNode(String name) {
@@ -311,7 +328,14 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public Object getPragma(String pragmaName) {
-			ensureExecutor();
+			ensureStarting();
+			try {
+                activeNode.get();
+            } catch (InterruptedException e) {
+                throw new NodeExecutionException("Operation interrupted");
+            } catch (ExecutionException e) {
+                throwUncheked(e.getCause());
+            }
 			if (realNode != null) {
 				return realNode.getPragma(pragmaName);
 			}
@@ -345,35 +369,89 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void exec(Runnable task) {
-			MassExec.submitAndWait(this, task);
+			ensureStarting();
+			try {
+                activeNode.get().exec(task);
+            } catch (InterruptedException e) {
+                throw new NodeExecutionException("Operation interrupted");
+            } catch (ExecutionException e) {
+                throwUncheked(e.getCause());
+    		} catch (Exception e) {
+    		    throwUncheked(e);
+    		}
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public void exec(VoidCallable task) {
 			MassExec.submitAndWait(this, task);
 		}
 
 		@Override
 		public <T> T exec(Callable<T> task) {
-			return MassExec.submitAndWait(this, task);
+            ensureStarting();
+            try {
+                return activeNode.get().exec(task);
+            } catch (InterruptedException e) {
+                throw new NodeExecutionException("Operation interrupted");
+            } catch (ExecutionException e) {
+                throwUncheked(e.getCause());
+                throw new Error("Unreachable");
+            } catch (Exception e) {
+                throwUncheked(e);
+                throw new Error("Unreachable");
+            }
 		}
 
 		@Override
-		public Future<Void> submit(Runnable task) {
-			ensureExecutor();
-			return nodeExecutor.submit(task);
+		public Future<Void> submit(final Runnable task) {
+		    ensureStarting();
+		    final FutureBox<Void> result = new FutureBox<Void>();
+		    activeNode.addListener(new Box<NodeExecutor>(){
+
+                @Override
+                public void setData(NodeExecutor data) {
+                    data.submit(task).addListener(result);                    
+                }
+
+                @Override
+                public void setError(Throwable e) {
+                    result.setError(e);                    
+                }
+		    });
+			return result;
+		}
+
+        @Override
+        @SuppressWarnings("deprecation")
+		public Future<Void> submit(final VoidCallable task) {
+			return submit(new Callable<Void>() {
+                
+                @Override
+                public Void call() throws Exception {
+                    task.call();
+                    return null;
+                }
+            });
 		}
 
 		@Override
-		public Future<Void> submit(VoidCallable task) {
-			ensureExecutor();
-			return nodeExecutor.submit(task);
-		}
+		public synchronized <T> Future<T> submit(final Callable<T> task) {
+            ensureStarting();
+            final FutureBox<T> result = new FutureBox<T>();
+            activeNode.addListener(new Box<NodeExecutor>(){
 
-		@Override
-		public synchronized <T> Future<T> submit(Callable<T> task) {
-			ensureExecutor();
-			return nodeExecutor.submit(task);
+                @Override
+                public void setData(NodeExecutor data) {
+                    data.submit(task).addListener(result);                    
+                }
+
+                @Override
+                public void setError(Throwable e) {
+                    result.setError(e);                    
+                }
+            });
+            return result;
 		}
 
 		@Override
@@ -386,7 +464,8 @@ public class ViManager implements ViNodeSet {
 			return MassExec.singleNodeMassSubmit(this, task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public List<Future<Void>> massSubmit(VoidCallable task) {
 			return MassExec.singleNodeMassSubmit(this, task);
 		}
@@ -413,9 +492,6 @@ public class ViManager implements ViNodeSet {
 					realNode.shutdown();
 					realNode = null;
 				}
-				if (nodeExecutor != null) {
-					nodeExecutor = null;
-				}
 				
 				terminated = true;
 				ViManager.this.markAsDead(this);
@@ -429,24 +505,20 @@ public class ViManager implements ViNodeSet {
 					realNode.kill();
 					realNode = null;
 				}
-				if (nodeExecutor != null) {
-					nodeExecutor = null;
-				}
 				
 				terminated = true;
 				ViManager.this.markAsDead(this);
 			}
 		}
 
-		private synchronized void ensureExecutor() {
+		private synchronized void ensureStarting() {
 			if (terminated) {
 				throw new IllegalStateException("ViNode[" + name + "] is terminated");
 			}
-			if (nodeExecutor == null) {
-				nodeExecutor = new DeferedNodeExecutor(name, initBarrier, asyncInitThreads, this);
-				LOGGER.debug("ViNode[" + name + "] instantiating");
-				
-				asyncInitThreads.execute(initBarrier);
+			if (initTask == null) {
+			    LOGGER.debug("ViNode[" + name + "] instantiating");
+			    initTask = new FutureTask<Void>(new InitTask(), null);				
+				asyncInitThreads.execute(initTask);
 			}
 		}
 		
@@ -487,138 +559,36 @@ public class ViManager implements ViNodeSet {
 						ViNode realNode = createNode();
 						synchronized(ManagedNode.this) {
 							if (terminated) {
+							    activeNode.setError(new RuntimeException("Node terminated"));
 								realNode.shutdown();
 							}
 							else {
-								ManagedNode.this.realNode = realNode;
-								nodeExecutor = realNode;
-								LOGGER.debug("ViNode[" + name + "] instantiated");
+								try {
+                                    ManagedNode.this.realNode = realNode;
+                                    RemoteExecutor rexec = realNode.exec(RemoteExecutor.INLINE_EXECUTOR_PRODUCER);
+                                    if (RemoteStub.isRemoteStub(rexec)) {
+                                        activeNode.setData(new RemoteNodeExecutor(rexec));
+                                    }
+                                    else {
+                                        // fall back, added for compatibility with in-process node type
+                                        activeNode.setData(new ViNodeExecutor(realNode));
+                                    }
+                                    LOGGER.debug("ViNode[" + name + "] instantiated");
+                                } catch (Exception e) {
+                                    activeNode.setError(e);
+                                }
 							}
 						}
 					}
-					catch(RuntimeException e) {
+					catch(Exception e) {
 						LOGGER.error("ViNode[" + name + "] initialization has failed", e);
-						throw e;
+						activeNode.setError(e);
 					}
-					//TODO handle exception
 				}
 				finally {
 					swapThreadName(tname);
 				}
 			}
-		}
-	}
-	
-	private static class DeferedNodeExecutor implements ViExecutor {
-
-		private String name;
-		private Future<Void> barrier;
-		private ExecutorService executor;
-		private ViExecutor target;
-
-		public DeferedNodeExecutor(String name, Future<Void> barrier, ExecutorService executor, ViExecutor target) {
-			this.name = name;
-			this.barrier = barrier;
-			this.executor = executor;
-			this.target = target;
-		}
-
-		@Override
-		public void exec(Runnable task) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void exec(VoidCallable task) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public <T> T exec(Callable<T> task) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public Future<Void> submit(final Runnable task) {
-			return executor.submit(new Callable<Void>() {
-				@Override
-				public Void call() throws Exception {
-					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
-					try {
-						try {
-							barrier.get();
-						}
-						catch(ExecutionException e) {
-							if (e.getCause() instanceof Exception) {
-								throw ((Exception)e.getCause());
-							}
-							else {
-								throw e;
-							}
-						}
-						target.exec(task);
-						return null;
-					}
-					finally {
-						swapThreadName(tname);
-					}
-				}
-			});
-		}
-
-		@Override
-		public Future<Void> submit(final VoidCallable task) {
-			return executor.submit(new Callable<Void>() {
-				@Override
-				public Void call() throws Exception {
-					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
-					try {
-						barrier.get();
-						target.exec(task);
-						return null;
-					}
-					finally {
-						swapThreadName(tname);
-					}
-				}
-			});
-		}
-
-		@Override
-		public <T> Future<T> submit(final Callable<T> task) {
-			return executor.submit(new Callable<T>() {
-				@Override
-				public T call() throws Exception {
-					String tname = swapThreadName("ViNode[" + name + "] defered submission " + task.toString());
-					try {
-						barrier.get();
-						return target.exec(task);
-					}
-					finally {
-						swapThreadName(tname);
-					}
-				}
-			});
-		}
-
-		@Override
-		public <T> List<T> massExec(Callable<? extends T> task) {
-			return MassExec.singleNodeMassExec(this, task);
-		}
-
-		@Override
-		public List<Future<Void>> massSubmit(Runnable task) {
-			return MassExec.singleNodeMassSubmit(this, task);
-		}
-
-		@Override
-		public List<Future<Void>> massSubmit(VoidCallable task) {
-			return MassExec.singleNodeMassSubmit(this, task);
-		}
-
-		@Override
-		public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-			return MassExec.singleNodeMassSubmit(this, task);
 		}
 	}
 	
@@ -726,7 +696,8 @@ public class ViManager implements ViNodeSet {
 			select().exec(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public void exec(VoidCallable task) {
 			select().exec(task);
 		}
@@ -741,7 +712,8 @@ public class ViManager implements ViNodeSet {
 			return select().submit(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public Future<Void> submit(VoidCallable task) {
 			return select().submit(task);
 		}
@@ -761,7 +733,8 @@ public class ViManager implements ViNodeSet {
 			return select().massSubmit(task);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public List<Future<Void>> massSubmit(VoidCallable task) {
 			return select().massSubmit(task);
 		}
@@ -835,7 +808,8 @@ public class ViManager implements ViNodeSet {
 			node.exec(task);			
 		}
 		
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public void exec(VoidCallable task) {
 			node.exec(task);			
 		}
@@ -850,7 +824,8 @@ public class ViManager implements ViNodeSet {
 			return node.submit(task);
 		}
 		
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public Future<Void> submit(VoidCallable task) {
 			return node.submit(task);
 		}
@@ -870,7 +845,8 @@ public class ViManager implements ViNodeSet {
 			return node.massSubmit(task);
 		}
 		
-		@Override
+        @Override
+        @SuppressWarnings("deprecation")
 		public List<Future<Void>> massSubmit(VoidCallable task) {
 			return node.massSubmit(task);
 		}
@@ -933,4 +909,52 @@ public class ViManager implements ViNodeSet {
 			// do nothing
 		}		
 	}
+
+	private static interface NodeExecutor {
+
+        public void exec(Runnable task) throws Exception;
+
+        public <T> T exec(Callable<T> task) throws Exception;
+
+        public FutureEx<Void> submit(Runnable task);
+
+        public <V> FutureEx<V> submit(Callable<V> task);
+
+	}
+	
+	private static class RemoteNodeExecutor extends RemoteExecutorAsynAdapter implements NodeExecutor {
+
+        public RemoteNodeExecutor(RemoteExecutor executor) {
+            super(executor);
+        }        
+	}
+
+	private static class ViNodeExecutor implements NodeExecutor {
+	    
+	    private ViNode executor;
+
+        public ViNodeExecutor(ViNode executor) {
+            this.executor = executor;
+        }
+
+        @Override
+        public void exec(Runnable task) throws Exception {
+            executor.exec(task);
+        }
+
+        @Override
+        public <T> T exec(Callable<T> task) throws Exception {
+            return executor.exec(task);
+        }
+
+        @Override
+        public FutureEx<Void> submit(Runnable task) {
+            return (FutureEx<Void>) executor.submit(task);
+        }
+
+        @Override
+        public <V> FutureEx<V> submit(Callable<V> task) {
+            return (FutureEx<V>) executor.submit(task);
+        }
+	}	
 }

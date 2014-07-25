@@ -27,13 +27,15 @@ public interface ViExecutor {
 
 	public void exec(Runnable task);
 	
-	public void exec(VoidCallable task);
+	@SuppressWarnings("deprecation")
+    public void exec(VoidCallable task);
 
 	public <T> T exec(Callable<T> task);
 	
 	public Future<Void> submit(Runnable task);
 	
-	public Future<Void> submit(VoidCallable task);
+	@SuppressWarnings("deprecation")
+    public Future<Void> submit(VoidCallable task);
 	
 	public <T> Future<T> submit(Callable<T> task);	
 
@@ -48,7 +50,8 @@ public interface ViExecutor {
 	
 	public List<Future<Void>> massSubmit(Runnable task);
 	
-	public List<Future<Void>> massSubmit(VoidCallable task);
+	@SuppressWarnings("deprecation")
+    public List<Future<Void>> massSubmit(VoidCallable task);
 	
 	public <T> List<Future<T>> massSubmit(Callable<? extends T> task);
 }
