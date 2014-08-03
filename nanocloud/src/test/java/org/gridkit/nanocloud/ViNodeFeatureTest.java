@@ -15,7 +15,9 @@
  */
 package org.gridkit.nanocloud;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gridkit.nanocloud.VX.CLASSPATH;
+import static org.gridkit.nanocloud.VX.PROCESS;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,17 +32,21 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
+import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
-@SuppressWarnings("deprecation")
-public abstract class BasicNodeFeatureTest {
+public abstract class ViNodeFeatureTest {
 
 	protected Cloud cloud;
+
+	@Rule
+	public TestName testName = new TestName();
 	
 	@Before
 	public abstract void initCloud();
@@ -49,23 +55,29 @@ public abstract class BasicNodeFeatureTest {
 	public void shutdownCloud() {
 		cloud.shutdown();
 	}
-
+	
+	public ViNode testNode() {
+	    return cloud.node(testName.getMethodName());
+	}
+	
     public void verify_isolated_static_with_void_callable() {
 		
 		ViNode viHost1 = cloud.node("node-1");
 		ViNode viHost2 = cloud.node("node-2");
 		
-		viHost1.exec(new VoidCallable() {
+		viHost1.exec(new Callable<Void>() {
 			@Override
-			public void call() throws Exception {
+			public Void call() throws Exception {
 				StaticVarHost.TEST_STATIC_VAR = "isolate 1";
+				return null;
 			}
 		});
 
-		viHost2.exec(new VoidCallable() {
+		viHost2.exec(new Callable<Void>() {
 			@Override
-			public void call() throws Exception {
+			public Void call() throws Exception {
 				StaticVarHost.TEST_STATIC_VAR = "isolate 2";
+				return null;
 			}
 		});
 		
@@ -214,10 +226,9 @@ public abstract class BasicNodeFeatureTest {
 		Assert.assertNull(System.getProperty("local-prop"));
 	}
 	
-	@Test
 	public void verify_exec_stack_trace_locality() {
 
-		ViNode node = cloud.node("node-1");
+		ViNode node = testNode();
 		
 		try {
 			node.exec(new Runnable() {
@@ -235,10 +246,9 @@ public abstract class BasicNodeFeatureTest {
 		}
 	}
 
-    @Test
     public void verify_transparent_proxy_stack_trace() {
 
-        ViNode node = cloud.node("node-1");
+        ViNode node = testNode();
         
         try {
             Runnable r = node.exec(new Callable<Runnable>() {
@@ -263,10 +273,9 @@ public abstract class BasicNodeFeatureTest {
         }
     }   
 
-    @Test
     public void verify_transitive_transparent_proxy_stack_trace() {
 
-        ViNode node = cloud.node("node-1");
+        ViNode node = testNode();
         
         final RemoteRunnable explosive = new RemoteRunnable() {
             
@@ -290,42 +299,13 @@ public abstract class BasicNodeFeatureTest {
             e.printStackTrace();
             assertLocalStackTrace(e);
             assertStackTraceContains(e, "[master] java.lang.Runnable.run(Remote call)");
-            assertStackTraceContains(e, "[node-1] org.gridkit.zerormi.RemoteExecutor.exec(Remote call)");
+            assertStackTraceContains(e, "[" + node + "] org.gridkit.zerormi.RemoteExecutor.exec(Remote call)");
         }
     }       
     
-	private void assertLocalStackTrace(Exception e) {
-		Exception local = new Exception();
-		int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
-		Assert.assertEquals(
-				printStackTop(new Exception().getStackTrace(), depth), 
-				printStackTop(e.getStackTrace(),depth)
-		);
-	}
-
-	private void assertStackTraceContains(Exception e, String line) {
-	    for(StackTraceElement ee: e.getStackTrace()) {
-	        if (ee.toString().contains(line)) {
-	            return;
-	        }
-	    }
-        Assert.fail("Line: " + line + "\n is not found in stack traces\n" + printStackTop(e.getStackTrace(), e.getStackTrace().length));
-	}
-	
-	private static String printStackTop(StackTraceElement[] stack, int depth) {
-		StringBuilder sb = new StringBuilder();
-		int n = stack.length - depth;
-		n = n < 0 ? 0 : n;
-		for(int i = n; i != stack.length; ++i) {
-			sb.append(stack[i]).append("\n");
-		}
-		return sb.toString();
-	}
-	
-	
 	public void test_classpath_extention() throws IOException, URISyntaxException {
 		
-		ViNode node = cloud.node("test-node");
+		ViNode node = testNode();
 		
 		URL jar = getClass().getResource("/marker-override.jar");
 		File path = new File(jar.toURI());
@@ -345,26 +325,57 @@ public abstract class BasicNodeFeatureTest {
 		Assert.assertEquals("Default marker", readMarkerFromResources());
 	}
 
-    @Test(expected = NoClassDefFoundError.class)
-	public void test_dont_inherit_cp() throws IOException, URISyntaxException {
+	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
+    	
+	    ViNode node = testNode();
+    	
+    	URL url = getClass().getResource("/org/junit/Assert.class");
+    	Assert.assertNotNull(url);
+    	
+    	String jarUrl = url.toString();
+    	jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));
+    	jarUrl = jarUrl.substring("jar:".length());
+    	node.x(CLASSPATH).remove(new File(new URI(jarUrl)).getAbsolutePath());
+    
+    	try {
+    		node.exec(new Runnable() {
+    			@Override
+    			public void run() {
+    				// should throw NoClassDefFoundError because junit was removed from isolate classpath
+    				Assert.assertTrue(true);
+    			}
+    		});
+    		Assert.fail("Exception is expected");
+    	}
+    	catch(Error e) {
+    	    assertThat(e).isInstanceOf(NoClassDefFoundError.class);
+    	}
+    }
 
-        ViNode node = cloud.node("test-node");
+    public void test_dont_inherit_cp() {
+
+        ViNode node = testNode();
 
         node.x(CLASSPATH).inheritClasspath(false);
 
-        node.exec(new Runnable() {
-            @Override
-            public void run() {
-                // should throw NoClassDefFoundError because junit should not inherited
-                Assert.assertTrue(true);
-            }
-        });
+        try {
+            node.exec(new Runnable() {
+                @Override
+                public void run() {
+                    // should throw NoClassDefFoundError because junit should not inherited
+                    Assert.assertTrue(true);
+                }
+            });
+            Assert.fail("Exception is expected");
+        }
+        catch(Error e) {
+            assertThat(e).isInstanceOf(NoClassDefFoundError.class);
+        }
 	}
 
-    @Test
 	public void test_inherit_cp_true() throws IOException, URISyntaxException {
 
-        ViNode node = cloud.node("test-node");
+        ViNode node = testNode();
 
         node.x(CLASSPATH).inheritClasspath(true);
 
@@ -377,10 +388,9 @@ public abstract class BasicNodeFeatureTest {
         });
 	}
 
-    @Test
-	public void test_inherit_cp_default_true() throws IOException, URISyntaxException {
+	public void test_inherit_cp_default_true() {
 
-        ViNode node = cloud.node("test-node");
+        ViNode node = testNode();
 
         //this is by default: node.x(CLASSPATH).inheritClasspath(true);
 
@@ -393,39 +403,9 @@ public abstract class BasicNodeFeatureTest {
         });
 	}
 
-	private static String readMarkerFromResources() throws IOException {
-		URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
-		Assert.assertNotNull(url);
-		BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
-		String marker = r.readLine();
-		r.close();
-		return marker;
-	}
-	
-	@Test(expected = NoClassDefFoundError.class)
-	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
-		ViNode node = cloud.node("test-node");
-		
-		URL url = getClass().getResource("/org/junit/Assert.class");
-		Assert.assertNotNull(url);
-		
-		String jarUrl = url.toString();
-		jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));
-		jarUrl = jarUrl.substring("jar:".length());
-		node.x(CLASSPATH).remove(new File(new URI(jarUrl)).getAbsolutePath());
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				// should throw NoClassDefFoundError because junit was removed from isolate classpath
-				Assert.assertTrue(true);
-			}
-		});		
-	}
-	
 	public void test_annonimous_primitive_in_args() {
 		
-		ViNode node = cloud.node("test_annonimous_primitive_in_args");
+        ViNode node = testNode();
 		
 		final boolean fb = trueConst();
 		final int fi = int_10();
@@ -443,7 +423,141 @@ public abstract class BasicNodeFeatureTest {
 		});
 	}
 
-	private double double_10_1() {
+    public void verify_new_env_variable() {
+        
+        ViNode node = testNode();
+        node.x(PROCESS).setEnv("TEST_VAR", "TEST");
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("TEST",System.getenv("TEST_VAR"));
+            }
+        });
+    }
+
+    public void verify_env_variable_removal() {
+        
+        ViNode node = testNode();
+        node.x(PROCESS).setEnv("HOME", null);
+        node.x(PROCESS).setEnv("HOMEPATH", null);
+        node.exec(new Runnable() {
+            @Override
+            public void run() {             
+                Assert.assertFalse("HOME expected to be empty", System.getenv().containsKey("HOME"));
+                Assert.assertFalse("HOMEPATH expected to be empty", System.getenv().containsKey("HOMEPATH"));
+            }
+        });
+    }
+    
+    public void verify_jvm_single_arg_passing() {
+        
+        ViNode node = testNode();
+        node.x(PROCESS).addJvmArg("-DtestProp=TEST");
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("TEST",System.getProperty("testProp"));
+            }
+        });
+    }
+
+    public void verify_jvm_multiple_args_passing() {
+        
+        ViNode node = testNode();
+        node.x(PROCESS).addJvmArg("-DtestProp=TEST");
+        node.x(PROCESS).addJvmArgs("-DtestProp1=A", "-DtestProp2=B");
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("TEST",System.getProperty("testProp"));
+                Assert.assertEquals("A",System.getProperty("testProp1"));
+                Assert.assertEquals("B",System.getProperty("testProp2"));
+            }
+        });
+    }
+
+    public void verify_jvm_invalid_arg_error() {
+        
+        ViNode node = testNode();
+        JvmProps.addJvmArg(node, "-XX:+InvalidOption");
+
+        try {
+            node.exec(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("Ping");
+                }
+            });
+            Assert.fail("Exception expected");
+        }
+        catch(Throwable e) {
+            e.printStackTrace();
+            // expected
+        }
+    }   
+    
+    public void verify_slave_working_dir() throws IOException {
+        
+        ViNode nodeB = cloud.node(testName.getMethodName() + ".base");
+        ViNode nodeC = cloud.node(testName.getMethodName() + ".child");
+        nodeC.x(PROCESS).setWorkDir("target");
+        cloud.node("**").touch();
+        final File base = nodeB.exec(new Callable<File>() {
+            @Override
+            public File call() throws Exception {
+                File wd = new File(".").getCanonicalFile();
+                new File(wd, "target").mkdirs();
+                return wd;
+            }
+        });
+        nodeC.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                File wd = new File(".").getCanonicalFile();
+                Assert.assertEquals(new File(base, "target").getCanonicalFile(), wd);
+                return null;
+            }
+        });
+    }
+    
+	private static String readMarkerFromResources() throws IOException {
+    	URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
+    	Assert.assertNotNull(url);
+    	BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
+    	String marker = r.readLine();
+    	r.close();
+    	return marker;
+    }
+
+    private void assertLocalStackTrace(Exception e) {
+    	Exception local = new Exception();
+    	int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
+    	Assert.assertEquals(
+    			printStackTop(new Exception().getStackTrace(), depth), 
+    			printStackTop(e.getStackTrace(),depth)
+    	);
+    }
+
+    private void assertStackTraceContains(Exception e, String line) {
+        for(StackTraceElement ee: e.getStackTrace()) {
+            if (ee.toString().contains(line)) {
+                return;
+            }
+        }
+        Assert.fail("Line: " + line + "\n is not found in stack traces\n" + printStackTop(e.getStackTrace(), e.getStackTrace().length));
+    }
+
+    private static String printStackTop(StackTraceElement[] stack, int depth) {
+    	StringBuilder sb = new StringBuilder();
+    	int n = stack.length - depth;
+    	n = n < 0 ? 0 : n;
+    	for(int i = n; i != stack.length; ++i) {
+    		sb.append(stack[i]).append("\n");
+    	}
+    	return sb.toString();
+    }
+
+    private double double_10_1() {
 		return 10.1d;
 	}
 

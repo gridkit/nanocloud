@@ -173,7 +173,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 			try {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
 				Map<String, String> tweaks = (Map<String, String>) (Map) game.getConfigProps(ViConf.CLASSPATH_TWEAK);
-                final boolean inheritClassPath = !Boolean.FALSE.toString().equals(game.getAllConfigProps().get(ViConf.INHERIT_CLASS_PATH));
+                final boolean inheritClassPath = !Boolean.FALSE.toString().equals(game.getAllConfigProps().get(ViConf.CLASSPATH_INHERIT));
                 final List<ClasspathEntry> cp;
                 final List<ClasspathEntry> inheritedClasspath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
                 if (inheritClassPath){
@@ -194,10 +194,6 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 					
 					for(String k: tweaks.keySet()) {
 						String change = tweaks.get(k);
-// TODO ?
-//						if (change.trim().length() == 0) {
-//							change = k.substring(ViConf.CLASSPATH_TWEAK.length());
-//						}
 						if (change.startsWith("+")) {
 							String cpe = normalize(toURL(change.substring(1)));
 							addEntry(entries, cpe);

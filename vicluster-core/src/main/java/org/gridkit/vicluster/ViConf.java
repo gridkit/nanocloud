@@ -59,8 +59,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String JVM_ENV_VAR = JvmProps.JVM_ENV;
 
 	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
-
-    public static final String INHERIT_CLASS_PATH = "classpath:inherit";
+    public static final String CLASSPATH_INHERIT = "classpath:inherit";
 
 	public static final String REMOTE_HOST = "remote:host";
 	public static final String REMOTE_ACCOUNT = "remote:account";
@@ -506,7 +505,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 		}
 
         public ClasspathConf inheritClasspath(boolean inherit){
-            conf.setProp(INHERIT_CLASS_PATH, String.valueOf(inherit));
+            conf.setProp(CLASSPATH_INHERIT, String.valueOf(inherit));
             return this;
         }
 

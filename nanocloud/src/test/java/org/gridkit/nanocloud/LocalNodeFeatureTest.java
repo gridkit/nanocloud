@@ -20,10 +20,9 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
+public class LocalNodeFeatureTest extends ViNodeFeatureTest {
 
 	@Before
 	public void initCloud() {
@@ -49,7 +48,6 @@ public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 		super.verify_isolated_static_with_runnable();
 	}
 
-	@Ignore
 	public void verify_class_exclusion() {
 		// class sharing is not supported by local nodes, obviously
 	}		
@@ -84,7 +82,25 @@ public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 		super.test_classpath_extention();
 	}
 
-	@Test(expected = NoClassDefFoundError.class)
+    @Test
+	@Override
+    public void test_dont_inherit_cp() {
+        super.test_dont_inherit_cp();
+    }
+
+    @Test
+    @Override
+    public void test_inherit_cp_true() throws IOException, URISyntaxException {
+        super.test_inherit_cp_true();
+    }
+
+    @Test
+    @Override
+    public void test_inherit_cp_default_true() {
+        super.test_inherit_cp_default_true();
+    }
+
+    @Test
 	@Override
 	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
 		super.test_classpath_limiting();
@@ -95,4 +111,40 @@ public class LocalNodeFeatureTest extends BasicNodeFeatureTest {
 	public void test_annonimous_primitive_in_args() {
 		super.test_annonimous_primitive_in_args();
 	}
+
+	@Test
+    @Override
+    public void verify_new_env_variable() {
+        super.verify_new_env_variable();
+    }
+
+	@Test
+    @Override
+    public void verify_env_variable_removal() {
+        super.verify_env_variable_removal();
+    }
+
+	@Test
+    @Override
+    public void verify_jvm_single_arg_passing() {
+        super.verify_jvm_single_arg_passing();
+    }
+
+	@Test
+    @Override
+    public void verify_jvm_multiple_args_passing() {
+        super.verify_jvm_multiple_args_passing();
+    }
+
+	@Test
+    @Override
+    public void verify_jvm_invalid_arg_error() {
+        super.verify_jvm_invalid_arg_error();
+    }
+
+	@Test
+    @Override
+    public void verify_slave_working_dir() throws IOException {
+        super.verify_slave_working_dir();
+    }
 }

@@ -40,6 +40,7 @@ public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
         
         // Use default boot sequence
 
+        configurePragmas(config);
         configureClasspathSubphase(config);
         configureHostControlConsoleSubphase(config);
         configureDefaultJavaExec(config);
@@ -48,6 +49,10 @@ public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
         configureLaunchAction(config);
         
         return config;
+    }
+
+    protected void configurePragmas(PragmaWriter config) {
+        NodeConfigHelper.passivePragma(config, "jvm");
     }
 
     protected void configureLaunchAction(PragmaWriter config) {

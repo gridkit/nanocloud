@@ -11,8 +11,6 @@ public class ManagedProcessTextTerminal implements TextTerminalControl {
     private StreamPipe stdInPipe = new StreamPipe(1 << 10);
     private OutputStream processIn;
     
-    
-    
     public ManagedProcessTextTerminal(ManagedProcess process) {
         this.process = process;
         this.process.bindStdIn(stdInPipe.getInputStream());

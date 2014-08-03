@@ -23,7 +23,7 @@ import org.gridkit.vicluster.ViProps;
 import org.junit.Before;
 import org.junit.Test;
 
-public class IsolateNodeFeatureTest extends BasicNodeFeatureTest {
+public class IsolateNodeFeatureTest extends ViNodeFeatureTest {
 
 	@Before
 	public void initCloud() {
@@ -79,13 +79,31 @@ public class IsolateNodeFeatureTest extends BasicNodeFeatureTest {
         super.verify_transitive_transparent_proxy_stack_trace();
     }
 
+	@Test
+    @Override
+    public void test_dont_inherit_cp() {
+        super.test_dont_inherit_cp();
+    }
+
+	@Test
+    @Override
+    public void test_inherit_cp_true() throws IOException, URISyntaxException {
+        super.test_inherit_cp_true();
+    }
+
+	@Test
+    @Override
+    public void test_inherit_cp_default_true() {
+        super.test_inherit_cp_default_true();
+    }
+
     @Test
 	@Override
 	public void test_classpath_extention() throws IOException, URISyntaxException {
 		super.test_classpath_extention();
 	}
 
-	@Test(expected = NoClassDefFoundError.class)
+    @Test
 	@Override
 	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
 		super.test_classpath_limiting();
