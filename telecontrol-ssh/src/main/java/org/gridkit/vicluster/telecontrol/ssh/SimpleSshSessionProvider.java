@@ -104,7 +104,10 @@ public class SimpleSshSessionProvider implements SshSessionFactory {
 				
 		Session session = jsch.getSession(user, host, port);
 		session.setConfig("StrictHostKeyChecking", "no");
-		for(String key: config.keySet()) {
+        if (password != null) {
+            session.setPassword(password);
+        }
+        for(String key: config.keySet()) {
 			session.setConfig(key, config.get(key));
 		}
 		session.setDaemonThread(true);

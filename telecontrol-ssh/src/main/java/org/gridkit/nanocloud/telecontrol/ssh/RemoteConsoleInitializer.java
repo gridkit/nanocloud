@@ -17,6 +17,7 @@ import org.gridkit.vicluster.CloudContext.ServiceProvider;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
+import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SshHostControlConsole;
 import org.gridkit.zerormi.zlog.ZLogFactory;
@@ -115,6 +116,9 @@ public class RemoteConsoleInitializer implements InductiveRule {
 		if (password == null) {
 			password = game.get(SPI_SSH_PASSWORD);
 		}
+        if (password == null) {
+            password = game.get(RemoteNodeProps.PASSWORD);
+        }
 		return password;
 	}
 
