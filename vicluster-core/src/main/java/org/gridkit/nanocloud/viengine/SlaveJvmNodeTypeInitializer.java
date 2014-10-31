@@ -12,10 +12,12 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.ProcessSporeLauncher;
 import org.gridkit.nanocloud.telecontrol.ZeroRmiRemoteSession;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 
 public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
 
-    protected static final ProcessLauncher SPORE_LAUNCHER = new ProcessSporeLauncher();
+    // TODO use context stream copier
+    protected static final ProcessLauncher SPORE_LAUNCHER = new ProcessSporeLauncher(BackgroundStreamDumper.SINGLETON);
     protected static final LazyPragma REMOTING_SESSION_FACTORY = new LazyPragma() {
         
         @Override

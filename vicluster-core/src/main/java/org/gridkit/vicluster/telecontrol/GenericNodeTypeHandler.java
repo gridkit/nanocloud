@@ -35,7 +35,8 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 
 	@Override
 	public boolean apply(QuorumGame game) {
-		initJvmConfigurationRules(game);
+		initNodeCommon(game);
+	    initJvmConfigurationRules(game);
 		initExtraConfigurationRules(game);
 		initControlConsole(game);
 		initProcessLauncher(game);
@@ -47,7 +48,11 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		return true;
 	}
 
-	protected void initExtraConfigurationRules(QuorumGame game) {		
+	private void initNodeCommon(QuorumGame game) {
+        game.setPropIfAbsent(ViConf.SPI_STREAM_COPY_SERVICE, getCloudSingleton(game, StreamCopyThread.class, "shutdown"));
+    }
+
+    protected void initExtraConfigurationRules(QuorumGame game) {
 	}
 
 	protected void initProcessBootstrapper(QuorumGame game) {

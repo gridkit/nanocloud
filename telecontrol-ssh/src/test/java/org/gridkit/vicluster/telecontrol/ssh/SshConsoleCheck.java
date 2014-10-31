@@ -9,7 +9,7 @@ import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.ProcessHandler;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper.Link;
+import org.gridkit.vicluster.telecontrol.StreamCopyService.Link;
 import org.junit.Test;
 
 public class SshConsoleCheck {

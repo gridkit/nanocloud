@@ -45,6 +45,7 @@ import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.bootstraper.Bootstraper;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
@@ -65,11 +66,13 @@ import org.slf4j.LoggerFactory;
 public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 
 	private static final long DEFAULT_CONN_TIMEOUT = 5000;
-	
+
+	private final StreamCopyService streamCopyService;
+
 	private SshRemotingConfig rconfig = new SshRemotingConfig();
 	private boolean initialized;
 	private boolean destroyed;
-	
+
 	private Session session;
 	private RemotingHub hub;
 	private TunnellerConnection control;
@@ -80,16 +83,18 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	private String tunnelHost;
 	private int tunnelPort;
 	private long connectTimeoutMS = DEFAULT_CONN_TIMEOUT;
-	
+
 	private ZLogger logger;
-	
-	public TunnellerJvmReplicator() {		
+
+	public TunnellerJvmReplicator(StreamCopyService streamCopyService) {
+	    this.streamCopyService = streamCopyService;
 	}
-	
-	public TunnellerJvmReplicator(ZLogger logger) {
+
+	public TunnellerJvmReplicator(StreamCopyService streamCopyService, ZLogger logger) {
+	    this(streamCopyService);
 		this.logger = logger;
 	}
-	
+
 	@Override
 	public synchronized void configure(Map<String, String> nodeConfig) {
 		rconfig.configure(nodeConfig);
@@ -298,13 +303,13 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		
 		String cmd = rconfig.getJavaExec() + " -Xms32m -Xmx32m -jar " + tunnellerJarPath;
 		exec.setCommand(cmd);
-		
+
 		// use std out for binary communication
 		InputStream cin = exec.getInputStream();
 		OutputStream cout = exec.getOutputStream();
 		// use std err for diagnostic output
 		OutputStream tunnel = new LoggerPrintStream(logger.get("console", LogLevel.WARN));
-		BackgroundStreamDumper.link(exec.getExtInputStream(), tunnel, false);
+		streamCopyService.link(exec.getExtInputStream(), tunnel, false);
 
 		// unfortunately Pty will merge out and err, so it should be disabled
 		exec.setPty(false);
@@ -504,7 +509,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		@Override
 		public void bindStdIn(InputStream is) {
 			if (is != null) {
-				BackgroundStreamDumper.link(is, getOutputStream());
+				streamCopyService.link(is, getOutputStream());
 			}
 			else {
 				try {
@@ -514,11 +519,11 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 				}
 			}
 		}
-		
+
 		@Override
 		public void bindStdOut(OutputStream os) {
 			if (os != null) {
-				BackgroundStreamDumper.link(getInputStream(), os);
+			    streamCopyService.link(getInputStream(), os);
 			}
 			else {
 				try {
@@ -527,13 +532,13 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 					throw new RuntimeException(e);
 				}
 			}
-			
+
 		}
 
 		@Override
 		public void bindStdErr(OutputStream os) {
 			if (os != null) {
-				BackgroundStreamDumper.link(getErrorStream(), os);
+			    streamCopyService.link(getErrorStream(), os);
 			}
 			else {
 				try {

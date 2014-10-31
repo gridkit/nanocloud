@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -34,11 +35,11 @@ public class LocalJvmProcessFactoryTest {
 
 	@Test
 	public void test_echo() throws IOException, InterruptedException, ExecutionException {
-		
-		LocalJvmProcessFactory factory = new LocalJvmProcessFactory();
-		
+
+		LocalJvmProcessFactory factory = new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON);
+
 		ManagedProcess process = factory.createProcess("test", new JvmConfig());
-		
+
 		process.bindStdIn(null);
 		process.bindStdOut(System.out);
 		process.bindStdOut(System.err);
@@ -49,15 +50,15 @@ public class LocalJvmProcessFactoryTest {
 		System.out.println("VM names: " + name + " / " + rname);
 		Assert.assertThat(rname, not(name));
 		process.destroy();
-	}	
+	}
 
 	@Test
 	public void test_annon_echo() throws IOException, InterruptedException, ExecutionException {
-		
-		LocalJvmProcessFactory factory = new LocalJvmProcessFactory();
-		
+
+		LocalJvmProcessFactory factory = new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON);
+
 		ManagedProcess process = factory.createProcess("test", new JvmConfig());
-		
+
 		String name = ManagementFactory.getRuntimeMXBean().getName();
 		Future<String> f = process.getExecutionService().submit(new Callable<String>() {
 			@Override

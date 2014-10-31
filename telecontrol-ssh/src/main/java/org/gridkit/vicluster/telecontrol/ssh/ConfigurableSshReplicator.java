@@ -34,6 +34,7 @@ import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.vicluster.WildProps;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,12 +45,14 @@ import org.slf4j.LoggerFactory;
 public class ConfigurableSshReplicator implements ViNodeProvider {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableSshReplicator.class);
-	
+
+	private final StreamCopyService streamCopyService;
 	private Map<String, WildProps> sshConfCache = new HashMap<String, WildProps>();
 	private Map<String, SessionInfo> sessions = new HashMap<String, SessionInfo>();
 	private ViNodeConfig defaultConfig = new ViNodeConfig();
-	
-	public ConfigurableSshReplicator() {
+
+	public ConfigurableSshReplicator(StreamCopyService streamCopyService) {
+	    this.streamCopyService = streamCopyService;
 		RemoteNodeProps.setRemoteJarCachePath(defaultConfig, ".gridagent");
 	}
 
@@ -122,7 +125,7 @@ public class ConfigurableSshReplicator implements ViNodeProvider {
 
 	private RemoteJmvReplicator getReplicatorProto(SshSessionConfig sc) {
 //		RemoteJmvReplicator rep = new LegacySshJvmReplicator();
-		RemoteJmvReplicator rep = new TunnellerJvmReplicator();
+		RemoteJmvReplicator rep = new TunnellerJvmReplicator(streamCopyService);
 		rep.configure(sc.toConfig());
 		return rep;
 	}

@@ -2,19 +2,20 @@ package org.gridkit.vicluster.telecontrol.jvm;
 
 import java.io.IOException;
 
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.junit.After;
 import org.junit.Test;
 
 public class NewJvmWrapperTest {
 
-	LocalJvmProcessFactory lpf = new LocalJvmProcessFactory();
+	LocalJvmProcessFactory lpf = new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON);
 
 	@After
 	public void cleanup() {
 		lpf.stop();
 	}
-	
+
 	@Test
 	public void hallo_world_test() throws IOException, InterruptedException {
 	

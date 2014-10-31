@@ -31,6 +31,7 @@ import org.gridkit.vicluster.CloudContext.ServiceKey;
 import org.gridkit.vicluster.CloudContext.ServiceProvider;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 
 public interface ViEngine {
 
@@ -621,10 +622,15 @@ public interface ViEngine {
 		public ViNode getNodeInstance() {
 			return getConfig().getNodeInstance();
 		}
+
+        @Override
+        public StreamCopyService getStreamCopyService() {
+            return getConfig().getStreamCopyService();
+        }
 	}
-	
+
 	public interface QuorumGame extends ViSpiConfig, WritableSpiConfig {
-		
+
 		public String getStringProp(String propName);
 
 		void setPropIfAbsent(String propName, Object value);

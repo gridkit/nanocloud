@@ -21,25 +21,25 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.rmi.Remote;
 
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.StreamPipe;
 
 @SuppressWarnings("serial")
 public class ProcessRemoteAdapter extends Process implements Serializable {
-	
+
 	private final transient Process process;
 	private final RemoteProcess proxy;
-	
+
 	private OutputStream stdIn;
 	private transient InputStream stdOut;
 	private transient InputStream stdErr;
-	
-	public ProcessRemoteAdapter(Process process) {
+
+	public ProcessRemoteAdapter(Process process, StreamCopyService streamCopyService) {
 		this.process = process;
-		this.proxy = new ProcessProxy();
+		this.proxy = new ProcessProxy(streamCopyService);
 		this.stdIn = new OutputStreamRemoteAdapter(process.getOutputStream());
 	}
-	
+
 	@Override
 	public OutputStream getOutputStream() {
 		return stdIn;
@@ -97,17 +97,23 @@ public class ProcessRemoteAdapter extends Process implements Serializable {
 
 		public void destroy() throws IOException;
 	}
-	
+
 	private class ProcessProxy implements RemoteProcess {
 
-		@Override
+	    private final StreamCopyService streamCopyService;
+
+		public ProcessProxy(StreamCopyService streamCopyService) {
+            this.streamCopyService = streamCopyService;
+        }
+
+        @Override
 		public void setStdOutReceiver(OutputStream stream) {
-			BackgroundStreamDumper.link(process.getInputStream(), stream);
+            streamCopyService.link(process.getInputStream(), stream);
 		}
 
 		@Override
 		public void setStdErrReceiver(OutputStream stream) {
-			BackgroundStreamDumper.link(process.getErrorStream(), stream);
+		    streamCopyService.link(process.getErrorStream(), stream);
 		}
 
 		@Override

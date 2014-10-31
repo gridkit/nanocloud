@@ -24,6 +24,7 @@ import junit.framework.Assert;
 import org.gridkit.util.concurrent.BlockingBarrier;
 import org.gridkit.util.concurrent.LatchBarrier;
 import org.gridkit.vicluster.ViManager;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.junit.After;
@@ -33,12 +34,12 @@ import org.junit.Test;
 public class RemoteBlockingLatchTest {
 
 	ViManager manager;
-	
+
 	@Before
 	public void initManager() {
-		manager = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory()));
+		manager = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON)));
 	}
-	
+
 	@After
 	public void shutdownManager() {
 		manager.shutdown();

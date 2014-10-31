@@ -18,6 +18,7 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.junit.Test;
@@ -33,14 +34,14 @@ public class TunnellerCheck {
 		config.put(RemoteNodeProps.JAR_CACHE_PATH, "/tmp/.vigrid/.cache");
 		return config;
 	}
-	
+
 	@Test
 	public void test_init() throws Exception {
-		
-		TunnellerJvmReplicator per = new TunnellerJvmReplicator();
+
+		TunnellerJvmReplicator per = new TunnellerJvmReplicator(BackgroundStreamDumper.SINGLETON);
 		per.configure(config());
 		per.init();
-		
+
 		ManagedProcess cp = per.createProcess("test", new JvmConfig());
 		cp.bindStdOut(System.out);
 		cp.bindStdOut(System.err);

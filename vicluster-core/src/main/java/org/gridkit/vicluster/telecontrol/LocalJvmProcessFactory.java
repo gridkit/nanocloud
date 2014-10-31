@@ -57,11 +57,13 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 	private ServerSocket socket;
 	private Thread accepter;
 	private List<Process> processes = new ArrayList<Process>();
-	
-	public LocalJvmProcessFactory() {
+	private StreamCopyService streamCopyService;
+
+	public LocalJvmProcessFactory(StreamCopyService streamCopyService) {
 		javaHome = System.getProperty("java.home");
-		defaultClasspath = sanitize(System.getProperty("java.class.path"));		
-		
+		defaultClasspath = sanitize(System.getProperty("java.class.path"));
+		this.streamCopyService = streamCopyService;
+
 		initHubSocket();
 	}
 
@@ -262,7 +264,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		@Override
 		public void bindStdIn(InputStream is) {
 			if (is != null) {
-				BackgroundStreamDumper.link(is, process.getOutputStream());
+				streamCopyService.link(is, process.getOutputStream());
 			}
 			else {
 				try {
@@ -276,7 +278,7 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 		@Override
 		public void bindStdOut(OutputStream os) {
 			if (os != null) {
-				BackgroundStreamDumper.link(process.getInputStream(), os);
+			    streamCopyService.link(process.getInputStream(), os);
 			}
 			else {
 				try {
@@ -285,13 +287,13 @@ public class LocalJvmProcessFactory implements JvmProcessFactory {
 					throw new RuntimeException(e);
 				}
 			}
-			
+
 		}
 
 		@Override
 		public void bindStdErr(OutputStream os) {
 			if (os != null) {
-				BackgroundStreamDumper.link(process.getErrorStream(), os);
+			    streamCopyService.link(process.getErrorStream(), os);
 			}
 			else {
 				try {

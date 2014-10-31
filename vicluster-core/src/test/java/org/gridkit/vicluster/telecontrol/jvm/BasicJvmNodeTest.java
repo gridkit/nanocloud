@@ -19,6 +19,7 @@ import junit.framework.Assert;
 
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -27,12 +28,12 @@ import org.junit.Test;
 public class BasicJvmNodeTest {
 
 	ViManager cloud;
-	
+
 	@Before
 	public void init() {
-		cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory()));
+		cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON)));
 	}
-	
+
 	@After
 	public void cleanup() {
 		cloud.shutdown();

@@ -25,15 +25,38 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.vicluster.telecontrol.StreamCopyService.Link;
 
 /**
- * 
+ * This class provides means for efficient (single thread) polling of
+ * multiple  {@link InputStream}s and push to {@link OutputStream}s.
+ *
+ * Mostly used to gather console output from remote processes.
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class BackgroundStreamDumper implements Runnable {
 
 	private static List<StreamPair> BACKLOG = new ArrayList<BackgroundStreamDumper.StreamPair>();
-	
+
+	public static StreamCopyService SINGLETON = new StreamCopyService() {
+
+        @Override
+        public Link link(InputStream is, OutputStream os) {
+            return BackgroundStreamDumper.link(is, os);
+        }
+
+        @Override
+        public Link link(InputStream is, OutputStream os, boolean closeOnEof) {
+            return BackgroundStreamDumper.link(is, os, closeOnEof);
+        }
+
+        @Override
+        public void shutdown() {
+            // do nothing
+        }
+	};
+
 	static {
 		Thread worker = new Thread(new BackgroundStreamDumper());
 		worker.setDaemon(true);
@@ -98,11 +121,11 @@ public class BackgroundStreamDumper implements Runnable {
 			return 0;
 		}
 	}
-	
-	@Override
+
+    @Override
 	public void run() {
 		byte[] buffer = new byte[1 << 14];
-		
+
 		while(true) {
 			List<StreamPair> backlog;
 			synchronized (BACKLOG) {
@@ -181,16 +204,7 @@ public class BackgroundStreamDumper implements Runnable {
 		} catch (IOException e) {
 		}
 	}
-	
-	public interface Link {
-		
-		public void flush();
 
-		public void flushAndClose();
-
-		public void join();
-	}
-	
 	private static class StreamPair implements Link {
 		InputStream is;
 		OutputStream os;

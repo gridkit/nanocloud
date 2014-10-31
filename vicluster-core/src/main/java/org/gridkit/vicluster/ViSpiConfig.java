@@ -9,6 +9,7 @@ import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 
 public interface ViSpiConfig {
 
@@ -45,6 +46,8 @@ public interface ViSpiConfig {
 	public HostControlConsole getControlConsole();
 
 	public CloudContext getCloudContext();
+
+	public StreamCopyService getStreamCopyService();
 	
 	public <T> T get(String key);
 }

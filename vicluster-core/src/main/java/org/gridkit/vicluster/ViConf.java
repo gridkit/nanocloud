@@ -21,6 +21,7 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViConfigurable.Delegate;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.gridkit.zeroio.WriterOutputStream;
 
@@ -91,6 +92,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String TYPE_HANDLER = "type-handler:";
 
 	public static final String SPI_CLOUD_CONTEXT = "#spi:cloud-context";
+	public static final String SPI_STREAM_COPY_SERVICE = "#spi:stream-copy-service";
 	public static final String SPI_KILL_SWITCH = "#spi:kill-switch";
 	public static final String SPI_EPITAPH = "#spi:epitaph";
 	public static final String SPI_INSTRUMENTATION_WRAPPER = "#spi:instrumentation_wrapper";
@@ -237,6 +239,13 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@DefaultNull
 	public CloudContext getCloudContext() {
 		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_STREAM_COPY_SERVICE)
+	@DefaultNull
+	public StreamCopyService getStreamCopyService() {
+	    return readObject();
 	}
 	
 	@Override

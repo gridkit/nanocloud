@@ -32,10 +32,12 @@ import org.gridkit.vicluster.ViNodeExtender;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.ExecCommand;
 import org.gridkit.vicluster.telecontrol.JvmConfig;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 
@@ -73,8 +75,8 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 				isolateProps.put(IsolateProps.CP_EXCLUDE + url, "");
 				isolateProps.put(IsolateProps.CP_EXCLUDE + "jar:" + url + "!/", "");
 			}
-			
-			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps, config.getAllVanilaProps());
+
+			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps, config.getAllVanilaProps(), BackgroundStreamDumper.SINGLETON);
 			JvmConfig jvmConfig = prepareJvmConfig(config);
 			ManagedProcess process = factory.createProcess(name, jvmConfig);
 			return createViNode(name, config, process);
@@ -100,9 +102,10 @@ public class IsolateAwareNodeProvider extends JvmNodeProvider {
 		private Map<String, String> isolateConfigProps;
 		private Map<String, String> vanilaProps;
 
-		
-		private IsolateJvmNodeFactory(Map<String, String> isolateConfigProps, Map<String, String> vanilaProps) {
-			this.isolateConfigProps = isolateConfigProps;
+
+		private IsolateJvmNodeFactory(Map<String, String> isolateConfigProps, Map<String, String> vanilaProps, StreamCopyService streamCopyService) {
+			super(streamCopyService);
+		    this.isolateConfigProps = isolateConfigProps;
 			this.vanilaProps = vanilaProps;
 		}
 

@@ -41,13 +41,13 @@ import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViSpiConfig;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper.Link;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
+import org.gridkit.vicluster.telecontrol.StreamCopyService.Link;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
 import org.gridkit.zeroio.LookbackOutputStream;
 import org.gridkit.zerormi.DuplexStream;
@@ -59,22 +59,33 @@ import org.gridkit.zerormi.hub.SlaveSpore;
 /**
  * {@link ProcessSporeLauncher} is using {@link SmartBootstraper}
  * to instantiate and launch slave spore.
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class ProcessSporeLauncher implements ProcessLauncher {
 
+    StreamCopyService streamCopyService;
+
+    @Deprecated
+    public ProcessSporeLauncher() {
+    }
+
+    public ProcessSporeLauncher(StreamCopyService streamCopyService) {
+        this.streamCopyService = streamCopyService;
+    }
+
     public ManagedProcess launchProcess(LaunchConfig config) {
-        
+
         HostControlConsole console = config.getControlConsole();
         RemoteExecutionSession rmiSession = config.getRemotingSession();
         List<String> slaveArgs = config.getSlaveArgs();
         Map<String, String> slaveEnv = config.getSlaveEnv();
         String slaveWD = config.getSlaveWorkDir();
-        
+
         ControlledSession session = new ControlledSession();
         session.session = rmiSession;
-        
+        session.streamCopyService = streamCopyService;
+
         SlaveSpore spore = rmiSession.getMobileSpore();
 
         // TODO single socket per console should be reused or at least it should be closed after use
@@ -109,10 +120,12 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		List<String> slaveArgs = ctx.getSlaveArgs();
 		Map<String, String> slaveEnv = ctx.getSlaveEnv();
 		String slaveWD = ctx.getSlaveWorkDir();
-		
+
 		ControlledSession session = new ControlledSession();
 		session.session = rmiSession;
-		
+		// TODO temporary work around
+		session.streamCopyService = ctx.getStreamCopyService();
+
 		SlaveSpore spore = rmiSession.getMobileSpore();
 
 		// TODO single socket per console should be reused or at least it should be closed after use
@@ -295,9 +308,9 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		Link eofOut;
 		LookbackOutputStream stdErr;
 		Link eofErr;
-		
+
 	}
-	
+
 	// TODO shutdown sequence is still fishy
 	private static class ControlledSession implements ManagedProcess, ProcessHandler, SocketHandler {
 
@@ -309,12 +322,13 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		FutureBox<AdvancedExecutor> executor = new FutureBox<AdvancedExecutor>();
 		Destroyable socketHandle;
 		volatile Destroyable procHandle;
+		StreamCopyService streamCopyService;
 		/** Process has been started so we except exit code to be invoked eventually */
 		boolean procStarted;
-		
+
 		@Override
 		public void bound(String host, int port) {
-			bindAddress.setData(new InetSocketAddress(host, port));			
+			bindAddress.setData(new InetSocketAddress(host, port));
 		}
 
 		@Override
@@ -335,17 +349,17 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr) {
 			procStarted = true;
 			ProcessStreams ps = new ProcessStreams();
-			ps.stdIn = stdIn;			
+			ps.stdIn = stdIn;
 			ps.stdOut = new LookbackOutputStream(4096);
 			ps.stdErr = new LookbackOutputStream(4096);
-			ps.eofOut = BackgroundStreamDumper.link(stdOut, ps.stdOut);
-			ps.eofErr = BackgroundStreamDumper.link(stdErr, ps.stdErr);
-			
+			ps.eofOut = streamCopyService.link(stdOut, ps.stdOut);
+			ps.eofErr = streamCopyService.link(stdErr, ps.stdErr);
+
 			try {
 				// TO DO just for debug
 //				ps.stdOut.setOutput(System.out);
 //				ps.stdErr.setOutput(System.err);
-				
+
 				DataOutputStream dos = new DataOutputStream(stdIn);
 				dos.writeInt(binspore.length);
 				dos.write(binspore);
@@ -392,7 +406,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		public void bindStdIn(InputStream is) {
 			ProcessStreams ps = fget(procStreams);
 			if (is != null) {
-				BackgroundStreamDumper.link(is, ps.stdIn);
+			    streamCopyService.link(is, ps.stdIn);
 			}
 			else {
 				try {

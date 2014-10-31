@@ -30,6 +30,7 @@ import org.gridkit.vicluster.CompositeViNodeProvider;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.vicluster.ViProps;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.junit.After;
@@ -41,17 +42,17 @@ public class ViManagerTest {
 	
 	public ViManager createViManager() {
 		CompositeViNodeProvider provider = new CompositeViNodeProvider();
-		
+
 		ViNodeProvider isolateProvider = new IsolateAwareNodeProvider();
 		Map<String, String> isolateSelector = new HashMap<String, String>();
 		isolateSelector.put(ViProps.NODE_TYPE, "isolate");
 		provider.addProvider(isolateSelector, isolateProvider);
 
-		ViNodeProvider localProvider = new JvmNodeProvider(new LocalJvmProcessFactory());
+		ViNodeProvider localProvider = new JvmNodeProvider(new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON));
 		Map<String, String> localSelector = new HashMap<String, String>();
 		localSelector.put(ViProps.NODE_TYPE, "clone-jvm");
 		provider.addProvider(localSelector, localProvider);
-		
+
 		return new ViManager(provider);
 	}
 	

@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamPipe;
@@ -79,6 +80,7 @@ public class MockedManagedProcessLauncherTest {
 		config.put(ViConf.JVM_EXEC_CMD, new File(new File(System.getProperty("java.home"), "bin"), "java").getPath());
 		config.put(ViConf.SPI_SLAVE_ARGS, new ArrayList<String>());
 		config.put(ViConf.SPI_SLAVE_CLASSPATH, Classpath.getClasspath(Thread.currentThread().getContextClassLoader()));
+		config.put(ViConf.SPI_STREAM_COPY_SERVICE, BackgroundStreamDumper.SINGLETON);
 		
 		ProcessSporeLauncher launcher = new ProcessSporeLauncher();
 		ManagedProcess slave = launcher.createProcess(config);

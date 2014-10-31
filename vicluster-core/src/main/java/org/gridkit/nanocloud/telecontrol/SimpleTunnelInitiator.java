@@ -19,11 +19,11 @@ import java.util.regex.Pattern;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.Destroyable;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.ProcessHandler;
 import org.gridkit.util.concurrent.FutureBox;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper.Link;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.FileBlob;
+import org.gridkit.vicluster.telecontrol.StreamCopyService;
+import org.gridkit.vicluster.telecontrol.StreamCopyService.Link;
 import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 import org.gridkit.vicluster.telecontrol.bootstraper.TunnellerConnection;
 import org.gridkit.zeroio.LineLoggerOutputStream;
@@ -33,9 +33,11 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 	
 	private String javaCmd;
 	private ZLogger logger;
+	private StreamCopyService streamCopyService;
 
-	public SimpleTunnelInitiator(String javaCmd, String fileCachePath, ZLogger logger) {
+	public SimpleTunnelInitiator(String javaCmd, String fileCachePath, StreamCopyService streamCopyService, ZLogger logger) {
 		this.javaCmd = javaCmd;
+		this.streamCopyService = streamCopyService;
 		this.logger = logger;
 	}
 
@@ -67,7 +69,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 			public void started(final OutputStream stdIn, final InputStream stdOut, InputStream stdErr) {
 				final LineLoggerOutputStream log = new LineLoggerOutputStream("", logger.getLogger("console").warn());
 				final LineLoggerOutputStream dlog = new LineLoggerOutputStream("", logger.getLogger("tunneller").info());
-				diag = BackgroundStreamDumper.link(stdErr, log, true);
+				diag = streamCopyService.link(stdErr, log, true);
 				Thread thread = new Thread(new Runnable() {
 					@Override
 					public void run() {
@@ -216,8 +218,8 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 					} catch (IOException e) {
 						// ignore
 					}
-					lout = BackgroundStreamDumper.link(out, stdOut);
-					lerr = BackgroundStreamDumper.link(err, stdErr);
+					lout = streamCopyService.link(out, stdOut);
+					lerr = streamCopyService.link(err, stdErr);
 				}
 				
 				@Override
