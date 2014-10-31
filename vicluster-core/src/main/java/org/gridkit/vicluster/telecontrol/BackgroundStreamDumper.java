@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,26 +29,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.gridkit.util.concurrent.FutureBox;
 
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class BackgroundStreamDumper implements Runnable {
 
 	private static List<StreamPair> BACKLOG = new ArrayList<BackgroundStreamDumper.StreamPair>();
-	
+
 	static {
 		Thread worker = new Thread(new BackgroundStreamDumper());
 		worker.setDaemon(true);
 		worker.setName("BackgroundStreamCopy");
 		worker.start();
 	}
-	
+
 	public static Link link(InputStream is, final OutputStream os, boolean closeOnEof) {
 		if (!closeOnEof) {
 			OutputStream wos = new OutputStream() {
 				@Override
 				public void write(int b) throws IOException {
-					os.write(b);					
+					os.write(b);
 				}
 
 				@Override
@@ -83,7 +85,7 @@ public class BackgroundStreamDumper implements Runnable {
 			return link;
 		}
 	}
-	
+
 	public static int pullStream(byte[] buffer, InputStream is, OutputStream os) throws IOException {
 		int s = is.read(buffer, 0, 0);
 		if (s < 0) {
@@ -98,11 +100,11 @@ public class BackgroundStreamDumper implements Runnable {
 			return 0;
 		}
 	}
-	
+
 	@Override
 	public void run() {
 		byte[] buffer = new byte[1 << 14];
-		
+
 		while(true) {
 			List<StreamPair> backlog;
 			synchronized (BACKLOG) {
@@ -111,13 +113,15 @@ public class BackgroundStreamDumper implements Runnable {
 					p.locked.set(true);
 				}
 			}
-			
+
 			int readCount = 0;
 			try {
-				
+
 				for(StreamPair pair: backlog) {
-					try {
-						if (pair.is.read(buffer, 0, 0) < 0) {
+                    Object oldThreadLocal = null;
+                    try {
+                        oldThreadLocal = ReflectionHelper.setInheritedThreadLocal(Thread.currentThread(), pair.inheritedThreadLocal);
+                        if (pair.is.read(buffer, 0, 0) < 0) {
 							// EOF
 							closePair(pair);
 						}
@@ -142,8 +146,10 @@ public class BackgroundStreamDumper implements Runnable {
 							// ignore;
 						}
 						closePair(pair);
-					}
-				}				
+					}finally {
+                        ReflectionHelper.setInheritedThreadLocal(Thread.currentThread(), oldThreadLocal);
+                    }
+                }
 			}
 			finally {
 				for(StreamPair p: backlog) {
@@ -156,8 +162,8 @@ public class BackgroundStreamDumper implements Runnable {
 				} catch (InterruptedException e) {
 					// ignore
 				}
-			}			
-		}		
+			}
+		}
 	}
 
 	private void closePair(StreamPair pair) {
@@ -181,26 +187,30 @@ public class BackgroundStreamDumper implements Runnable {
 		} catch (IOException e) {
 		}
 	}
-	
+
 	public interface Link {
-		
+
 		public void flush();
 
 		public void flushAndClose();
 
 		public void join();
 	}
-	
+
 	private static class StreamPair implements Link {
-		InputStream is;
-		OutputStream os;
-		FutureBox<Void> signal = new FutureBox<Void>();
-		AtomicBoolean locked = new AtomicBoolean(false);
+
+        InputStream is;
+        OutputStream os;
+        FutureBox<Void> signal = new FutureBox<Void>();
+        AtomicBoolean locked = new AtomicBoolean(false);
+        Object inheritedThreadLocal;
 
 		public StreamPair(InputStream is, OutputStream os) {
 			this.is = is;
 			this.os = os;
-		}
+
+            inheritedThreadLocal = ReflectionHelper.createInheritedThreadLocal(Thread.currentThread());
+        }
 
 		@Override
 		public void flush() {
@@ -208,31 +218,31 @@ public class BackgroundStreamDumper implements Runnable {
 				BACKLOG.remove(this);
 			}
 			sync();
-			
+
 			try {
 				pullStream(new byte[8 << 10], is, os);
 			} catch (IOException e) {
 				// ignore
-			}			
+			}
 
 			synchronized (BACKLOG) {
 				BACKLOG.add(this);
-			}			
+			}
 		}
-		
+
 		@Override
 		public void flushAndClose() {
 			synchronized (BACKLOG) {
 				BACKLOG.remove(this);
 			}
 			sync();
-			
+
 			try {
 				pullStream(new byte[8 << 10], is, os);
 			} catch (IOException e) {
 				// ignore
-			}			
-			
+			}
+
 			close(is);
 			close(os);
 		}
@@ -255,5 +265,50 @@ public class BackgroundStreamDumper implements Runnable {
 				// ignore
 			}
 		}
-	}	
+	}
+
+    private static class ReflectionHelper {
+        private static Field inheritableThreadLocalField;
+        private static Class<?> threadLocalMapClass;
+
+        private static Constructor<?> threadLocalMapConstructor;
+
+        static {
+            try {
+                inheritableThreadLocalField = Thread.class.getDeclaredField("inheritableThreadLocals");
+                inheritableThreadLocalField.setAccessible(true);
+
+                threadLocalMapClass = inheritableThreadLocalField.getType();
+
+                threadLocalMapConstructor = threadLocalMapClass.getDeclaredConstructor(threadLocalMapClass);
+                threadLocalMapConstructor.setAccessible(true);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        static Object createInheritedThreadLocal(Thread thread) {
+            try {
+                final Object inheritedThreadLocalForParentThread = inheritableThreadLocalField.get(thread);
+                if (inheritedThreadLocalForParentThread == null) {
+                    return null;
+                }
+                return threadLocalMapConstructor.newInstance(inheritedThreadLocalForParentThread);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null; // if by some reason code above does not work (due to changes in private API for example) - just forget about in
+            }
+        }
+
+        static Object setInheritedThreadLocal(Thread thread, Object inheritableThreadLocal) {
+            try {
+                final Object oldValue = inheritableThreadLocalField.get(thread);
+                inheritableThreadLocalField.set(thread, inheritableThreadLocal);
+                return oldValue;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
 }
