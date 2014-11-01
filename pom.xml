@@ -48,9 +48,10 @@
     </developers>
     
     <scm>
-        <connection>scm:svn:http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.8</connection>
-        <developerConnection>scm:svn:https://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.8</developerConnection>
-        <url>http://gridkit.googlecode.com/svn/grid-lab/branches/vicluster-0.8</url>
+      <connection>scm:git:https://github.com/gridkit/nanocloud.git</connection>
+      <developerConnection>scm:git:https://github.com/gridkit/nanocloud.git</developerConnection>
+      <url>https://github.com/gridkit/nanocloud</url>
+      <tag>HEAD</tag>
     </scm>
 
     <properties>
@@ -135,8 +136,7 @@
                 <version>2.4</version>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <remoteTagging>false</remoteTagging>
-                    <suppressCommitBeforeTag>true</suppressCommitBeforeTag>
+                    <pushChanges>false</pushChanges>
                 </configuration>
             </plugin>
             <plugin>
@@ -193,39 +193,39 @@
             </plugin>                
         </plugins>
         <pluginManagement>
-        	<plugins>
-        		<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        		<plugin>
-        			<groupId>org.eclipse.m2e</groupId>
-        			<artifactId>lifecycle-mapping</artifactId>
-        			<version>1.0.0</version>
-        			<configuration>
-        				<lifecycleMappingMetadata>
-        					<pluginExecutions>
-        						<pluginExecution>
-        							<pluginExecutionFilter>
-        								<groupId>
-        									org.apache.maven.plugins
-        								</groupId>
-        								<artifactId>
-        									maven-dependency-plugin
-        								</artifactId>
-        								<versionRange>
-        									[2.8,)
-        								</versionRange>
-        								<goals>
-        									<goal>get</goal>
-        								</goals>
-        							</pluginExecutionFilter>
-        							<action>
-        								<ignore />
-        							</action>
-        						</pluginExecution>
-        					</pluginExecutions>
-        				</lifecycleMappingMetadata>
-        			</configuration>
-        		</plugin>
-        	</plugins>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.apache.maven.plugins
+                                        </groupId>
+                                        <artifactId>
+                                            maven-dependency-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [2.8,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>get</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore />
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
         </pluginManagement>
     </build>
 </project>
