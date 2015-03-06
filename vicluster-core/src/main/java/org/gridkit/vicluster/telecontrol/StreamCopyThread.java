@@ -182,7 +182,7 @@ public class StreamCopyThread extends Thread implements StreamCopyService {
     }
 
     private void closePair(StreamPair pair) {
-        synchronized (this) {
+        synchronized (StreamCopyThread.this) {
             backlog.remove(pair);
         }
         close(pair.os);
@@ -215,8 +215,8 @@ public class StreamCopyThread extends Thread implements StreamCopyService {
         }
 
         @Override
-        public void flush() {
-            synchronized (this) {
+        public synchronized void flush() {
+            synchronized (StreamCopyThread.this) {
                 backlog.remove(this);
             }
             sync();
@@ -227,14 +227,14 @@ public class StreamCopyThread extends Thread implements StreamCopyService {
                 // ignore
             }
 
-            synchronized (this) {
+            synchronized (StreamCopyThread.this) {
                 backlog.add(this);
             }
         }
 
         @Override
-        public void flushAndClose() {
-            synchronized (this) {
+        public synchronized void flushAndClose() {
+            synchronized (StreamCopyThread.this) {
                 backlog.remove(this);
             }
             sync();
