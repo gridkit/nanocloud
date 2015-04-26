@@ -227,7 +227,8 @@ public class ViManager implements ViNodeSet {
 			asyncInitThreads.awaitTermination(10, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			LOGGER.warn("ViManager shutdown: Defered task threads are still active");
-		}		
+		}
+		provider.shutdown();
 	}
 	
 	public synchronized void resetDeadNode() {
