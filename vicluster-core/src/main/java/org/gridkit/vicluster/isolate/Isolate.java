@@ -87,7 +87,7 @@ import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
 /**
  *	@author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-@SuppressWarnings({ "restriction", "deprecation" })
+@SuppressWarnings({ "deprecation" })
 public class Isolate {
 	
 	private static final InheritableThreadLocal<Isolate> ISOLATE = new InheritableThreadLocal<Isolate>();
@@ -875,14 +875,20 @@ public class Isolate {
 			try { t.resume(); }	catch(Exception e) {/* ignore */};
 			try { t.start(); }	catch(Exception e) {/* ignore */};
 			try { t.interrupt(); }	catch(Exception e) {/* ignore */};
-			try { t.stop(new ThreadDoomError(name)); }	catch(IllegalStateException e) {/* ignore */};
+			try { t.stop(new ThreadDoomError(name)); }	catch(IllegalStateException e) {/* ignore */}
+		    catch(UnsupportedOperationException e) {
+		        try { t.stop(); }   catch(IllegalStateException ee) {/* ignore */}
+		    }
 		}
 		else {
 			try { t.interrupt(); }	catch(Exception e) {/* ignore */};
 			trySocketInterrupt(t);
 			tryStop(t);
 			try { t.interrupt(); }	catch(Exception e) {/* ignore */};
-			try { t.stop(new ThreadDoomError(name)); }	catch(IllegalStateException e) {/* ignore */};							
+            try { t.stop(new ThreadDoomError(name)); }  catch(IllegalStateException e) {/* ignore */}
+            catch(UnsupportedOperationException e) {
+                try { t.stop(); }   catch(IllegalStateException ee) {/* ignore */}
+            }
 		}
 	}
 	
@@ -1471,6 +1477,7 @@ public class Isolate {
 					JarInputStream jar = new JarInputStream(is);
 					list.add(new URL("jar:" + url.toString() + "!/"));
 					Manifest mf = jar.getManifest();
+					jar.close();
 					if (mf == null) {
 						return;
 					}

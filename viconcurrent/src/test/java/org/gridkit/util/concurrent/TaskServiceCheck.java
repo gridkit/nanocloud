@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.gridkit.util.concurrent.TaskService.Task;
 import org.junit.Test;
 
-public class TaskServiceTest {
+public class TaskServiceCheck {
 
 	SensibleTaskService taskService = new SensibleTaskService("TestPool");
 	

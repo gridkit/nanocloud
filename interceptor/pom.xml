@@ -49,6 +49,10 @@
       </developer>
     </developers>
 
+    <properties>
+      <asm.version>5.0.4</asm.version>
+    </properties>
+
     <dependencies>
 
         <dependency>
@@ -71,13 +75,13 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>4.2</version>
+            <version>${asm.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
-            <version>4.2</version>
+            <version>${asm.version}</version>
         </dependency>
         
         <dependency>
@@ -89,7 +93,7 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
-            <version>4.2</version>
+            <version>${asm.version}</version>
             <scope>test</scope>
         </dependency>
 
