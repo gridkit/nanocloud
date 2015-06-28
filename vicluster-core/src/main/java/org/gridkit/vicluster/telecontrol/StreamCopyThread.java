@@ -95,13 +95,18 @@ public class StreamCopyThread extends Thread implements StreamCopyService {
 
     @Override
     public void shutdown() {
+        List<StreamPair> backlog;
         synchronized(this) {
             if (!terminated) {
                 terminated = true;
+                backlog = new ArrayList<StreamPair>(this.backlog);
             }
-            for(StreamPair pair: new ArrayList<StreamPair>(backlog)) {
-                pair.flushAndClose();
+            else {
+                return;
             }
+        }
+        for(StreamPair pair: backlog) {
+            pair.flushAndClose();
         }
     }
 
@@ -219,6 +224,7 @@ public class StreamCopyThread extends Thread implements StreamCopyService {
             synchronized (StreamCopyThread.this) {
                 backlog.remove(this);
             }
+            
             sync();
 
             try {
@@ -237,6 +243,7 @@ public class StreamCopyThread extends Thread implements StreamCopyService {
             synchronized (StreamCopyThread.this) {
                 backlog.remove(this);
             }
+
             sync();
 
             try {

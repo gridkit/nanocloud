@@ -71,7 +71,8 @@ public class ClasspathUtils {
 		return null;
 	}
 	
-	public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
+	@SuppressWarnings("resource")
+    public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
 		List<URL> result = new ArrayList<URL>();
 		while(true) {
 			for(URL url: classLoader.getURLs()) {
@@ -116,6 +117,7 @@ public class ClasspathUtils {
 			}
 			JarInputStream jar = new JarInputStream(is);
 			Manifest mf = jar.getManifest();
+			jar.close();
 			if (mf == null) {
 				return;
 			}
