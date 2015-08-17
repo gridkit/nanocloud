@@ -41,6 +41,7 @@ import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViSpiConfig;
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
@@ -91,29 +92,38 @@ public class ProcessSporeLauncher implements ProcessLauncher {
         // TODO single socket per console should be reused or at least it should be closed after use
         Destroyable socketHandler = console.openSocket(session);
         session.socketHandle = socketHandler;
-        
+
         InetSocketAddress sockAddr = (InetSocketAddress)fget(session.bindAddress);
         CallbackSporePlanter planter = new CallbackSporePlanter(spore, sockAddr.getHostName(), sockAddr.getPort());
         byte[] binspore = serialize(planter);
         session.binspore = binspore;
-        
+
         String javaCmd = config.getSlaveJvmExecCmd();
         String bootstraper = buildBootJar(console, config.getSlaveClasspath());
-        
+
         List<String> commands = new ArrayList<String>();
         commands.add(javaCmd);
         commands.addAll(slaveArgs);
+
+		if (config.getAgentEntries() != null) {
+			for (AgentEntry agentEntry : config.getAgentEntries()) {
+				final String agentPath = console.cacheFile(agentEntry);
+				final String options = agentEntry.getOptions();
+				commands.add("-javaagent:" + agentPath + (options == null ? "" : "=" + options));
+			}
+		}
+
         commands.add("-jar");
         commands.add(bootstraper);
-        
+
         console.startProcess(isEmpty(slaveWD) ? "." : slaveWD, commands.toArray(new String[0]), slaveEnv, session);
-        
+
         return session;
     }
-    
+
 	@Override
 	public ManagedProcess createProcess(Map<String, Object> config) {
-		
+
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		HostControlConsole console = ctx.getControlConsole();
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
@@ -131,47 +141,56 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		// TODO single socket per console should be reused or at least it should be closed after use
 		Destroyable socketHandler = console.openSocket(session);
 		session.socketHandle = socketHandler;
-		
+
 		InetSocketAddress sockAddr = (InetSocketAddress)fget(session.bindAddress);
 		CallbackSporePlanter planter = new CallbackSporePlanter(spore, sockAddr.getHostName(), sockAddr.getPort());
 		byte[] binspore = serialize(planter);
 		session.binspore = binspore;
-		
+
 		String javaCmd = ctx.getJvmExecCmd();
 		String bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
-		
+
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
 		commands.addAll(slaveArgs);
+
+		if (ctx.getSlaveAgents() != null) {
+			for (AgentEntry agentEntry : ctx.getSlaveAgents()) {
+				final String agentPath = console.cacheFile(agentEntry);
+				final String options = agentEntry.getOptions();
+				commands.add("-javaagent:" + agentPath + (options == null ? "" : "=" + options));
+			}
+		}
+
 		commands.add("-jar");
 		commands.add(bootstraper);
-		
+
 		console.startProcess(isEmpty(slaveWD) ? "." : slaveWD, commands.toArray(new String[0]), slaveEnv, session);
-		
+
 		return session;
 	}
-	
+
 	private boolean isEmpty(String s) {
 		return s == null || s.length() == 0;
 	}
 
 	private String buildBootJar(HostControlConsole console, List<ClasspathEntry> jvmClasspath) {
-		
+
 		List<String> paths = console.cacheFiles(jvmClasspath);
-		
+
 		StringBuilder remoteClasspath = new StringBuilder();
 		for(String path: paths) {
 			if (remoteClasspath.length() > 0) {
 				remoteClasspath.append(' ');
 			}
-			remoteClasspath.append(convertToURI(path));			
+			remoteClasspath.append(convertToURI(path));
 		}
-		
+
 		Manifest mf = new Manifest();
 		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, remoteClasspath.toString());
 		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, SmartBootstraper.class.getName());
-		
+
 		byte[] booter;
 		try {
 			booter = ClasspathUtils.createManifestJar(mf);
@@ -179,9 +198,9 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			throw new RuntimeException();
 		}
 		FileBlob bb = Classpath.createBinaryEntry("booter.jar", booter);
-		
+
 		String path = console.cacheFile(bb);
-		
+
 		return path;
 	}
 
@@ -200,7 +219,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 				else if (ch == ' ') {
 					sb.append("%20");
 				}
-				else {					
+				else {
 					sb.append(ch);
 				}
 			}
@@ -224,7 +243,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	static <T> T fget(Future<T> future) {
 		try {
 			return future.get();
@@ -251,15 +270,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			return null;
 		}
 	}
-	
+
 	private static class CallbackSporePlanter implements Runnable, Serializable {
 
 		private static final long serialVersionUID = 20130928L;
-		
+
 		SlaveSpore spore;
 		String masterHost;
 		int masterPort;
-		
+
 		public CallbackSporePlanter(SlaveSpore spore, String masterHost, int masterPort) {
 			this.spore = spore;
 			this.masterHost = masterHost;
@@ -276,13 +295,13 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			return spore + " + call home [" + masterHost + ":" + masterPort + "]";
 		}
 	}
-	
+
 	private static class ConnectSocketConnector implements DuplexStreamConnector, Serializable {
 
 		private static final long serialVersionUID = 20131217L;
-		
+
 		private final SocketAddress address;
-		
+
 		public ConnectSocketConnector(SocketAddress address) {
 			this.address = address;
 		}
@@ -294,15 +313,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 			return new SocketStream(socket);
 		}
-		
+
 		@Override
 		public String toString() {
 			return String.valueOf(address);
 		}
 	}
-	
+
 	private static class ProcessStreams {
-		
+
 		OutputStream stdIn;
 		LookbackOutputStream stdOut;
 		Link eofOut;
@@ -448,18 +467,18 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 				throw new RuntimeException(e);
 			}
 		}
-		
+
 		@Override
 		public void suspend() {
 			throw new UnsupportedOperationException();
-			
+
 		}
 
 		@Override
 		public void resume() {
 			throw new UnsupportedOperationException();
 		}
-		
+
 		@Override
 		public void consoleFlush() {
 			if (procStreams.isDone()) {
@@ -473,7 +492,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		public void destroy() {
 			sepuku(new RuntimeException("Terminated"));
 		}
-		
+
 		protected synchronized void sepuku(Throwable e) {
 			session.terminate();
 			procStreams.setErrorIfWaiting(e);
@@ -503,6 +522,6 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		@Override
 		public FutureEx<Integer> getExitCodeFuture() {
 			return exitCode;
-		}		
-	}	
+		}
+	}
 }

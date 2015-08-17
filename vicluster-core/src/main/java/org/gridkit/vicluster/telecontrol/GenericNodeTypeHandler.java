@@ -79,6 +79,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		game.setPropIfAbsent(ViConf.HOOK_CLASSPATH_BUILDER, createClasspathBuilder(game));
 		game.setPropIfAbsent(ViConf.HOOK_JVM_ARGUMENTS_BUIDLER, createJvmArgumentsBuilder(game));
 		game.setPropIfAbsent(ViConf.HOOK_JVM_ENV_VARS_BUIDLER, createJvmEnvironmentBuilder(game));
+		game.setPropIfAbsent(ViConf.HOOK_AGENT_BUILDER, createAgentBuilder(game));
 		game.setPropIfAbsent(ViConf.JVM_EXEC_CMD, defaultJavaExecCmd(game));
 	}
 
@@ -86,6 +87,10 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 
 	protected Interceptor createClasspathBuilder(QuorumGame game) {
 		return new ClasspathReplicaBuilder();
+	}
+
+	protected Interceptor createAgentBuilder(QuorumGame game) {
+		return new AgentBuilder();
 	}
 
 	protected Interceptor createJvmArgumentsBuilder(QuorumGame game) {
@@ -312,6 +317,31 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 
 		private boolean compareContent(ClasspathEntry e1, ClasspathEntry e2) {
 			return e1.getContentHash().equals(e2.getContentHash());
+		}
+	}
+
+	public static class AgentBuilder extends IdempotentConfigBuilder<List<AgentEntry>> {
+
+		public AgentBuilder() {
+			super(ViConf.SPI_SLAVE_AGENT);
+		}
+
+		@Override
+		protected List<AgentEntry> buildState(QuorumGame game) {
+			@SuppressWarnings({"rawtypes", "unchecked"})
+			Map<String, String> agents = (Map<String, String>) (Map) game.getConfigProps(ViConf.JVM_AGENT);
+			List<AgentEntry> agentEntries = new ArrayList<AgentEntry>();
+			for (String agentAndOptions : agents.values()) {
+				final int delimiterIndex = agentAndOptions.indexOf("=");
+				final File file = new File(agentAndOptions.substring(0, delimiterIndex));
+				if (!file.exists()) {
+					throw new IllegalArgumentException("Can not find agent file " + file);
+				}
+				final String options = agentAndOptions.substring(delimiterIndex + 1);
+				final AgentEntry agentEntry = new AgentEntry(file, options.isEmpty() ? null : options);
+				agentEntries.add(agentEntry);
+			}
+			return agentEntries;
 		}
 	}
 	

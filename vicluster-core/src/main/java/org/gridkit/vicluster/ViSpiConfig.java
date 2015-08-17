@@ -7,6 +7,7 @@ import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
@@ -32,6 +33,8 @@ public interface ViSpiConfig {
 	public String getSlaveWorkDir();
 
 	public List<ClasspathEntry> getSlaveClasspath();
+
+	public List<AgentEntry> getSlaveAgents();
 
 	public String getJvmExecCmd();
 

@@ -19,6 +19,7 @@ import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViConfigurable.Delegate;
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
@@ -58,6 +59,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String JVM_ARGUMENT = JvmProps.JVM_XX;
 	public static final String JVM_WORK_DIR = "jvm:work-dir";
 	public static final String JVM_ENV_VAR = JvmProps.JVM_ENV;
+	public static final String JVM_AGENT = "jvm:agent";
 
 	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
     public static final String CLASSPATH_INHERIT = "classpath:inherit";
@@ -77,6 +79,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String HOOK_JVM_ARGUMENTS_BUIDLER = "hook:jvm-arguments-builder";
 	public static final String HOOK_JVM_ENV_VARS_BUIDLER = "hook:jvm-env-vars-builder";
 	public static final String HOOK_NODE_INITIALIZER = "hook:node-initializer";
+	public static final String HOOK_AGENT_BUILDER = "hook:jvm-agent";
 
 	public static final String PRAGMA_HANDLER = "pragma-handler:";
 	public static final String PRAGMA_HANDLER__CONSOLE = "pragma-handler:console";
@@ -108,7 +111,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_NODE_FACTORY = "#spi:node-factory";
 	public static final String SPI_NODE_INSTANCE = "#spi:node-instance";
 	public static final String SPI_LOGGER = "#spi:logger";
-	
+	public static final String SPI_SLAVE_AGENT = "#spi:jvm-agent";
+
 	public static final String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";
 	public static final String ACTIVATED_FINALIZER_HOOK = "#finally:";
@@ -294,6 +298,13 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@PropName(SPI_SLAVE_CLASSPATH)
 	@DefaultNull
 	public List<ClasspathEntry> getSlaveClasspath() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_SLAVE_AGENT)
+	@DefaultNull
+	public List<AgentEntry> getSlaveAgents() {
 		return readObject();
 	}
 	
@@ -542,6 +553,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	}
 	
 	public static class JvmConf extends Delegate {
+		private static AtomicLong AGENT_COUNTER = new AtomicLong();
 
 		private ViConfigurable conf;
 
@@ -578,6 +590,15 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 				addJvmArg(sb.toString());
 			}
 			return this;
+		}
+
+		public JvmConf addAgent(File agentJar, String options){
+			conf.setProp(JVM_AGENT + AGENT_COUNTER.incrementAndGet(), agentJar.getAbsolutePath() + "=" + (options == null ? "" : options));
+			return this;
+		}
+
+		public JvmConf addAgent(File agentJar){
+			return addAgent(agentJar, null);
 		}
 
 		public JvmConf setWorkDir(String path) {

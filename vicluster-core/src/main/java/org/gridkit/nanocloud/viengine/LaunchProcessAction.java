@@ -8,6 +8,7 @@ import java.util.Map;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
@@ -18,6 +19,7 @@ public class LaunchProcessAction extends AbstractNodeAction {
     InArg<RemoteExecutionSession> remotingSession = required(Pragma.RUNTIME_REMOTING_SESSION);
     InArg<HostControlConsole> controlConsole = required(Pragma.RUNTIME_HOST_CONTROL_CONSOLE);
     InArg<List<ClasspathEntry>> classpath = required(Pragma.RUNTIME_CLASSPATH);
+    InArg<List<AgentEntry>> agents = required(Pragma.RUNTIME_AGENTS);
     InArg<String> jvmExec = required(JvmConf.JVM_EXEC_CMD);
     InArg<String> jvmWorkDir = optional(JvmConf.JVM_WORK_DIR);
     
@@ -126,6 +128,11 @@ public class LaunchProcessAction extends AbstractNodeAction {
         @Override
         public List<ClasspathEntry> getSlaveClasspath() {
             return classpath.get();
+        }
+
+        @Override
+        public List<AgentEntry> getAgentEntries() {
+            return agents.get();
         }
     }
     

@@ -159,4 +159,22 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public void verify_slave_working_dir() throws IOException {
         super.verify_slave_working_dir();
     }
+
+    @Test
+    @Override
+    public void verify_jvm_agent() throws Exception {
+        super.verify_jvm_agent();
+    }
+
+    @Test
+    @Override
+    public void verify_jvm_agent_with_options() throws Exception {
+        super.verify_jvm_agent_with_options();
+    }
+
+    @Test
+    @Override
+    public void verify_jvm_agent_multiple_agents() throws Exception {
+        super.verify_jvm_agent_multiple_agents();
+    }
 }

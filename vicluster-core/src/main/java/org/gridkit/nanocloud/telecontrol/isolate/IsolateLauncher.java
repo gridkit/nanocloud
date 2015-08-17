@@ -63,6 +63,10 @@ class IsolateLauncher implements ProcessLauncher {
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
 		List<Classpath.ClasspathEntry> cp = ctx.getSlaveClasspath();
+
+		if (ctx.getSlaveAgents() != null && !ctx.getSlaveAgents().isEmpty()) {
+			throw new RuntimeException("Agents is not supported in Isolate mode.");
+		}
 		
 		List<URL> urls = new ArrayList<URL>();
 		for(Classpath.ClasspathEntry ce: cp) {
