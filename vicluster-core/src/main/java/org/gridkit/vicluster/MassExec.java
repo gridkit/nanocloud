@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 
@@ -88,6 +90,55 @@ public class MassExec {
 			AnyThrow.throwUncheked(e);
 			return null;
 		}
+	}
+
+	/**
+	 * Collect result from all futures. If any of futures have thrown exception, other futures will be collected but exception disacred.
+	 * @return list of results from futures
+	 */
+	public static <T> List<? super T> waitAll(List<Future<T>> futures, long timeout, TimeUnit tu) {
+	    long deadline = System.nanoTime() + tu.toNanos(timeout);
+	    try {
+	        Object[] results = new Object[futures.size()];
+	        int n = 0;
+	        Exception e = null;
+	        for(Future<T> f : futures) {
+	            try {
+	                try {
+	                    long to = deadline - System.nanoTime();
+	                    if (to < 0) {
+	                        to = 0;
+	                    }
+	                    results[n] = f.get(to, TimeUnit.NANOSECONDS);
+	                }
+	                catch(ExecutionException ee) {
+	                    // unwrapping ExecutionException
+	                    if (ee.getCause() instanceof Exception) {
+	                        throw (Exception)ee.getCause();
+	                    }
+	                    else {
+	                        throw ee;
+	                    }
+	                }
+	            }
+	            catch(TimeoutException te) {
+	                throw te;
+	            }
+	            catch(Exception ee) {
+	                if (e == null) {
+	                    e = ee; // only first exception will be thrown
+	                }
+	            }
+	            ++n;
+	        }
+	        if (e != null) {
+	            throw e;
+	        }
+	        return Arrays.asList(results);
+	    } catch (Exception e) {
+	        AnyThrow.throwUncheked(e);
+	        return null;
+	    }
 	}
 
 	@SuppressWarnings("unchecked")

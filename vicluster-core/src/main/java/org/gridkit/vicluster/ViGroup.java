@@ -265,10 +265,10 @@ public class ViGroup implements ViNode {
 			return (T) MassExec.waitAll((List)futures).get(0);
 		}
 
-		@Override
+        @Override
+        @SuppressWarnings({ "unchecked",  "rawtypes" })
 		public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-			// TODO implement get() with timeout
-			throw new UnsupportedOperationException();
+		    return (T) MassExec.waitAll((List)futures, timeout, unit).get(0);
 		}
 	}
 	
