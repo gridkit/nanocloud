@@ -169,7 +169,8 @@ public class TunnellerConnection extends TunnellerIO {
 		shutdown();
 	}
 	
-	private void shutdown() {
+	protected void shutdown() {
+	    super.shutdown();
 		close(ctrlRep);
 		close(ctrlReq);
 		
@@ -180,7 +181,7 @@ public class TunnellerConnection extends TunnellerIO {
 		
 		join(inbound);
 		join(outbound);
-		join(control);		
+		join(control);
 	}
 	
 	private void close(Closeable c) {

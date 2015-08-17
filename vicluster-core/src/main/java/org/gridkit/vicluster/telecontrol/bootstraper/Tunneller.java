@@ -27,6 +27,7 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -340,7 +341,15 @@ public class Tunneller extends TunnellerIO {
 		}
 	}
 
-	private static String transformPath(String path) throws IOException {
+	@Override
+    protected synchronized void shutdown() {
+        super.shutdown();
+        for (ProcessHandler ph: new ArrayList<ProcessHandler>(processes.values())) {
+            ph.proc.destroy();
+        }
+    }
+
+    private static String transformPath(String path) throws IOException {
 		if (path.startsWith("~/")) {
 			String home = System.getProperty("user.home");
 			File fp = new File(new File(home), path.substring("~/".length()));

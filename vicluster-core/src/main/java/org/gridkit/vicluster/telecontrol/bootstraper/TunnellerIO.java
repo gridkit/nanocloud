@@ -588,6 +588,7 @@ class TunnellerIO {
 					diagOut.println("Inbound mux stopped");
 				}
 				stopChannels();
+				shutdown();
 			}
 		}
 	}
@@ -596,7 +597,10 @@ class TunnellerIO {
 		return (size + 7) & (~7);
 	}
 	
-	protected static class Channel {
+	protected void shutdown() {
+    }
+
+    protected static class Channel {
 		
 		final long channelId;
 		final Direction direction;
