@@ -19,10 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.gridkit.nanocloud.VX.CLASSPATH;
 import static org.gridkit.nanocloud.VX.PROCESS;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,7 +27,15 @@ import java.net.URL;
 import java.rmi.Remote;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import org.gridkit.nanocloud.agent.SampleAgent;
+import org.gridkit.nanocloud.agent.SampleAgent2;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
@@ -476,7 +481,46 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void verify_jvm_invalid_arg_error() {
+	public void verify_jvm_agent() throws Exception {
+		ViNode node = testNode();
+		node.x(PROCESS).addAgent(packAgent(SampleAgent.class));
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				Assert.assertNull(SampleAgent.options.get());
+			}
+		});
+	}
+
+	public void verify_jvm_agent_with_options() throws Exception {
+		ViNode node = testNode();
+		final String options = "my-super-options=abc";
+		node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options);
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				Assert.assertEquals(options, SampleAgent.options.get());
+			}
+		});
+	}
+
+	public void verify_jvm_agent_multiple_agents() throws Exception {
+		ViNode node = testNode();
+		final String options1 = "my-super-options=abc";
+		final String options2 = "my-super-options=bcd";
+
+		node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options1);
+		node.x(PROCESS).addAgent(packAgent(SampleAgent2.class), options2);
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				Assert.assertEquals(options1, SampleAgent.options.get());
+				Assert.assertEquals(options2, SampleAgent2.options.get());
+			}
+		});
+	}
+
+	public void verify_jvm_invalid_arg_error() {
         
         ViNode node = testNode();
         JvmProps.addJvmArg(node, "-XX:+InvalidOption");
@@ -571,5 +615,55 @@ public abstract class ViNodeFeatureTest {
 	
     public interface RemoteRunnable extends Runnable, Remote {
         
-    }	
+    }
+
+	private File packAgent(Class<?> agentClass) throws Exception {
+		File agentJar = File.createTempFile("agent", ".jar");
+
+		Manifest manifest = new Manifest();
+		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+		manifest.getMainAttributes().put(new Attributes.Name("PreMain-Class"), agentClass.getName());
+
+		ZipOutputStream jarOut = new JarOutputStream(new FileOutputStream(agentJar), manifest);
+
+		String path = agentClass.getName().replace('.', '/') + ".class";
+		InputStream classStream = this.getClass().getClassLoader().getResourceAsStream(path);
+
+		ZipEntry classEntry = new ZipEntry(path);
+		jarOut.putNextEntry(classEntry);
+		copyNoClose(classStream, jarOut);
+		jarOut.closeEntry();
+
+		jarOut.closeEntry();
+		jarOut.close();
+		return agentJar;
+	}
+
+	public static void copyNoClose(InputStream in, OutputStream out) throws IOException {
+		boolean doClose = true;
+		try {
+			byte[] buf = new byte[1 << 12];
+			while(true) {
+				int n = in.read(buf);
+				if(n >= 0) {
+					out.write(buf, 0, n);
+				}
+				else {
+					break;
+				}
+			}
+			doClose = false;
+
+		} finally {
+			if (doClose) {
+				// close if there were exception thrown
+				try {
+					in.close();
+				}
+				catch(Exception e) {
+					// ignore
+				}
+			}
+		}
+	}
 }

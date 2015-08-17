@@ -29,6 +29,7 @@ import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.CloudContext.ServiceKey;
 import org.gridkit.vicluster.CloudContext.ServiceProvider;
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
@@ -595,6 +596,10 @@ public interface ViEngine {
 
 		public List<ClasspathEntry> getSlaveClasspath() {
 			return getConfig().getSlaveClasspath();
+		}
+
+		public List<AgentEntry> getSlaveAgents() {
+			return getConfig().getSlaveAgents();
 		}
 
 		public List<String> getSlaveArgs() {

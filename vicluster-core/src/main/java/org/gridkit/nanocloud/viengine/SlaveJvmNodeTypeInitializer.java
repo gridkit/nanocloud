@@ -44,6 +44,7 @@ public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
 
         configurePragmas(config);
         configureClasspathSubphase(config);
+        configureAgentSubphase(config);
         configureHostControlConsoleSubphase(config);
         configureDefaultJavaExec(config);
         configureRemoteSession(config);
@@ -78,6 +79,12 @@ public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
         addPostPhase(config, "init", "classpath");
         require(config, "init-classpath", Pragma.RUNTIME_CLASSPATH, "Classpath configuration required");
         action(config, "init-classpath", "collect-classpath", ClasspathConfigurator.INSTANCE);
+    }
+
+    protected void configureAgentSubphase(PragmaWriter config) {
+        addPostPhase(config, "init", "agents");
+        require(config, "init-agents", Pragma.RUNTIME_AGENTS, "Agents configuration required");
+        action(config, "init-agents", "collect-agents", AgentConfigurator.INSTANCE);
     }
 
     protected void configureDefaultJavaExec(PragmaWriter config) {

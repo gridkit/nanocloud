@@ -41,12 +41,8 @@ import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViSpiConfig;
-import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.*;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
-import org.gridkit.vicluster.telecontrol.ClasspathUtils;
-import org.gridkit.vicluster.telecontrol.FileBlob;
-import org.gridkit.vicluster.telecontrol.ManagedProcess;
-import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.StreamCopyService.Link;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
 import org.gridkit.zeroio.LookbackOutputStream;
@@ -103,6 +99,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
         List<String> commands = new ArrayList<String>();
         commands.add(javaCmd);
         commands.addAll(slaveArgs);
+
+		if (config.getAgentEntries() != null) {
+			for (AgentEntry agentEntry : config.getAgentEntries()) {
+				final String agentPath = console.cacheFile(agentEntry);
+				final String options = agentEntry.getOptions();
+				commands.add("-javaagent:" + agentPath + (options == null ? "" : "=" + options));
+			}
+		}
+
         commands.add("-jar");
         commands.add(bootstraper);
         
@@ -139,10 +144,19 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		
 		String javaCmd = ctx.getJvmExecCmd();
 		String bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
-		
+
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
 		commands.addAll(slaveArgs);
+
+		if (ctx.getSlaveAgents() != null) {
+			for (AgentEntry agentEntry : ctx.getSlaveAgents()) {
+				final String agentPath = console.cacheFile(agentEntry);
+				final String options = agentEntry.getOptions();
+				commands.add("-javaagent:" + agentPath + (options == null ? "" : "=" + options));
+			}
+		}
+
 		commands.add("-jar");
 		commands.add(bootstraper);
 		

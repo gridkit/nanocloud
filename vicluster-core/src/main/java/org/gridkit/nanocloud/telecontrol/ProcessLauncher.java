@@ -3,6 +3,7 @@ package org.gridkit.nanocloud.telecontrol;
 import java.util.List;
 import java.util.Map;
 
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
@@ -25,6 +26,8 @@ public interface ProcessLauncher {
         public List<String> getSlaveArgs();
 
         public List<ClasspathEntry> getSlaveClasspath();
+
+        public List<AgentEntry> getAgentEntries();
         
     }
 
