@@ -25,7 +25,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.Attributes;
@@ -71,9 +72,8 @@ public class ClasspathUtils {
 		return null;
 	}
 	
-	@SuppressWarnings("resource")
     public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
-		List<URL> result = new ArrayList<URL>();
+		Set<URL> result = new LinkedHashSet<URL>();
 		while(true) {
 			for(URL url: classLoader.getURLs()) {
 				addEntriesFromManifest(result, url);
@@ -89,10 +89,14 @@ public class ClasspathUtils {
 				break;
 			}
 		}
-		return result;
+		return new ArrayList<URL>(result);
 	}
 	
-	private static void addEntriesFromManifest(List<URL> list, URL url) {
+	private static void addEntriesFromManifest(Set<URL> list, URL url) {
+	    if (list.contains(url)) {
+	        // avoid duplicates in list
+	        return;
+	    }
 		// TODO eliminate manifest only classpaths
 		try {
 			InputStream is;
@@ -151,7 +155,6 @@ public class ClasspathUtils {
 		return jarFile;
 	}
 
-	// unused
 	public static byte[] createBootstrapperJar(Manifest manifest, Class<?> bootstrapper) throws IOException {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
 		String path = bootstrapper.getName().replace('.', '/') + ".class";

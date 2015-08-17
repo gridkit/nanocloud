@@ -1017,7 +1017,8 @@ public class Isolate {
 		}
 	}
 	
-	private int removeAppContexts() {
+	@SuppressWarnings("restriction")
+    private int removeAppContexts() {
 		int n = 0;
 		Set<sun.awt.AppContext> contexts = sun.awt.AppContext.getAppContexts();
 		Iterator<sun.awt.AppContext> it = contexts.iterator();
