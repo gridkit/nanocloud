@@ -49,6 +49,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.runners.JUnit4;
 
 public abstract class ViNodeFeatureTest {
 
@@ -380,6 +381,26 @@ public abstract class ViNodeFeatureTest {
         catch(Error e) {
             assertThat(e).isInstanceOf(NoClassDefFoundError.class);
         }
+	}
+
+	public void test_handle_NoDefClassFound(){
+		ViNode node = testNode();
+
+		node.x(CLASSPATH).inheritClasspath(false);
+
+		try {
+			node.exec(new Runnable() {
+				Assert anAssert = new Assert(){}; // NoClassDefFoundError during deserialization
+
+				@Override
+				public void run() {
+				}
+			});
+			Assert.fail("Exception is expected");
+		}
+		catch(Error e) {
+			assertThat(e).isInstanceOf(NoClassDefFoundError.class);
+		}
 	}
 
 	public void test_inherit_cp_true() throws IOException, URISyntaxException {

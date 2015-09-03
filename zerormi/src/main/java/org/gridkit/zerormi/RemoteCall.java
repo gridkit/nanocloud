@@ -15,6 +15,9 @@
  */
 package org.gridkit.zerormi;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -28,26 +31,31 @@ public class RemoteCall implements RemoteMessage, Serializable {
 	/**
 	 * Instance will receive the call
 	 */
-	RemoteInstance remoteInstance;
+	private RemoteInstance remoteInstance;
 	
 	/**
 	 * Method's name
 	 * TODO normal method signature
 	 */
-	RemoteMethodSignature method;
+	private RemoteMethodSignature method;
 	
 	/**
 	 * Method's arguments
 	 */
-	Object[] args;
+	private ObjectOrException<Object[]> args;
+
+	/**
+	 * If exception was thrown while trying to deserialize arguments
+	 */
+	private Throwable exceptionWhileReadArgs = null;
 	
 	/**
 	 * The id is a number unique in client and server to identify the call
 	 */
-	Long callId;
+	private Long callId;
 
-	public Object[] getArgs() {
-		return args;
+	public Object[] getArgs() throws Throwable {
+		return args.getObject();
 	}
 
 	public Long getCallId() {
@@ -65,7 +73,7 @@ public class RemoteCall implements RemoteMessage, Serializable {
 	public RemoteCall(RemoteInstance remoteInstance, RemoteMethodSignature method, Object[] args, Long callId) {
 		this.remoteInstance = remoteInstance;
 		this.method = method;
-		this.args = args;
+		this.args = new ObjectOrException<Object[]>(args);;
 		this.callId = callId;
 	}
 
