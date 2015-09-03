@@ -71,7 +71,7 @@ public class RmiGateway {
 	
 	private StreamErrorHandler streamErrorHandler = new StreamErrorHandler() {
 		@Override
-		public void streamError(DuplexStream socket, Object stream, Exception error) {
+		public void streamError(DuplexStream socket, Object stream, Throwable error) {
 			shutdown();
 		}
 
@@ -278,7 +278,7 @@ public class RmiGateway {
 					}
 				}
 			}
-			catch(Exception e) {
+			catch(Throwable e) {
 				if (IOHelper.isSocketTerminationException(e)) {
 					logVerbose.log("RMI stream, socket has been discontinued [" + socket + "] - " + e.toString());
 				}
@@ -307,7 +307,7 @@ public class RmiGateway {
 		try {
 			this.socket = socket;
 			
-			out = new RmiObjectOutputStream(socket.getOutput());
+			out = new RmiObjectOutputStream(name, channel, socket.getOutput());
 			
 			CounterAgent localAgent = new LocalAgent();			
 			channel.exportObject(CounterAgent.class, localAgent);
@@ -318,7 +318,7 @@ public class RmiGateway {
 			}
 	
 			// important create out stream first!
-			in = new RmiObjectInputStream(socket.getInput());
+			in = new RmiObjectInputStream(name, channel, socket.getInput());
 			remote = (CounterAgent) in.readObject();
 			
 			readerThread = new SocketReader();
@@ -361,17 +361,29 @@ public class RmiGateway {
 		}
 	}
 
-	private class RmiObjectInputStream extends ObjectInputStream {
-		
-		public RmiObjectInputStream(InputStream in) throws IOException {
+	public static class RmiObjectInputStream extends ObjectInputStream {
+
+		private final RmiChannel channel;
+		private final String name;
+
+		public RmiObjectInputStream(String name, RmiChannel channel, InputStream in) throws IOException {
 			super(in);
+			this.channel = channel;
+			this.name = name;
 			enableResolveObject(true);
 		}
 
 		@Override
 		protected Object resolveObject(Object obj) throws IOException {
-			Object r = channel.streamResolveObject(obj);
-			return r;
+			return channel.streamResolveObject(obj);
+		}
+
+		public RmiChannel getChannel() {
+			return channel;
+		}
+
+		public String getName() {
+			return name;
 		}
 
 		@Override
@@ -380,11 +392,24 @@ public class RmiGateway {
 		}
 	}
 
-	private class RmiObjectOutputStream extends ObjectOutputStream {
+	public static class RmiObjectOutputStream extends ObjectOutputStream {
 
-		public RmiObjectOutputStream(OutputStream in) throws IOException {
+		private final String name;
+		private final RmiChannel channel;
+
+		public RmiObjectOutputStream(String name, RmiChannel channel, OutputStream in) throws IOException {
 			super(in);
+			this.name = name;
+			this.channel = channel;
 			enableReplaceObject(true);
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public RmiChannel getChannel() {
+			return channel;
 		}
 
 		@Override
@@ -420,7 +445,7 @@ public class RmiGateway {
 	
 	public interface StreamErrorHandler {
 		
-		public void streamError(DuplexStream socket, Object stream, Exception error);
+		public void streamError(DuplexStream socket, Object stream, Throwable error);
 		
 		public void streamClosed(DuplexStream socket, Object stream);
 		

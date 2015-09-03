@@ -90,33 +90,33 @@ public class RmiChannel1 implements RmiChannel {
         bean2name.put(obj, name);
     }
 
-    public void handleMessage(RemoteMessage message) {
+    public void handleMessage(final RemoteMessage message) {
         if (message instanceof RemoteCall) {
-
-            final RemoteCall remoteCall = (RemoteCall) message;
-            if (remoteCall.getArgs() != null) {
-                for (int n = 0; n < remoteCall.getArgs().length; n++) {
-                    Object arg = remoteCall.getArgs()[n];
-                    if (arg instanceof RemoteInstance) {
-                        RemoteInstance remoteInstance = (RemoteInstance) arg;
-                        remoteCall.getArgs()[n] = getProxyFromRemoteInstance(remoteInstance);
-                    }
-                }
-            }
 
             Runnable runnable = new Runnable() {
                 public void run() {
+                    final RemoteCall remoteCall = (RemoteCall) message;
                     String threadName = Thread.currentThread().getName();
                     Thread.currentThread().setName("RemoteCall: " + remoteCall.toString());
 
                     try {
                         RemoteReturn remoteReturn;
                         try {
+
+                            if (remoteCall.getArgs() != null) {
+                                for (int n = 0; n < remoteCall.getArgs().length; n++) {
+                                    Object arg = remoteCall.getArgs()[n];
+                                    if (arg instanceof RemoteInstance) {
+                                        RemoteInstance remoteInstance = (RemoteInstance) arg;
+                                        remoteCall.getArgs()[n] = getProxyFromRemoteInstance(remoteInstance);
+                                    }
+                                }
+                            }
+
                             remoteReturn = delegateCall(remoteCall);
-                        } catch (Exception e) {
+                        } catch (Throwable e) {
                             e.printStackTrace();
-                            RmiChannel1.this.close();
-                            return;
+                            remoteReturn = new RemoteReturn(true, e, remoteCall.getCallId());
                         }
                         try {
                             sendMessage(remoteReturn);
@@ -202,7 +202,7 @@ public class RmiChannel1 implements RmiChannel {
         } catch (InvocationTargetException e) {
             System.err.println("Call[" + remoteCall + "] exception " + e.getCause().toString());
             remoteReturn = new RemoteReturn(true, e.getCause(), callId);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             remoteReturn = new RemoteReturn(true, new RemoteException("Invocation failed", e), callId);
         }
 
@@ -247,7 +247,7 @@ public class RmiChannel1 implements RmiChannel {
             sendMessage(remoteCall);
         }
         catch (IOException e) {
-            remoteReturnWaiters.remove(future.remoteCall.callId);
+            remoteReturnWaiters.remove(future.remoteCall.getCallId());
             future.setErrorIfWaiting(e);
         }
     	
@@ -260,7 +260,7 @@ public class RmiChannel1 implements RmiChannel {
         if (terminated) {
             throw new IllegalStateException("Connection closed");
         }
-        remoteReturnWaiters.put(future.remoteCall.callId, ctx);
+        remoteReturnWaiters.put(future.remoteCall.getCallId(), ctx);
 	}
 
     @Override
@@ -306,7 +306,7 @@ public class RmiChannel1 implements RmiChannel {
 
         RemoteReturn ret = context.result;
 
-        if (ret.throwing) {
+        if (ret.isThrowing()) {
             throw decorateException(method, modifyStackTrace(method, (Throwable) ret.getRet()));
         }
 
@@ -573,10 +573,18 @@ public class RmiChannel1 implements RmiChannel {
             }
             else {
                 if (ret.isThrowing()) {
-                    future.setError((Throwable) ret.ret);
+                    try {
+                        future.setError((Throwable) ret.getRet());
+                    } catch (Throwable throwable) {
+                        future.setError(throwable);
+                    }
                 }
                 else {
-                    future.setData(ret.ret);
+                    try {
+                        future.setData(ret.getRet());
+                    } catch (Throwable throwable) {
+                        future.setError(throwable);
+                    }
                 }
             }
         }

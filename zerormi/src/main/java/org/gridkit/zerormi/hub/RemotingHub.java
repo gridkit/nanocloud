@@ -205,7 +205,7 @@ public class RemotingHub implements MasterHub {
 		private DuplexStream stream;
 
 		@Override
-		public synchronized void streamError(DuplexStream socket, Object stream, Exception error) {
+		public synchronized void streamError(DuplexStream socket, Object stream, Throwable error) {
 			gateway.disconnect();
 			this.stream = null;
 			listener.interrupted(socket);

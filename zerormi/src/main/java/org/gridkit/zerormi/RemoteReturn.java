@@ -26,24 +26,24 @@ public class RemoteReturn implements RemoteMessage {
 	/**
 	 * The return is a throwable to be thrown?
 	 */
-	boolean throwing;
+	private boolean throwing;
 	
 	/**
 	 * Returning object
 	 */
-	Object ret;
+	private ObjectOrException<Object> ret;
 	
 	/**
 	 * Call id which generated this return
 	 */
-	long callId;
+	private long callId;
 
 	public long getCallId() {
 		return callId;
 	}
 
-	public Object getRet() {
-		return ret;
+	public Object getRet() throws Throwable {
+		return ret.getObject();
 	}
 
 	public boolean isThrowing() {
@@ -52,7 +52,7 @@ public class RemoteReturn implements RemoteMessage {
 
 	public RemoteReturn(boolean throwing, Object ret, long callId) {
 		this.throwing = throwing;
-		this.ret = ret;
+		this.ret = new ObjectOrException<Object>(ret);
 		this.callId = callId;
 	}
 }

@@ -21,7 +21,7 @@ import java.net.SocketException;
 
 class IOHelper {
 	
-	public static boolean isSocketTerminationException(Exception e) {
+	public static boolean isSocketTerminationException(Throwable e) {
 		if (e instanceof EOFException) {
 			return true;
 		}

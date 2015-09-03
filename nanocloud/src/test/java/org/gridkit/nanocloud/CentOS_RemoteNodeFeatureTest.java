@@ -102,6 +102,12 @@ public class CentOS_RemoteNodeFeatureTest extends ViNodeFeatureTest {
 
     @Test
     @Override
+    public void test_handle_NoDefClassFound(){
+        super.test_handle_NoDefClassFound();
+    }
+
+    @Test
+    @Override
     public void test_inherit_cp_true() throws IOException, URISyntaxException {
         super.test_inherit_cp_true();
     }
