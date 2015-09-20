@@ -46,4 +46,16 @@ class IOHelper {
 		return false;
 	}
 
+	private static char[] HEX = "0123456789ABCDEF".toCharArray(); 
+	
+	public static String toHexString(byte[] data, int offs, int len) {
+	    char[] c = new char[3 * len];
+	    for(int i = 0; i != len; ++i) {
+	        c[3 * i] = HEX[0xF & (data[offs + i] >> 4)];
+	        c[3 * i + 1] = HEX[0xF & (data[offs + i])];
+	        c[3 * i + 2] = ' ';
+	    }
+	    return new String(c, 0, c.length - 1);
+	}
+	
 }

@@ -100,7 +100,7 @@ public class RemotingHubTest {
 		
 		remoteExecutor2 = hub.getExecutionService(uid2);
 		
-		latch.await(5000, TimeUnit.MILLISECONDS);		
+		latch.await(5000000, TimeUnit.MILLISECONDS);		
 	}
 
 	protected ServerSocket openServerSocket() {

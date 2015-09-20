@@ -17,6 +17,7 @@ package org.gridkit.zerormi;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.NotSerializableException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
@@ -24,15 +25,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.zerormi.DuplexStream;
-import org.gridkit.zerormi.NamedStreamPair;
-import org.gridkit.zerormi.RmiGateway;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -120,12 +119,17 @@ public class RmiChannelPipeTest {
 		}
 	}
 
+	public void ping() throws InterruptedException, ExecutionException {
+	    Future<String> task = left.getRemoteExecutorService().submit(new Echo<String>("ping"));
+	    Assert.assertEquals("ping", task.get());	    
+	}
+	
 	@Test
 	public void simple_test() throws InterruptedException, IOException, ExecutionException {
 		Future<String> task = left.getRemoteExecutorService().submit(new Echo<String>("abc"));
 		Assert.assertEquals("abc", task.get());
 	}
-
+	
 	@Test
 	public void verify_serialization() throws InterruptedException, IOException, ExecutionException {
 		SelfIdentity sid = new SelfIdentity();
@@ -133,17 +137,54 @@ public class RmiChannelPipeTest {
 		Assert.assertNotSame(sid, task.get());
 	}
 
-	@Test(expected=ExecutionException.class)
+	@Test
 	public void fail_on_non_serializable() throws InterruptedException, IOException, ExecutionException {
-		Future<String> task = left.getRemoteExecutorService().submit(new NotSerializable());
-		Assert.assertEquals("NotSerializable", task.get());
+        try {
+            Future<String> task = left.getRemoteExecutorService().submit(new NotSerializable());
+            task.get();
+            Assert.fail("Exception expected");
+        }
+        catch(ExecutionException e) {
+            Assert.assertTrue(e.getCause() instanceof RemoteException);
+            Assert.assertTrue(e.getCause().getCause() instanceof NotSerializableException);
+        }
+        ping();
 	}
 
-	@Test(expected=ExecutionException.class)
+	@Test
 	public void fail_on_non_serializable2() throws InterruptedException, IOException, ExecutionException {
-		Future<String> task = left.getRemoteExecutorService().submit(new SerializableAdapter<String>(new NotSerializable()));
-		Assert.assertEquals("NotSerializable", task.get());
+	    try {
+    		Future<String> task = left.getRemoteExecutorService().submit(new SerializableAdapter<String>(new NotSerializable()));
+    		task.get();
+    		Assert.fail("Exception expected");
+	    }
+	    catch(ExecutionException e) {
+	        Assert.assertTrue(e.getCause() instanceof RemoteException);
+	        Assert.assertTrue(e.getCause().getCause() instanceof NotSerializableException);
+	    }
+	    ping();
 	}
+
+	@Test
+	public void fail_on_non_serializable_return_value() throws InterruptedException, IOException, ExecutionException {
+	    try {
+	        Future<NotSerializable> task = left.getRemoteExecutorService().submit(new Callable<NotSerializable>() {
+                @Override
+                public NotSerializable call() throws Exception {
+                    return new NotSerializable();
+                }
+            });
+	        task.get();
+	        Assert.fail("Exception expected");
+	    }
+	    catch(ExecutionException e) {
+	        e.printStackTrace();
+	        Assert.assertTrue(e.getCause() instanceof RemoteException);
+	        Assert.assertTrue(e.getCause().getCause() instanceof NotSerializableException);
+	    }
+	    ping();
+	}
+	    
 	
 	@Test
 	public void verify_auto_export() throws InterruptedException, IOException, ExecutionException {

@@ -19,9 +19,7 @@ package org.gridkit.zerormi;
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public class RemoteReturn implements RemoteMessage {
-
-	private static final long serialVersionUID = 20090415L;
+class RemoteReturn implements RemoteMessage {
 
 	/**
 	 * The return is a throwable to be thrown?
@@ -38,7 +36,13 @@ public class RemoteReturn implements RemoteMessage {
 	 */
 	long callId;
 
-	public long getCallId() {
+	public RemoteReturn(long callId, boolean throwing, Object ret) {
+    	this.throwing = throwing;
+    	this.ret = ret;
+    	this.callId = callId;
+    }
+
+    public long getCallId() {
 		return callId;
 	}
 
@@ -48,11 +52,5 @@ public class RemoteReturn implements RemoteMessage {
 
 	public boolean isThrowing() {
 		return throwing;
-	}
-
-	public RemoteReturn(boolean throwing, Object ret, long callId) {
-		this.throwing = throwing;
-		this.ret = ret;
-		this.callId = callId;
 	}
 }

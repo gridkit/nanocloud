@@ -17,10 +17,17 @@ package org.gridkit.zerormi;
 
 
 /**
+ * This object is produced if deserialization of
+ * {@link RemoteCall} have failed.
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-class RemoteCall implements RemoteMessage {
+class InboundCallError implements RemoteMessage {
+
+    /**
+     * The id is a number unique in client and server to identify the call
+     */
+    transient long callId;
 
 	/**
 	 * Instance will receive the call
@@ -33,21 +40,17 @@ class RemoteCall implements RemoteMessage {
 	 */
 	RemoteMethodSignature method;
 	
-	/**
-	 * Method's arguments
-	 */
-	Object[] args;
+	Exception error;
 	
-	/**
-	 * The id is a number unique in client and server to identify the call
-	 */
-	transient long callId;
 
-	public Object[] getArgs() {
-		return args;
-	}
+	public InboundCallError(long callId, RemoteInstance remoteInstance, RemoteMethodSignature method, Exception error) {
+        this.callId = callId;
+    	this.remoteInstance = remoteInstance;
+    	this.method = method;
+    	this.error = error;
+    }
 
-	public long getCallId() {
+    public long getCallId() {
 		return callId;
 	}
 
@@ -59,11 +62,8 @@ class RemoteCall implements RemoteMessage {
 		return method;
 	}
 
-	public RemoteCall(long callId, RemoteInstance remoteInstance, RemoteMethodSignature method, Object[] args) {
-		this.remoteInstance = remoteInstance;
-		this.method = method;
-		this.args = args;
-		this.callId = callId;
+	public Exception getError() {
+	    return error;
 	}
 
 	@Override

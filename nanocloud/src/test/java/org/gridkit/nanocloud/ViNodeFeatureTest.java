@@ -31,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.jar.Attributes;
@@ -382,6 +383,82 @@ public abstract class ViNodeFeatureTest {
         }
 	}
 
+	public void test_handle_NoDefClassFound(){
+		ViNode node = testNode();
+
+		node.x(CLASSPATH).inheritClasspath(false);
+		
+		try {
+			node.exec(new Runnable() {
+				@SuppressWarnings("unused")
+                Assert anAssert = new Assert(){}; // NoClassDefFoundError during deserialization
+
+				@Override
+				public void run() {
+				}
+			});
+			Assert.fail("Exception is expected");
+		}
+		catch(Exception e) {
+			assertThat(e).isInstanceOf(RemoteException.class);
+			assertThat(e.getCause()).isInstanceOf(NoClassDefFoundError.class);
+		}
+		
+		// Verify that node is still live
+		node.exec(new Runnable() {
+            
+            @Override
+            public void run() {
+                System.out.println("ping");
+            }
+        });
+	}
+
+	public void test_handle_NoDefClassFound_on_return(){
+	    ViNode node = testNode();
+	    
+	    node.x(CLASSPATH).inheritClasspath(false);
+
+	    final Callable<Runnable> factory = new RemoteCallable<Runnable>() {
+
+            @Override
+            public Runnable call() throws Exception {
+                return new Runnable() {
+                    @SuppressWarnings("unused")
+                    Assert anAssert = new Assert(){}; // NoClassDefFoundError during deserialization
+
+                    @Override
+                    public void run() {
+                    }
+                };
+            }	        
+	    };
+	    
+	    try {
+	        node.exec(new Callable<Void>() {
+	            @Override
+	            public Void call() throws Exception {
+	                factory.call().run();
+	                return null;
+	            }
+	        });
+	        Assert.fail("Exception is expected");
+	    }
+	    catch(Exception e) {
+	        assertThat(e).isInstanceOf(RemoteException.class);
+	        assertThat(e.getCause()).isInstanceOf(NoClassDefFoundError.class);
+	    }
+	    
+	    // Verify that node is still live
+	    node.exec(new Runnable() {
+	        
+	        @Override
+	        public void run() {
+	            System.out.println("ping");
+	        }
+	    });
+	}
+
 	public void test_inherit_cp_true() throws IOException, URISyntaxException {
 
         ViNode node = testNode();
@@ -620,6 +697,10 @@ public abstract class ViNodeFeatureTest {
     public interface RemoteRunnable extends Runnable, Remote {
         
     }
+    
+    public interface RemoteCallable<T> extends Callable<T>, Remote {
+        
+    }
 
 	private File packAgent(Class<?> agentClass) throws Exception {
 		File agentJar = File.createTempFile("agent", ".jar");
@@ -669,5 +750,5 @@ public abstract class ViNodeFeatureTest {
 				}
 			}
 		}
-	}
+	}	
 }

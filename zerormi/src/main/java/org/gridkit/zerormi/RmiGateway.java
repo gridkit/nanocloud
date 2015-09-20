@@ -16,12 +16,15 @@
 package org.gridkit.zerormi;
 
 import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.StreamCorruptedException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Collections;
@@ -58,8 +61,8 @@ public class RmiGateway {
 	
 	private String name;
 	private DuplexStream socket;
-	private RmiObjectInputStream in;
-	private RmiObjectOutputStream out;
+	private InboundMessageStream in;
+	private OutboundMessageStream out;
 
 	private RemoteExecutionService service;
 	private CounterAgent remote;
@@ -134,7 +137,7 @@ public class RmiGateway {
 				readerThread = this.readerThread;
 				
 				try {
-					out.writeObject("close");
+					out.close();
 				}
 				catch(Exception e) {
 					// ignore
@@ -187,7 +190,7 @@ public class RmiGateway {
 		terminated = true;
 		
 		try {
-			out.writeObject("close");
+			out.close();
 		}
 		catch(Exception e) {
 			// ignore
@@ -242,13 +245,8 @@ public class RmiGateway {
 		// needed for Isolate shutdown support
 		@Override
 		public void close() {
-			try {
-				if (in != null) {
-					in.close();
-				}
-			}
-			catch (IOException e) {
-				// ignore
+			if (in != null) {
+				in.close();
 			}
 			try {
 				if (socket != null) {
@@ -263,18 +261,16 @@ public class RmiGateway {
 		@Override
 		public void run() {
 			
-			RmiObjectInputStream chin = in;
+			InboundMessageStream ims = in;
 			try {
 				while(true) {
-					Object message = chin.readObject();
-					if (message != null) {
-						if ("close".equals(message)) {
-							logInfo.log("RMI gateway [" + name + "], remote side has requested termination");
-							shutdown();
-						}
-						else {
-							channel.handleMessage((RemoteMessage) message);
-						}
+					RemoteMessage message = ims.readMessage();
+					if (message == null) {
+						logInfo.log("RMI gateway [" + name + "], remote side has requested termination");
+						shutdown();
+					}
+					else {
+						channel.handleMessage(message);
 					}
 				}
 			}
@@ -286,7 +282,7 @@ public class RmiGateway {
 					logCritical.log("RMI stream read exception [" + socket + "]", e);
 				}
 				DuplexStream socket = RmiGateway.this.socket;
-				InputStream in = RmiGateway.this.in;
+				InputStream in = RmiGateway.this.in.tstream;
 				readerThread = null;
 				logVerbose.log("disconnecting");
 				disconnect();
@@ -307,19 +303,15 @@ public class RmiGateway {
 		try {
 			this.socket = socket;
 			
-			out = new RmiObjectOutputStream(socket.getOutput());
+			out = new OutboundMessageStream(socket.getOutput());
 			
 			CounterAgent localAgent = new LocalAgent();			
 			channel.exportObject(CounterAgent.class, localAgent);
-			synchronized(out) {					
-				out.writeUnshared(localAgent);
-				out.reset();
-				out.flush();
-			}
+			out.writeHandShake(localAgent);
 	
 			// important create out stream first!
-			in = new RmiObjectInputStream(socket.getInput());
-			remote = (CounterAgent) in.readObject();
+			in = new InboundMessageStream(socket.getInput());
+			remote = (CounterAgent) in.readHandShake();
 			
 			readerThread = new SocketReader();
 			readerThread.setName("RMI-Receiver: " + socket);
@@ -327,19 +319,11 @@ public class RmiGateway {
 			connected = true;			
 			
 		} catch (Exception e) {
-			try {
-				if (in != null) {
-					in.close();
-				}
-			} catch (IOException e1) {
-				// ignore
+			if (in != null) {
+				in.close();
 			}
-			try {
-				if (out != null) {
-					out.close();
-				}
-			} catch (IOException e1) {
-				// ignore
+			if (out != null) {
+				out.close();
 			}
 			try {
 				if (this.socket != null) {
@@ -361,14 +345,307 @@ public class RmiGateway {
 		}
 	}
 
+	static long TAG_CALL = 1;
+	static long TAG_RETURN = 2;
+	static long TAG_THROW = 3;
+	static long TRAILER_SUCCESS = 10;
+	static long TRAILER_DISCARD = 20;
+	static long TRAILER_ERROR = 30;
+	
+	static byte[] canary = new byte[0];
+	
+	private class InboundMessageStream {
+	    
+	    byte[] callId = new byte[7];
+	    InputStream tstream;
+	    EnvelopInputStream estream; 
+	    DataInputStream dstream;
+	    RmiObjectInputStream ostream;
+	    
+	    public InboundMessageStream(InputStream stream) throws IOException {
+	        this.tstream = stream;
+	        this.estream = new EnvelopInputStream(tstream);
+	        this.dstream = new DataInputStream(estream);
+	        this.ostream = new RmiObjectInputStream(estream);
+	    }
+	    
+	    public void close() {
+            try {
+                tstream.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+
+	    public Object readHandShake() throws IOException, ClassNotFoundException {
+	        Object obj = ostream.readObject();
+	        ostream.readObject(); // null expected
+	        estream.nextMessage();
+	        return obj;
+	    }
+	    
+        public RemoteMessage readMessage() throws IOException {
+	        while(true) {
+    	        int tag = estream.read();
+    	        if (tag == -1) {
+    	            return null; // End of Stream
+    	        }
+    	        else if (tag == TRAILER_SUCCESS) {
+    	            // ignore
+    	            estream.nextMessage();
+    	            return readMessage();
+    	        }
+    	        else if (tag == TRAILER_DISCARD) {
+    	            // ignore
+    	            estream.nextMessage();
+    	            return readMessage();
+    	        }
+    	        else if (tag == TAG_CALL) {
+    	            long callId = readCallId();
+    	            RemoteMessage msg;
+    	            RemoteInstance ri = null;
+    	            RemoteMethodSignature m = null;
+    	            Object[] args = null;
+    	            try {
+                        ri = (RemoteInstance) ostream.readObject();
+                        m = (RemoteMethodSignature) ostream.readObject();
+                        args = (Object[]) ostream.readObject();
+                        ostream.readObject(); // null expected
+                        
+                        msg = new RemoteCall(callId, ri, m, args);
+                        estream.nextMessage();
+                    } catch (NoClassDefFoundError e) {
+                        recover();
+                        msg = processFollowUp(new InboundCallError(callId, ri, m, new RemoteException("Unparsable call", e)));
+                        if (msg == null) {
+                            continue;
+                        }
+                    } catch (Exception e) {
+        	            recover();
+                        msg = processFollowUp(new InboundCallError(callId, ri, m, new RemoteException("Unparsable call", e)));
+                        if (msg == null) {
+                            continue;
+                        }
+        	        }
+    	            return msg;
+    	        }
+    	        else if (tag == TAG_RETURN || tag == TAG_THROW) {
+                    long callId = readCallId();
+                    RemoteMessage msg;
+                    try {
+                        Object obj = ostream.readObject();
+                        ostream.readObject(); // null expected
+                        if (tag == TAG_RETURN) {
+                            msg = new RemoteReturn(callId, false, obj);
+                        }
+                        else {
+                            msg = new RemoteReturn(callId, true, obj);
+                        }
+                        estream.nextMessage();
+                    } catch (NoClassDefFoundError e) {
+                        recover();
+                        msg = new RemoteReturn(callId, true, new RemoteException("Unparsable result", e));
+                        msg = processFollowUp(msg);
+                        if (msg == null) {
+                            continue;
+                        }
+                    } catch (Exception e) {
+                        recover();
+                        msg = new RemoteReturn(callId, true, new RemoteException("Unparsable result", e));
+                        msg = processFollowUp(msg);
+                        if (msg == null) {
+                            continue;
+                        }
+                    }
+                    return msg;	            
+    	        }
+    	        else {
+    	            throw new IOException("Stream corrupted, unknown tag: " + tag);
+    	        }
+	        }
+	    }
+
+        private RemoteMessage processFollowUp(RemoteMessage lastError) throws IOException {
+            int tag = estream.read();
+            if (tag < 0) {
+                estream.nextMessage();               
+                return lastError;
+            }
+            else if (tag == TRAILER_SUCCESS) {
+                estream.nextMessage();               
+                return lastError;                
+            }
+            else if (tag == TRAILER_DISCARD) {
+                estream.nextMessage();               
+                return null;                
+            }
+            else if (tag == TRAILER_ERROR) {
+                RemoteMessage msg = lastError;
+                try {
+                    readCallId();
+                    Object error = ostream.readObject();
+                    ostream.readObject(); // null expected
+                    msg = new RemoteReturn(lastError.getCallId(), true, error);
+                    estream.nextMessage();
+                }
+                catch(NoClassDefFoundError e) {
+                    recover();
+                }
+                catch(Exception e) {
+                    recover();
+                }
+                return msg;
+            }
+            else {
+                throw new IOException("Stream corrupted, unknown tag: " + tag);
+            }
+        }
+
+        private void recover() throws IOException {
+            estream.skip(Long.MAX_VALUE);
+            estream.nextMessage();
+            ostream = new RmiObjectInputStream(estream);
+            
+        }
+
+        private long readCallId() throws IOException {
+            dstream.readFully(callId, 0, callId.length);
+            return ((long)(callId[0] & 255) << 48) +
+                    ((long)(callId[1] & 255) << 40) +
+                    ((long)(callId[2] & 255) << 32) +
+                    ((long)(callId[3] & 255) << 24) +
+                    ((callId[4] & 255) << 16) +
+                    ((callId[5] & 255) <<  8) +
+                    ((callId[6] & 255) <<  0);
+        }
+	}
+
+	private class OutboundMessageStream {
+
+        OutputStream tstream;
+        EnvelopOutputStream estream;
+        DataOutputStream dstream;
+        RmiObjectOutputStream ostream;
+        
+        public OutboundMessageStream(OutputStream stream) throws IOException {
+            this.tstream = stream;
+            this.estream = new EnvelopOutputStream(tstream);
+            this.dstream = new DataOutputStream(estream);
+            this.ostream = new RmiObjectOutputStream(estream);
+        }
+        
+        public void close() {
+            try {
+                tstream.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+
+        public void writeHandShake(Object object) throws IOException {
+            ostream.writeObject(object);
+            ostream.reset();
+            ostream.writeObject(null); // we need this to ensure reset is processed by read side
+            ostream.flush();
+            estream.closeMessage();
+        }
+        
+        public void writeMessage(RemoteCall call) throws IOException {
+//            System.out.println("[OUT:" + estream.hashCode() + "] remote call");
+            long id = call.getCallId();
+            id |= ((long)TAG_CALL) << 56;
+            dstream.writeLong(id);
+            try {
+                ostream.writeObject(call.getRemoteInstance());
+                ostream.writeObject(call.getMethod());
+                ostream.writeObject(call.getArgs());
+                ostream.reset();
+                ostream.writeObject(null);
+                ostream.flush();
+                // success
+                estream.closeMessage();
+                // writing empty trailer
+                dstream.writeLong(TRAILER_SUCCESS << 56);
+                estream.closeMessage();
+            }
+            catch(Exception e) {
+                recover();
+                discard();
+                throw new RecoverableSerializationException(e);
+            }
+        }
+
+        public void writeMessage(RemoteReturn result) throws IOException {
+//            System.out.println("[OUT:" + estream.hashCode() + "] remote return");
+            long id = result.getCallId();
+            if (result.isThrowing()) {
+                id |= ((long)TAG_THROW) << 56;
+            }
+            else {
+                id |= ((long)TAG_RETURN) << 56;
+            }
+            dstream.writeLong(id);
+            try {
+                ostream.writeObject(result.getRet());
+                ostream.reset();
+                ostream.writeObject(null);
+                ostream.flush();
+                // success
+                estream.closeMessage();
+                // writing empty trailer
+                dstream.writeLong(TRAILER_SUCCESS << 56);
+                estream.closeMessage();
+            }
+            catch(Exception e) {
+                recover();
+                followUp(result.callId, e);
+            }            
+        }
+        
+        private void followUp(long callId, Exception e) throws IOException {
+//            System.out.println("[OUT:" + estream.hashCode() + "] follow up");
+            long id = callId ;
+            id |= ((long)TRAILER_ERROR) << 56;
+            dstream.writeLong(id);
+            try {
+                ostream.writeObject(new RemoteException("Unwritable result", e));
+                ostream.reset();
+                ostream.writeObject(null);
+                ostream.flush();
+                // success
+                estream.closeMessage();
+            }
+            catch(Exception ee) {
+                recover();
+            }            
+        }
+
+        private void discard() throws IOException {
+//            System.out.println("[OUT:" + estream.hashCode() + "] discard");
+            dstream.writeLong((long)TRAILER_DISCARD << 56);
+            estream.closeMessage();
+        }
+
+        private void recover() throws IOException {
+            estream.closeMessage();
+            ostream = new RmiObjectOutputStream(estream);            
+        }	    
+	}
+	
 	private class RmiObjectInputStream extends ObjectInputStream {
 		
 		public RmiObjectInputStream(InputStream in) throws IOException {
 			super(in);
 			enableResolveObject(true);
 		}
-
+		
 		@Override
+        protected void readStreamHeader() throws IOException, StreamCorruptedException {
+		    // suppress stream header,
+		    // so stream can be reused until failure
+        }
+
+        @Override
 		protected Object resolveObject(Object obj) throws IOException {
 			Object r = channel.streamResolveObject(obj);
 			return r;
@@ -392,14 +669,24 @@ public class RmiGateway {
 			Object r = channel.streamReplaceObject(obj);
 			return r;
 		}
+
+        @Override
+        protected void writeStreamHeader() throws IOException {
+            // suppress stream header,
+            // so stream can be reused until failure
+        }
 	}
-	
+
 	private class MessageOut implements RmiChannel1.OutputChannel {
 		public void send(RemoteMessage message) throws IOException {
 			try {
 				synchronized(out) {
-					out.writeUnshared(message);
-					out.reset();
+				    if (message instanceof RemoteCall) {
+				        out.writeMessage((RemoteCall)message);
+				    }
+				    else {
+				        out.writeMessage((RemoteReturn)message);
+				    }
 				}
 			}
 			catch (NullPointerException e) {
@@ -410,7 +697,7 @@ public class RmiGateway {
 			}
 			catch (IOException e) {
 				DuplexStream socket = RmiGateway.this.socket;
-				OutputStream out = RmiGateway.this.out;			
+				OutputStream out = RmiGateway.this.out.tstream;			
 				disconnect();
 				streamErrorHandler.streamError(socket, out, e);
 				throw e;

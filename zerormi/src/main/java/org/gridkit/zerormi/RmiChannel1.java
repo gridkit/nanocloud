@@ -141,7 +141,23 @@ public class RmiChannel1 implements RmiChannel {
             }
             context.dispatch(remoteReturn);
             remoteReturnWaiters.remove(id);
-        } else {
+        } 
+        else if (message instanceof InboundCallError) {
+            InboundCallError error = (InboundCallError) message;
+            final RemoteReturn remoteReturn = new RemoteReturn(error.getCallId(), true, error.error);
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        sendMessage(remoteReturn);
+                    } catch (IOException e) {
+                        RmiChannel1.this.close();
+                    }
+                }
+            };
+            callDispatcher.execute(task);
+        }
+        else {
             throw new RuntimeException("Unknown RemoteMessage type. " + message); //$NON-NLS-1$
         }
     }
@@ -159,7 +175,7 @@ public class RmiChannel1 implements RmiChannel {
         remoteInstanceProxys.clear();
         for (RemoteCallContext context : remoteReturnWaiters.values()) {
             if (context.result == null) {
-                context.result = new RemoteReturn(true, new RemoteException("Connection closed"), 0);
+                context.result = new RemoteReturn(0, true, new RemoteException("Connection closed"));
                 LockSupport.unpark(context.thread);
             }
         }
@@ -183,7 +199,7 @@ public class RmiChannel1 implements RmiChannel {
 		}
 
         if (implementator == null) {
-            return new RemoteReturn(true, new RemoteException(String.format("Instance %s has not been exported ", instance)), callId);
+            return new RemoteReturn(callId, true, new RemoteException(String.format("Instance %s has not been exported ", instance)));
         }
 
         RemoteReturn remoteReturn;
@@ -192,18 +208,18 @@ public class RmiChannel1 implements RmiChannel {
         try {
             implementationMethod = lookupMethod(methodId);
         } catch (Exception e) {
-            return new RemoteReturn(true, new RemoteException(String.format("Method %s cannot be resolved. %s", methodId, e.toString())), callId);
+            return new RemoteReturn(callId, true, new RemoteException(String.format("Method %s cannot be resolved. %s", methodId, e.toString())));
         }
 
         Object methodReturn = null;
         try {
             methodReturn = implementationMethod.invoke(implementator, remoteCall.getArgs());
-            remoteReturn = new RemoteReturn(false, methodReturn, callId);
+            remoteReturn = new RemoteReturn(callId, false, methodReturn);
         } catch (InvocationTargetException e) {
             System.err.println("Call[" + remoteCall + "] exception " + e.getCause().toString());
-            remoteReturn = new RemoteReturn(true, e.getCause(), callId);
+            remoteReturn = new RemoteReturn(callId, true, e.getCause());
         } catch (Exception e) {
-            remoteReturn = new RemoteReturn(true, new RemoteException("Invocation failed", e), callId);
+            remoteReturn = new RemoteReturn(callId, true, new RemoteException("Invocation failed", e));
         }
 
        return remoteReturn;
@@ -238,7 +254,7 @@ public class RmiChannel1 implements RmiChannel {
     
     protected RemoteCallFuture asyncInvoke(final RemoteInstance remoteInstance, final Method method, Object[] args) {
     	Long id = generateCallId();
-    	RemoteCall remoteCall = new RemoteCall(remoteInstance, new RemoteMethodSignature(method), args, id);
+    	RemoteCall remoteCall = new RemoteCall(id, remoteInstance, new RemoteMethodSignature(method), args);
     	RemoteCallFuture future = new RemoteCallFuture(remoteCall);
     	
     	registerCall(future);
@@ -268,7 +284,7 @@ public class RmiChannel1 implements RmiChannel {
 
         Long id = generateCallId();
         RemoteInstance remoteInstance = stub.getRemoteInstance();
-        RemoteMessage remoteCall = new RemoteCall(remoteInstance, new RemoteMethodSignature(method), args, id);
+        RemoteMessage remoteCall = new RemoteCall(id, remoteInstance, new RemoteMethodSignature(method), args);
 
         RemoteCallContext context = new RemoteCallContext(Thread.currentThread());
 
@@ -279,6 +295,9 @@ public class RmiChannel1 implements RmiChannel {
         remoteReturnWaiters.put(id, context);
         try {
             sendMessage(remoteCall);
+        }
+        catch (RecoverableSerializationException e) {
+            throw decorateException(method, new RemoteException("Remote call failed", e.getCause()));
         }
         catch (IOException e) {
             throw decorateException(method, new RemoteException("Call failed", e));

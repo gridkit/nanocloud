@@ -49,7 +49,8 @@ class Slf4JStream extends AbstractLogStream {
 		}
 	}
 
-	@Override
+    @Override
+    @SuppressWarnings("incomplete-switch")
 	protected void logInternal(String msg, Throwable e) {
 		if (e == null) {
 			switch(level) {

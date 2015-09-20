@@ -41,7 +41,8 @@ class ZLogToSlf4J implements ZLogger {
 		return new ZLogToSlf4J(ln);
 	}
 	
-	@Override
+    @Override
+    @SuppressWarnings("incomplete-switch")
 	public LogStream get(String path, LogLevel level) {
 		if (level == null) {
 			throw new NullPointerException("log level should not be null");
