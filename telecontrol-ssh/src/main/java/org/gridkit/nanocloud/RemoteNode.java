@@ -74,16 +74,17 @@ public class RemoteNode extends ViConfigurable.Delegate {
 	
 	public RemoteNode setRemoteNodeType() {
 		config.setProp(ViConf.NODE_TYPE, ViConf.NODE_TYPE__REMOTE);
+		// minimal setup for remoting
+		setRemoteJarCachePath("/tmp/.nanocloud");
+        config.setProp(SshSpiConf.REMOTE_FALLBACK_JVM_EXEC, "java");
+        config.setConfigElement("pragma-handler:ssh",  new ViEngine.InitTimePragmaHandler());		
 		return this;
 	}
 
 	public RemoteNode useSimpleRemoting() {
 		setRemoteNodeType();
-		setRemoteJarCachePath("/tmp/.nanocloud");
-		config.setProp(SshSpiConf.REMOTE_FALLBACK_JVM_EXEC, "java");
 		setHostsConfigFile("?~/ssh-credentials.prop");
 		setRemoteHost("~%s!(.*)");
-		config.setConfigElement("pragma-handler:ssh",  new ViEngine.InitTimePragmaHandler());
 
 		return this;
 	}

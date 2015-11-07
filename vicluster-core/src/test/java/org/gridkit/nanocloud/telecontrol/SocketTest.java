@@ -51,5 +51,4 @@ public class SocketTest {
 		
 		Assert.assertEquals("Hallo world!", result);
 	}
-	
 }
