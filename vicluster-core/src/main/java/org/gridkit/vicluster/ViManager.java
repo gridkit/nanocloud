@@ -35,6 +35,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -212,14 +213,23 @@ public class ViManager implements ViNodeSet {
 				}));
 			}
 		}
+
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
 		for(Future<?> e: epitaphs) {
 			try {
-				e.get();
+			    long to = deadline - System.nanoTime();
+			    if (to <= 0) {
+			        to = 1;
+			    }
+			    // safety time out, normally node should shutdown promptly
+				e.get(to, TimeUnit.NANOSECONDS);
 			} catch (InterruptedException ee) {
 				break;
 			} catch (ExecutionException ee) {
 				LOGGER.warn("Exception on shutdown", ee.getCause());
-			}
+			} catch (TimeoutException e1) {
+			    LOGGER.warn("Timeout on shutdown");
+            }
 		}
 		// there could be a race between initialization and shutdown here
 		asyncInitThreads.shutdown();
