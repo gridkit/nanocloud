@@ -31,12 +31,13 @@ import org.objectweb.asm.commons.JSRInlinerAdapter;
  * Instance of this class is capable of parsing Java byte code (class file), identify call sites and optionally inject call interception if mandated by {@link HookManager}.
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings("deprecation")
 public class ClassRewriter {
 
 	private static final String HOOK_PREFIX = "$$hook_";
 	private static final String STUB_PREFIX = "$$stub_";
 	
-	@SuppressWarnings("deprecation")
+//	@SuppressWarnings("deprecation")
 	private static final String CALL_SITE_HOOK_IMPL = ReflectionMethodCallSiteHookContext.class.getName().replace('.', '/');
 	private static final String HOOK_CONTEXT_TYPE = Interception.class.getName().replace('.', '/');
 	
@@ -240,7 +241,7 @@ public class ClassRewriter {
 			}
 		}
 		
-		private void load_param_as_object(int n) {
+        private void load_param_as_object(int n) {
 			String type = paramTypes[n];
 			if ("Z".equals(type)) {
 				mv.visitVarInsn(ILOAD, paramOffs[n]);

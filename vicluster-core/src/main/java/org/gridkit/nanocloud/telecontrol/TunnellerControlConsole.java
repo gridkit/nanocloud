@@ -9,8 +9,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
+import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.util.concurrent.SensibleTaskService;
@@ -25,15 +27,38 @@ public class TunnellerControlConsole implements HostControlConsole {
 
 	private TunnellerConnection connection;
 	private String cachePath;
+	/**
+	 * There are parallel file transfer limit on tunneler side, 
+	 * so this limit is set high to speed up checking already cached fiels.
+	 */
+	private Semaphore uploadLimit;  
 	
 	public TunnellerControlConsole(TunnellerConnection connection, String cachePath) {
+	    this(connection, cachePath, 128);
+	}
+
+	public TunnellerControlConsole(TunnellerConnection connection, String cachePath, int maxParallelUploads) {
 		this.connection = connection;
 		this.cachePath = cachePath;
+		this.uploadLimit = new Semaphore(maxParallelUploads);
 	}
 
 	protected FutureEx<String> pushFile(final FileBlob blob, final TaskService taskService) {
 		final FutureBox<String> remotePath = new FutureBox<String>();
+		// free semaphore as soon as operation is completed/aborted
+		remotePath.addListener(new Box<String>() {
+            @Override
+            public void setData(String data) {
+                uploadLimit.release();
+            }
+
+            @Override
+            public void setError(Throwable e) {
+                uploadLimit.release();
+            }
+        });
 		try {
+		    uploadLimit.acquire();
 			connection.pushFile(cachePath + "/" + blob.getContentHash() + "/" + blob.getFileName(), new FileHandler() {
 				
 				@Override
@@ -43,11 +68,13 @@ public class TunnellerControlConsole implements HostControlConsole {
 				
 				@Override
 				public void confirmed(String path, long size) {
+				    System.out.println("Confirmed: " + path);
 					remotePath.setData(path);				
 				}
 				
 				@Override
 				public void accepted(final OutputStream out) {
+				    System.out.println("Accepted");
 					taskService.schedule(new TaskService.Task() {
 						
 						@Override
@@ -68,15 +95,15 @@ public class TunnellerControlConsole implements HostControlConsole {
 						@Override
 						public void canceled() {
 							remotePath.setErrorIfWaiting(new RejectedExecutionException());
-							
 						}
 					});
-							
 				}
 			});
 		} catch (IOException e) {
 			remotePath.setError(e);
-		}
+		} catch (InterruptedException e) {
+		    return FutureBox.errorFuture(e);
+        }
 		return remotePath;
 	}
 

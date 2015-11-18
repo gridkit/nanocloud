@@ -229,6 +229,7 @@ class TunnellerIO {
 		
 		long fileId;
 		String path;
+		transient String targetPath; // used in queue on tunneler side
 		long inId;
 		
 		public void read(DataInputStream dis) throws IOException {

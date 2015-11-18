@@ -35,7 +35,8 @@ import java.util.List;
  */
 class StreamHelper {
 	
-	public static byte[] readFile(File file) {
+	@SuppressWarnings("resource")
+    public static byte[] readFile(File file) {
 		try {
 			if (file.length() > 1 << 30) {
 				throw new ArrayIndexOutOfBoundsException("File is too big");
@@ -46,6 +47,11 @@ class StreamHelper {
 			while(n < data.length) {
 				int m = fis.read(data, n, data.length - n);
 				if (m < 0) {
+				    try {
+                        fis.close();
+                    } catch (IOException e) {
+                        // ignore
+                    }
 					throw new RuntimeException("Cannot read file: " + file.getCanonicalPath());
 				}
 				n += m;

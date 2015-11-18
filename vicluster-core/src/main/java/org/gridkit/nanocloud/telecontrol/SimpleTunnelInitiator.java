@@ -200,7 +200,8 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 	}
 	
 	
-	private String getJavaVersion(HostControlConsole console) {
+	@SuppressWarnings("resource")
+    private String getJavaVersion(HostControlConsole console) {
 		try {
 			final FutureBox<Void> done = new FutureBox<Void>();
 			final ByteArrayOutputStream stdOut = new ByteArrayOutputStream();

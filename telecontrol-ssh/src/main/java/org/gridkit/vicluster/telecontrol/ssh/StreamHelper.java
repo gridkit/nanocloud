@@ -35,13 +35,14 @@ import java.util.List;
  */
 class StreamHelper {
 	
+    @SuppressWarnings("resource")
 	public static byte[] readFile(File file) {
 		try {
 			if (file.length() > 1 << 30) {
 				throw new ArrayIndexOutOfBoundsException("File is too big");
 			}
 			byte[] data = new byte[(int)file.length()];
-			FileInputStream fis = new FileInputStream(file);
+            FileInputStream fis = new FileInputStream(file);
 			int n = 0;
 			while(n < data.length) {
 				int m = fis.read(data, n, data.length - n);

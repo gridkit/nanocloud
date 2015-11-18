@@ -109,7 +109,8 @@ public class ConsoleOutputSupport implements PragmaHandler {
 			setSilentShutdown(engine, wc, getSilentShutdown(engine));
 			cms = new ConsoleMultiplexorStream(new OutputStream[2]);
 			ManagedProcess mp = engine.getConfig().getManagedProcess();
-			WrapperPrintStream ws = new WrapperPrintStream(getEchoPrefix(engine), "out".equals(stream) ? System.out : System.err, true);
+			@SuppressWarnings("resource")
+            WrapperPrintStream ws = new WrapperPrintStream(getEchoPrefix(engine), "out".equals(stream) ? System.out : System.err, true);
 			ws.silence = !getEchoEnabled(engine, stream);
 			cms.outs[0] = ws;
 			check(mp);

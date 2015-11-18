@@ -1,5 +1,6 @@
 package org.gridkit.nanocloud.telecontrol;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -28,9 +29,26 @@ public class TunnelerControlConsoleTest extends LocalControlConsoleTest {
 		};
 		tunnellerThread.start();
 		TunnellerConnection conn = new TunnellerConnection("Test", ob.getInputStream(), ib.getOutputStream(), System.out, 10, TimeUnit.SECONDS);
+		
+		rmrf(new File("target/.tunneler"));
 		console = new TunnellerControlConsole(conn, "target/.tunneler");
 	}
 
+	private static void rmrf(File file) {
+	    if (file.isFile()) {
+	        file.delete();
+	    }
+	    else if (file.isDirectory()) {
+	        File[] c = file.listFiles();
+	        if (c != null) {
+	            for(File f: c) {
+	                rmrf(f);
+	            }
+	        }
+	        file.delete();
+	    }
+	}
+	
 	@After
 	public void destroyConsole() {
 		tunnellerThread.interrupt();

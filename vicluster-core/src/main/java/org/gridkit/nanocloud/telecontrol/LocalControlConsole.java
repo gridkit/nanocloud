@@ -200,6 +200,10 @@ public class LocalControlConsole implements HostControlConsole {
 			d.destroy();
 		}		
 	}
+	
+	public File getCacheDir() {
+	    return cacheDir;
+	}
 
 	private class SockerAcceptor implements Runnable, Destroyable {
 		

@@ -28,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -35,7 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Tunneller extends TunnellerIO {
 	
-	public static void main(String[] args) throws IOException  {
+	private static final byte[] EMPTY_BUFFER = new byte[0];
+
+    public static void main(String[] args) throws IOException  {
 		// This should warm up JDK IO classes
 		// without this I was observing mysterious JVM hands with WinXP + 1.6u27
 		File.createTempFile("this_file_is_used_to_warm_up_IO_classes", "", null).delete();
@@ -54,6 +57,10 @@ public class Tunneller extends TunnellerIO {
 
 	private Map<Long, ProcessHandler> processes = new ConcurrentHashMap<Long, ProcessHandler>();
 	private NavigableMap<Long, ServerSocket> sockets = new TreeMap<Long, ServerSocket>();
+	
+	private int maxParallelFileReceptions = 4;
+	private int activeFileReceptions = 0;
+	private List<FilePushCmd> pendingFiles = new ArrayList<TunnellerIO.FilePushCmd>();
 	
 	public Tunneller() {
 		super("", System.out);
@@ -183,17 +190,17 @@ public class Tunneller extends TunnellerIO {
 				}
 			}
 			else {
-				FileWriter writer = new FileWriter(cmd.fileId, path);
-				Channel soIn = new Channel(cmd.inId, Direction.INBOUND, 16 << 10); 
-				addChannel(soIn);
-				writer.in = soIn.inbound;
-				writer.start();			
+			    cmd.targetPath = path;
+				scheduleFileReception(cmd);
+				return;
 			}
 		}
 		catch(IOException e) {
 			error = e.toString();
 		}
 		
+		// send complete or error
+		// accept is send once quote for transfer is available
 		sendFileResponse(cmd.fileId, path, size, error);
 	}
 	
@@ -219,6 +226,47 @@ public class Tunneller extends TunnellerIO {
 		new SocketHandler(serverSocket, cmdId, inbound, outbound).start();		
 	}
 
+    private synchronized void scheduleFileReception(FilePushCmd cmd) throws IOException {
+        if (activeFileReceptions < maxParallelFileReceptions) {
+            startFileReception(cmd);
+        }
+        else {
+            pendingFiles.add(cmd);
+        }
+    }
+    
+    private synchronized void startFileReception(FilePushCmd cmd) {
+        try {
+            FileWriter writer = new FileWriter(cmd.fileId, cmd.targetPath);
+            Channel soIn = new Channel(cmd.inId, Direction.INBOUND, 16 << 10); 
+            addChannel(soIn);
+            writer.in = soIn.inbound;
+            writer.start();
+            ++activeFileReceptions;
+            sendFileResponse(cmd.fileId, cmd.targetPath, -1, "");
+        } catch (IOException e) {
+            sendFileResponse(cmd.fileId, cmd.targetPath, -1, e.toString());
+        }        
+    }
+
+    private synchronized void completeFileReception(long fileId, String path, long size, String error) {
+        --activeFileReceptions;
+        sendFileResponse(fileId, path, size, error);
+        processPendingReceptions();
+    }
+
+    private synchronized void processPendingReceptions() {
+        while(activeFileReceptions < maxParallelFileReceptions) {
+            if (pendingFiles.isEmpty()) {
+                break;
+            }
+            else {
+                FilePushCmd cmd = pendingFiles.remove(0);
+                startFileReception(cmd);
+            }
+        }
+    }
+	
 	synchronized void sendStarted(long procId) {
 		try {
 			StartedCmd cmd = new StartedCmd();
@@ -302,7 +350,7 @@ public class Tunneller extends TunnellerIO {
 		}
 	}
 	
-	boolean pump(String diag, InputStream is, OutputStream os) {
+	boolean pump(String diag, byte[] buffer, InputStream is, OutputStream os) {
 		try {
 			if (eof(is)) {
 				if (diag != null) {
@@ -320,9 +368,8 @@ public class Tunneller extends TunnellerIO {
 			if (n == 0) {
 				return false; 
 			}
-			byte[] buf = new byte[n];
-			n = is.read(buf);
-			os.write(buf, 0, n);
+			n = is.read(buffer);
+			os.write(buffer, 0, n);
 			if (diag != null) {
 				diagOut.println("Pump [" + diag + "]: " + n + " bytes");
 			}
@@ -335,7 +382,7 @@ public class Tunneller extends TunnellerIO {
 	
 	boolean eof(InputStream is) {
 		try {
-			return is.read(new byte[0]) < 0;
+			return is.read(EMPTY_BUFFER) < 0;
 		} catch (IOException e) {
 			return true;
 		}
@@ -387,14 +434,16 @@ public class Tunneller extends TunnellerIO {
 		
 		@Override
 		public void run() {
+		    // reuse data copy buffer
+		    byte[] buffer = new byte[4 << 10];
 			try {
 				String dStdIn = traceProcIO ? "stdIn@" + procId : null;
 				String dStdOut = traceProcIO ? "stdOut@" + procId : null;
 				String dStdErr = traceProcIO ? "stdErr@" + procId : null;
 				while(true) {
-					if (	pump(dStdIn, stdIn, proc.getOutputStream()) 
-						  | pump(dStdOut, proc.getInputStream(), stdOut)
-						  | pump(dStdErr, proc.getErrorStream(), stdErr)) {
+					if (	pump(dStdIn, buffer, stdIn, proc.getOutputStream()) 
+						  | pump(dStdOut, buffer, proc.getInputStream(), stdOut)
+						  | pump(dStdErr, buffer, proc.getErrorStream(), stdErr)) {
 						// TODO separate IN/OUT
 						try {
 							proc.getOutputStream().flush();
@@ -413,8 +462,8 @@ public class Tunneller extends TunnellerIO {
 							} catch (InterruptedException e) {
 								// ignore
 							}; 
-							pump(dStdOut, proc.getInputStream(), stdOut);
-							pump(dStdErr, proc.getErrorStream(), stdErr);
+							pump(dStdOut, buffer, proc.getInputStream(), stdOut);
+							pump(dStdErr, buffer, proc.getErrorStream(), stdErr);
 							
 							close(stdOut);
 							close(stdErr);
@@ -463,6 +512,7 @@ public class Tunneller extends TunnellerIO {
 		
 		@Override
 		public void run() {
+		    byte[] buffer = new byte[4 << 10];
 			InputStream soIn;
 			OutputStream soOut;
 			String rhost;
@@ -487,8 +537,8 @@ public class Tunneller extends TunnellerIO {
 
 			
 			while(sock.isConnected() && !sock.isClosed()) {
-				if (	pump(null, soIn, os)
-					 || pump(null, is, soOut)) {
+				if (	pump(null, buffer, soIn, os)
+					 || pump(null, buffer, is, soOut)) {
 					writePending();
 					continue;
 				}
@@ -552,14 +602,14 @@ public class Tunneller extends TunnellerIO {
 			} catch (IOException e) {
 				close(fos);
 				close(in);
-				sendFileResponse(fileId, targetFile.getPath(), -1, e.toString());
+				completeFileReception(fileId, targetFile.getPath(), -1, e.toString());
 				return;
 			}
 			if (targetFile.exists() && !targetFile.isDirectory()) {
-				sendFileResponse(fileId, targetFile.getPath(), targetFile.length(), "");
+			    completeFileReception(fileId, targetFile.getPath(), targetFile.length(), "");
 			}
 			else {
-				sendFileResponse(fileId, targetFile.getPath(), -1, "Failed to rename target file");
+			    completeFileReception(fileId, targetFile.getPath(), -1, "Failed to rename target file");
 			}
 		}				
 	}	

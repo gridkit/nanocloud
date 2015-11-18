@@ -13,7 +13,9 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -38,13 +40,30 @@ public class LocalControlConsoleTest  {
 	
 	@Before
 	public void initConsole() throws IOException, InterruptedException, TimeoutException {
-		console = new LocalControlConsole();
+	    console = new LocalControlConsole("{tmp}/nanocloud-console-test");
 	}
 
 	@After
 	public void destroyConsole() {
 		console.terminate();
+		if (console instanceof LocalControlConsole)
+		rmrf(((LocalControlConsole) console).getCacheDir());
 	}
+
+    private static void rmrf(File file) {
+        if (file.isFile()) {
+            file.delete();
+        }
+        else if (file.isDirectory()) {
+            File[] c = file.listFiles();
+            if (c != null) {
+                for(File f: c) {
+                    rmrf(f);
+                }
+            }
+            file.delete();
+        }
+    }
 	
 	@Test
 	public void verify_classpath_replication() {
@@ -81,6 +100,108 @@ public class LocalControlConsoleTest  {
 		assertEquals("File size ", 0, new File(path3).length());
 	}
 
+	private byte[] generateData(int seed) {
+	    byte[] data = new byte[(30 << 10) + seed];
+	    Random rnd = new Random(seed);
+	    rnd.nextBytes(data);
+	    return data;
+	}
+	
+    @Test
+    public void verify_bulk_file_transfer() {
+        
+        int fileCount = 20;
+        List<String> paths = new ArrayList<String>();
+        
+        for(int i = 0; i != fileCount; ++i) {
+            ByteBlob blob = new ByteBlob("test-blob-" + i, generateData(i));
+            paths.add(console.cacheFile(blob));
+        }
+        
+        for(int i = 0; i != fileCount; ++i) {
+            String path = paths.get(i);
+            assertTrue(new File(path).isFile());
+            assertEquals("File size ", (30 << 10) + i, new File(path).length());
+        }
+    }	
+
+    @Test
+    public void verify_bulk_file_transfer_parallel() {
+        
+        int fileCount = 100;
+        List<ByteBlob> blobs = new ArrayList<ByteBlob>();
+        List<String> paths = new ArrayList<String>();
+        
+        for(int i = 0; i != fileCount; ++i) {
+            ByteBlob blob = new ByteBlob("test-blob-" + i, generateData(i));
+            blobs.add(blob);
+        }
+        
+        paths.addAll(console.cacheFiles(blobs));
+        
+        for(int i = 0; i != fileCount; ++i) {
+            String path = paths.get(i);
+            assertTrue(new File(path).isFile());
+            assertEquals("File size ", (30 << 10) + i, new File(path).length());
+        }
+    }   
+    
+    @Test
+    public void verify_bulk_transfer_half_cached() {
+        
+        int fileCount = 20;
+        List<String> paths = new ArrayList<String>();
+        
+        for(int i = 0; i != fileCount; ++i) {
+            if (i % 2 == 0) {
+                ByteBlob blob = new ByteBlob("test-blob-" + i, generateData(i));
+                console.cacheFile(blob);
+            }
+        }
+
+        for(int i = 0; i != fileCount; ++i) {
+            ByteBlob blob = new ByteBlob("test-blob-" + i, generateData(i));
+            paths.add(console.cacheFile(blob));
+        }
+        
+        for(int i = 0; i != fileCount; ++i) {
+            String path = paths.get(i);
+            assertTrue(new File(path).isFile());
+            assertEquals("File size ", (30 << 10) + i, new File(path).length());
+        }
+    }	
+
+    @Test
+    public void verify_bulk_transfer_half_cached_parallel() {
+        
+        int fileCount = 100;
+        List<ByteBlob> blobs = new ArrayList<ByteBlob>();
+        List<String> paths = new ArrayList<String>();
+        
+        for(int i = 0; i != fileCount; ++i) {
+            if (i % 2 == 0) {
+                ByteBlob blob = new ByteBlob("test-blob-" + i, generateData(i));
+                blobs.add(blob);
+            }
+        }
+
+        console.cacheFiles(blobs);
+        blobs.clear();
+        
+        for(int i = 0; i != fileCount; ++i) {
+            ByteBlob blob = new ByteBlob("test-blob-" + i, generateData(i));
+            blobs.add(blob);
+        }
+        
+        paths.addAll(console.cacheFiles(blobs));
+        
+        for(int i = 0; i != fileCount; ++i) {
+            String path = paths.get(i);
+            assertTrue(new File(path).isFile());
+            assertEquals("File size ", (30 << 10) + i, new File(path).length());
+        }
+    }   
+    
 	@Test
 	public void verify_content_addressing() {
 		

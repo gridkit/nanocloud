@@ -73,6 +73,7 @@ public class ClasspathUtilsTest {
         addURL.setAccessible(true);
         addURL.invoke(classLoader, testJar.toURI().toURL());
 
+        @SuppressWarnings("resource")
         ApplicationContext context = new AnnotationConfigApplicationContext(packageName);
         final Map<String, Object> beansWithAnnotation = context.getBeansWithAnnotation(Component.class);
         assertEquals(1, beansWithAnnotation.size());
