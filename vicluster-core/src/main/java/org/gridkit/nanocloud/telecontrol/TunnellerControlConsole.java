@@ -68,13 +68,11 @@ public class TunnellerControlConsole implements HostControlConsole {
 				
 				@Override
 				public void confirmed(String path, long size) {
-				    System.out.println("Confirmed: " + path);
 					remotePath.setData(path);				
 				}
 				
 				@Override
 				public void accepted(final OutputStream out) {
-				    System.out.println("Accepted");
 					taskService.schedule(new TaskService.Task() {
 						
 						@Override
