@@ -57,8 +57,9 @@ class ZLogToSlf4J implements ZLogger {
 		case DEBUG: return new Slf4JStream(l, Level.DEBUG);
 		case VERBOSE: return new Slf4JStream(l, Level.DEBUG);
 		case INFO: return new Slf4JStream(l, Level.INFO);
+		case WARN: return new Slf4JStream(l, Level.WARN);
 		case CRITICAL: return new Slf4JStream(l, Level.ERROR);
-		case FATAL: return new Slf4JStream(l, Level.ERROR);		
+		case FATAL: return new Slf4JStream(l, Level.ERROR);
 		}
 		return new PrintStreamLogStream("", null, false);
 	}

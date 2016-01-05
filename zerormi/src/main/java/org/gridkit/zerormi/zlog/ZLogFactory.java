@@ -34,7 +34,7 @@ public class ZLogFactory {
 
 	public static ZLogger getSlf4JRootLogger() {
 		try {
-			return (ZLogger) Class.forName("org.gridkit.zerormi.zlog.Slf4JLogger").newInstance();
+			return (ZLogger) Class.forName("org.gridkit.zerormi.zlog.ZLogToSlf4J").newInstance();
 		}
 		catch(ClassNotFoundException e) {
 			return getStdErrRootLogger();
