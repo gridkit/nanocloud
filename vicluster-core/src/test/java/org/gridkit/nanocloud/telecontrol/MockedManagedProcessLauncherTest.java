@@ -82,7 +82,8 @@ public class MockedManagedProcessLauncherTest {
 		config.put(ViConf.SPI_SLAVE_CLASSPATH, Classpath.getClasspath(Thread.currentThread().getContextClassLoader()));
 		config.put(ViConf.SPI_STREAM_COPY_SERVICE, BackgroundStreamDumper.SINGLETON);
 		
-		ProcessSporeLauncher launcher = new ProcessSporeLauncher();
+		@SuppressWarnings("deprecation")
+        ProcessSporeLauncher launcher = new ProcessSporeLauncher();
 		ManagedProcess slave = launcher.createProcess(config);
 		
 		slave.bindStdOut(System.out);

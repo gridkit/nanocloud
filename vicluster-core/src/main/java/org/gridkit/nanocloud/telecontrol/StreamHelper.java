@@ -35,7 +35,6 @@ import java.util.List;
  */
 class StreamHelper {
 	
-	@SuppressWarnings("resource")
     public static byte[] readFile(File file) {
 		try {
 			if (file.length() > 1 << 30) {

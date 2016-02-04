@@ -72,7 +72,6 @@ public class Shell {
 		}
 
         @Override
-        @SuppressWarnings("resource")
 		public Prompt out(StringBuilder stdOut) {
 			this.stdOut = stdOut == null ? System.out : new StringBufferOutputStream(stdOut);
 			return this;
