@@ -46,12 +46,14 @@ class ViEngineNode implements ViNode {
 	public ViEngineNode(ViEngine engine) {
 		this.engine = engine;
 		
+		if (engine.isTerminated()) {
+		    throw new RuntimeException("Cannot create node, managed process has been terminated");
+		}
 		ManagedProcess mp = engine.getConfig().getManagedProcess();
 		if (mp == null) {
 			throw new RuntimeException("Cannot create node, ManagedProcess is not available");
 		}
-		execProxy = new ExecProxy(mp.getExecutionService());
-		
+		execProxy = new ExecProxy(mp.getExecutionService());		
 	}
 
 	@Override

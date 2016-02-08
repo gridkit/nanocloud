@@ -31,6 +31,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	
 	public static final String NODE_NAME = "node:name";
 	public static final String NODE_TYPE = "node:type";
+	public static final String NODE_TRACE = "node:config-trace";
+	public static final String NODE_DUMP_ON_FAILURE = "node:config-dump-on-failure";
 	
 	public static final String NODE_TYPE__LOCAL = ViProps.NODE_TYPE_LOCAL;
 	public static final String NODE_TYPE__ISOLATE = ViProps.NODE_TYPE_ISOLATE;
@@ -113,6 +115,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_LOGGER = "#spi:logger";
 	public static final String SPI_SLAVE_AGENT = "#spi:jvm-agent";
 
+	public static final String ERROR_NODE_BOOTSTRAP = "#error:bootstrap";
+	
 	public static final String ACTIVATED_REMOTE_HOOK = "#remote-hook:";
 	public static final String ACTIVATED_HOST_HOOK = "#host-hook:";
 	public static final String ACTIVATED_FINALIZER_HOOK = "#finally:";
@@ -183,6 +187,18 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@PropName(NODE_TYPE)
 	public String getNodeType() {
 		return readString();
+	}	
+
+	@Override
+	@PropName(NODE_TRACE)
+	public boolean isConfigTraceEnbaled() {
+	    return readBoolean();
+	}	
+
+	@Override
+	@PropName(NODE_DUMP_ON_FAILURE)
+	public boolean shouldDumpConfigOnFailure() {
+	    return readBoolean();
 	}	
 	
 	@PropName(RUNTIME_PID)

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -33,6 +34,9 @@ import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface ViEngine {
 
@@ -65,6 +69,8 @@ public interface ViEngine {
 		private Map<String, Object> coreConfig;
 		private ViConf spiConfig;
 		private Map<String, PragmaHandler> pragmaHandlers = new HashMap<String, PragmaHandler>();
+		
+		private LogStream trace;
 		
 		private boolean started;
 		
@@ -128,6 +134,20 @@ public interface ViEngine {
 			});
 			coreConfig.put(ViConf.SPI_EPITAPH, epitaph);
 			
+			if ("true".equalsIgnoreCase(String.valueOf(coreConfig.get(ViConf.NODE_TRACE)))) {
+			    trace = new InfoStream(LoggerFactory.getLogger(ViEngine.class));
+			}
+
+			if (trace != null) {
+			    trace.log("ViNode initial config");
+	            for(String key: coreConfig.keySet()) {
+	                dumpKeyState(trace, key);
+	            }
+			}
+		
+			if (trace != null) {
+			    trace.log("ViNode phase PRE_INIT");
+			}
 			processPhase(Phase.PRE_INIT);
 			
 			pragmaHandlers.put("pragma-handler", new InitTimePragmaHandler());
@@ -149,12 +169,18 @@ public interface ViEngine {
 			else {
 				try {
 					applyPragmas(new LinkedHashMap<String, Object>(coreConfig), true);
+ 
+		            if (trace != null) {
+ 		                trace.log("ViNode phase POST_INIT");
+		            }
+
 					processPhase(Phase.POST_INIT);
 					executeHooks(coreConfig, false, false);
 					started = true;
 				}
 				catch(Exception e) {
-					e.printStackTrace();
+				    epitaph.setErrorIfWaiting(e);
+				    coreConfig.put(ViConf.ERROR_NODE_BOOTSTRAP, e);
 					started = true;
 					killpending = true;
 				}
@@ -260,14 +286,19 @@ public interface ViEngine {
 			if (!terminated) {
 				processPhase(Phase.POST_SHUTDOWN);
 				executeHooks(coreConfig, true, true);
-				epitaph.setData(null);
+				try {
+				    epitaph.setData(null);
+				}
+				catch(IllegalStateException e) {
+				    // ignore;
+				}
 				terminated = true;
 			}
 		}
 
 		private void processPhase(Phase phase) {
 			ViEngineGame game = new ViEngineGame(coreConfig);
-			game.play(phase);
+			game.play(phase, trace);
 			coreConfig = game.exportConfig();
 			spiConfig = new ViConf(coreConfig);
 		}
@@ -465,7 +496,7 @@ public interface ViEngine {
 		@Deprecated
 		public static void processStartupHooks(ViNodeConfig conf, AdvancedExecutor exec) {
 			ViEngineGame game = new ViEngineGame(conf.config);
-			game.play(Phase.POST_INIT);
+			game.play(Phase.POST_INIT, null);
 			Map<String, Object> result = game.exportConfig();
 			processHooks(result, exec, false);
 		}
@@ -473,7 +504,7 @@ public interface ViEngine {
 		@Deprecated
 		public static void processShutdownHooks(ViNodeConfig conf, AdvancedExecutor exec) {
 			ViEngineGame game = new ViEngineGame(conf.config);
-			game.play(Phase.PRE_SHUTDOWN);
+			game.play(Phase.PRE_SHUTDOWN, null);
 			Map<String, Object> result = game.exportConfig();
 			processHooks(result, exec, true);
 		}
@@ -510,8 +541,45 @@ public interface ViEngine {
 						}
 					}
 				}
-			}			
+			}	
 		}
+
+		public void dumpCore(LogStream logger) {
+		    logger.log("ViNode state dump");
+		    for(String key: coreConfig.keySet()) {
+		        dumpKeyState(logger, key);
+		    }
+		}
+
+        protected void dumpKeyState(LogStream logger, String key) {
+            Object v = coreConfig.get(key);
+            if (v instanceof String) {
+                logger.log("  " + key + ": " + v);
+            }
+            else if (v instanceof Future<?>) {
+                Future<?> f = (Future<?>) v;
+                if (f.isDone()) {
+                    try {
+                        logger.log("  " + key + " -> " + f.get());
+                    }
+                    catch(ExecutionException e) {
+                        logger.log("  " + key + " [!] " + e.getCause());
+                    }
+                    catch(Exception e) {
+                        logger.log("  " + key + " [!] " + e);
+                    }
+                }
+                else {
+                    logger.log("  " + key + " - (unset future)");
+                }
+            }
+            else if (v == null) {
+                logger.log("  " + key + " - null");
+            }
+            else {
+                logger.log("  " + key + ": " + v);
+            }
+        }
 		
 		private class PragmaInvokationContext implements WritableSpiConfig {
 
@@ -564,18 +632,32 @@ public interface ViEngine {
 			return getConfig().getNodeType();
 		}
 
-		public CloudContext getCloudContext() {
+		@Override
+        public boolean isConfigTraceEnbaled() {
+            return getConfig().isConfigTraceEnbaled();
+        }
+
+        @Override
+        public boolean shouldDumpConfigOnFailure() {
+            return getConfig().shouldDumpConfigOnFailure();
+        }
+
+        @Override
+        public CloudContext getCloudContext() {
 			return getConfig().getCloudContext();
 		}
 
+        @Override
 		public HostControlConsole getControlConsole() {
 			return getConfig().getControlConsole();
 		}
 
+        @Override
 		public ProcessLauncher getProcessLauncher() {
 			return getConfig().getProcessLauncher();
 		}
 
+        @Override
 		public RemoteExecutionSession getRemotingSession() {
 			return getConfig().getRemotingSession();
 		}
@@ -590,18 +672,22 @@ public interface ViEngine {
 			return getConfig().isInstrumentationWrapperApplied();
 		}
 
+		@Override
 		public String getJvmExecCmd() {
 			return getConfig().getJvmExecCmd();
 		}
 
+		@Override
 		public List<ClasspathEntry> getSlaveClasspath() {
 			return getConfig().getSlaveClasspath();
 		}
 
+		@Override
 		public List<AgentEntry> getSlaveAgents() {
 			return getConfig().getSlaveAgents();
 		}
 
+		@Override
 		public List<String> getSlaveArgs() {
 			return getConfig().getSlaveArgs();
 		}
@@ -616,14 +702,17 @@ public interface ViEngine {
 			return getConfig().getSlaveWorkDir();
 		}
 
+		@Override
 		public ManagedProcess getManagedProcess() {
 			return getConfig().getManagedProcess();
 		}
 
+		@Override
 		public NodeFactory getNodeFactory() {
 			return getConfig().getNodeFactory();
 		}
 
+		@Override
 		public ViNode getNodeInstance() {
 			return getConfig().getNodeInstance();
 		}
@@ -886,5 +975,39 @@ public interface ViEngine {
 		
 		protected abstract HostControlConsole getControlConsole();
 		
+	}
+	
+	static class InfoStream implements LogStream {
+	    
+	    private Logger logger;
+
+        public InfoStream(Logger logger) {
+            this.logger = logger;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return logger.isInfoEnabled();
+        }
+
+        @Override
+        public void log(String message) {
+            logger.info(message);            
+        }
+
+        @Override
+        public void log(Throwable e) {
+            logger.info(e.toString(), e);            
+        }
+
+        @Override
+        public void log(String message, Throwable e) {
+            logger.info(message, e);            
+        }
+
+        @Override
+        public void log(String format, Object... argument) {
+            logger.info(format, argument);            
+        }
 	}
 }

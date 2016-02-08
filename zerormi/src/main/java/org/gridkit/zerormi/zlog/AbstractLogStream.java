@@ -40,6 +40,14 @@ abstract class AbstractLogStream implements LogStream {
 	}
 
 	@Override
+	public void log(String message, Throwable e) {
+	    if (!isEnabled()) {
+	        return;
+	    }
+	    logInternal(message, e);
+	}
+
+	@Override
 	public void log(String format, Object... args) {
 		if (!isEnabled()) {
 			return;

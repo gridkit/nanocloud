@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gridkit.nanocloud.RemoteNode;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViEngine.Interceptor;
@@ -91,6 +92,20 @@ public class HostConfigurationInitializer implements Interceptor {
 					throw new RuntimeException(e);
 				}
 			}
+			if (game.get(RemoteNode.PASSWORD) != null) {
+			    ec.put(SPI_SSH_PASSWORD, game.get(RemoteNode.PASSWORD));
+			}
+			if (game.get(SshSpiConf.SSH_PASSWORD) != null) {
+			    ec.put(SPI_SSH_PASSWORD, game.get(SshSpiConf.SSH_PASSWORD));
+			}
+			
+			if (ec.get(SPI_SSH_TARGET_ACCOUNT) == null) {
+			    ec.put(SPI_SSH_TARGET_ACCOUNT, System.getProperty("user.name"));
+			}
+			if (ec.get(SPI_SSH_PASSWORD) == null && ec.get(SPI_SSH_PRIVATE_KEY_FILE) == null) {
+			    ec.put(SPI_SSH_PRIVATE_KEY_FILE, "~/.ssh/id_dsa|~/.ssh/id_rsa");
+			}
+			
 			for(String key: ec.keySet()) {
 				if (ec.get(key) != null) {
 					set(game, key, ec.get(key));

@@ -53,4 +53,8 @@ public interface ViSpiConfig {
 	public StreamCopyService getStreamCopyService();
 	
 	public <T> T get(String key);
+
+    boolean isConfigTraceEnbaled();
+
+    boolean shouldDumpConfigOnFailure();
 }

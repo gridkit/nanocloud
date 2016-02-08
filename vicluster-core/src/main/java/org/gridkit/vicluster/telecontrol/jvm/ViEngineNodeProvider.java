@@ -9,6 +9,9 @@ import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
+import org.gridkit.zerormi.zlog.LogStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ViEngineNodeProvider implements ViNodeProvider {
 
@@ -21,14 +24,23 @@ public class ViEngineNodeProvider implements ViNodeProvider {
 
 	@Override
 	public ViNode createNode(String name, ViNodeConfig config) {
-		Map<String, Object> engineConfig = config.getConfigMap();
-		engineConfig.put(ViConf.NODE_NAME, name);
-		engineConfig.put("vinode.name", name);
-		initConfigDefaults(engineConfig);
-		ViEngine.Core core = new ViEngine.Core();
-		core.ignite(engineConfig);
-		ViEngineNode node = new ViEngineNode(core);
-		return node;
+	    ViEngine.Core core = null;
+	    try {
+	        Map<String, Object> engineConfig = config.getConfigMap();
+    		engineConfig.put(ViConf.NODE_NAME, name);
+    		engineConfig.put("vinode.name", name);
+    		initConfigDefaults(engineConfig);
+            core = new ViEngine.Core();
+    		core.ignite(engineConfig);
+    		ViEngineNode node = new ViEngineNode(core);
+    		return node;
+	    }
+	    catch(Exception e) {
+            if ("true".equalsIgnoreCase(String.valueOf(config.get(ViConf.NODE_DUMP_ON_FAILURE)))) {
+                core.dumpCore(new WarnStream(LoggerFactory.getLogger(ViEngineNodeProvider.class)));
+            }
+	        throw Any.throwUnchecked(e);
+	    }
 	}
 
 	@Override
@@ -68,4 +80,38 @@ public class ViEngineNodeProvider implements ViNodeProvider {
 			super.runFinalizers();
 		}
 	}
+	
+    static class WarnStream implements LogStream {
+        
+        private Logger logger;
+        
+        public WarnStream(Logger logger) {
+            this.logger = logger;
+        }
+        
+        @Override
+        public boolean isEnabled() {
+            return logger.isWarnEnabled();
+        }
+        
+        @Override
+        public void log(String message) {
+            logger.warn(message);            
+        }
+        
+        @Override
+        public void log(Throwable e) {
+            logger.warn(e.toString(), e);            
+        }
+
+        @Override
+        public void log(String name, Throwable e) {
+            logger.warn(name, e);            
+        }
+        
+        @Override
+        public void log(String format, Object... argument) {
+            logger.warn(format, argument);            
+        }
+    }	
 }

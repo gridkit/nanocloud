@@ -22,6 +22,8 @@ public interface LogStream {
 	public void log(String message);
 
 	public void log(Throwable e);
+
+	public void log(String message, Throwable e);
 	
 	public void log(String format, Object... argument);
 }

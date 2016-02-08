@@ -19,72 +19,100 @@ import java.net.InetAddress;
 import java.util.concurrent.Callable;
 
 import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.RemoteNode;
 import org.gridkit.nanocloud.SimpleCloudFactory;
+import org.gridkit.vicluster.ViConf;
 import org.junit.Test;
 
 public class SimpleCloudCheck {
 
-	@Test
-	public void verify_cbox_cluster() {
-		Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
-		cloud.node("cbox1");
-		
-		cloud.node("**").exec(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("Hi!");
-				
-				Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
-				rcloud.node("localhost").exec(new Runnable() {
-					@Override
-					public void run() {
-						System.out.println("Hi!");
-					}
-				});
-			}
-		});
-	}
+    @Test
+    public void verify_cbox_cluster() {
+        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        cloud.node("cbox1");
 
-	@Test
-	public void verify_cbox_cluster2() throws InterruptedException {
-		Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
-		cloud.node("cbox1");
-		
-		cloud.node("**").exec(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("Hi!");
-				
-				Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
-				rcloud.node("cbox3").exec(new Runnable() {
-					@Override
-					public void run() {
-						System.out.println("Hi!");
-					}
-				});
-			}
-		});
-		
-		Thread.sleep(2000);
-	}
-	
-@Test
-public void remote_hallo_world() throws InterruptedException {
-	Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
-	cloud.node("cbox1");
-	
-	cloud.node("**").exec(new Callable<Void>() {
-		@Override
-		public Void call() throws Exception {
-			String localHost = InetAddress.getLocalHost().toString();
-			System.out.println("Hi! I'm running on " + localHost);
-			return null;
-		}
-	});
+        cloud.node("**").exec(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Hi!");
 
-	// Console output is transfered asynchronously, 
-	// so it is better to wait few seconds for it to arrive  
-	Thread.sleep(1000);
-}
-	
+                Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
+                rcloud.node("localhost").exec(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("Hi!");
+                    }
+                });
+            }
+        });
+    }
+
+    @Test
+    public void verify_cbox_cluster_on_cbox() throws InterruptedException {
+        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        cloud.node("cbox1");
+
+        cloud.node("**").exec(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Hi!");
+
+                Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
+                rcloud.node("cbox1").exec(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("Hi!");
+                    }
+                });
+            }
+        });
+
+        Thread.sleep(2000);
+    }
+
+    @Test
+    public void verify_cbox_cluster_on_cbox_with_cloud_factory() throws InterruptedException {
+        Cloud cloud = CloudFactory.createCloud();        
+        cloud.node("cbox1").x(RemoteNode.REMOTE).useSimpleRemoting();
+        
+        cloud.node("**").exec(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Hi!");
+                
+                Cloud rcloud = CloudFactory.createCloud();
+                rcloud.node("cbox1").setProp(ViConf.NODE_TRACE, "true");
+                rcloud.node("cbox1").x(RemoteNode.REMOTE).useSimpleRemoting();
+                rcloud.node("cbox1").exec(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("Hi!");
+                    }
+                });
+            }
+        });
+        
+        Thread.sleep(2000);
+    }    
+    
+    @Test
+    public void remote_hallo_world() throws InterruptedException {
+        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        cloud.node("cbox1");
+
+        cloud.node("**").exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                String localHost = InetAddress.getLocalHost().toString();
+                System.out.println("Hi! I'm running on " + localHost);
+                return null;
+            }
+        });
+
+        // Console output is transfered asynchronously,
+        // so it is better to wait few seconds for it to arrive
+        Thread.sleep(1000);
+    }
+
 }

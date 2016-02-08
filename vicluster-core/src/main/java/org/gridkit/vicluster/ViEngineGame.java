@@ -15,6 +15,7 @@ import org.gridkit.vicluster.ViEngine.Phase;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
 import org.gridkit.vicluster.ViEngine.Rerun;
 import org.gridkit.vicluster.ViEngine.SpiPropsWrapper;
+import org.gridkit.zerormi.zlog.LogStream;
 
 class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 
@@ -26,6 +27,8 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 	List<RerunContext> updateRerunQueue = new ArrayList<RerunContext>();
 	List<RerunContext> quorumRerunQueue = new ArrayList<RerunContext>();
 
+	LogStream trace;
+	
 	boolean dirty = false;
 	long stepsLeft;
 
@@ -40,13 +43,17 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 		return spiConf;
 	}
 
-	public void play(Phase phase) {
+	public void play(Phase phase, LogStream trace) {
+	    this.trace = trace;
 		while(true) {
 			String key = pickInterceptor();
 			if (key == null) {
 				break;
 			}
 			Interceptor interceptor = (Interceptor) config.get(key);
+			if (trace != null) {
+			    trace.log("Interceptor[" + key + "] " + interceptor);
+			}
 			interceptor.process(key, phase, this);
 		}
 		stepsLeft = 2 * executed.size() * executed.size();
@@ -56,6 +63,9 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 				if (!ctx.changes.isEmpty()) {
 					updateRerunQueue.remove(ctx);
 					incRunCount();
+		            if (trace != null) {
+		                trace.log("Rerun: " + ctx.closure);
+		            }
 					ctx.closure.rerun(this, ctx.changes);
 					continue quorum;
 				}
@@ -67,6 +77,9 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 				RerunContext ctx = it.next();
 				it.remove();
 				incRunCount();
+                if (trace != null) {
+                    trace.log("Rerun: " + ctx.closure);
+                }
 				ctx.closure.rerun(this, ctx.changes);
 				if (dirty) {
 					continue quorum;
@@ -74,6 +87,7 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 			}
 			break;
 		}
+		trace = null;
 	}
 	
 	private void incRunCount() {
@@ -216,6 +230,9 @@ class ViEngineGame extends SpiPropsWrapper implements QuorumGame {
 	private void broadcastChange(String propName, Object object) {
 		if (executed.contains(propName)) {
 			throw new IllegalStateException("Interceptor '" + propName + "' is already activated");
+		}
+		if (trace != null) {
+		    trace.log("  " + propName + " <- " + object);
 		}
 		dirty = true;
 		for (RerunContext ctx: updateRerunQueue) {

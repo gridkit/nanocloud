@@ -2,6 +2,7 @@ package org.gridkit.nanocloud;
 
 import static org.gridkit.nanocloud.RemoteNode.REMOTE;
 
+import org.gridkit.vicluster.ViConf;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,6 +34,7 @@ public class SshAuthenticationTest {
     public void verify_password_auth() {
         
         Cloud c = CloudFactory.createCloud();
+        c.node("**").setProp(ViConf.NODE_TRACE, "true");
         c.node("**").x(RemoteNode.REMOTE).setRemoteNodeType();
         c.node("**").setProp(RemoteNode.HOST, "cbox1");
         

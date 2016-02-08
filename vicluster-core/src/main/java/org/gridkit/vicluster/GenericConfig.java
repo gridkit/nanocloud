@@ -70,9 +70,12 @@ abstract class GenericConfig {
 		}
 		else {
 			if (defVal == null) {
-				return null;
-//				raiseMissingProp(propName);
-//				throw new Error("Unreachable");
+			    try {
+			        return parser.nullValue();
+			    }
+			    catch(NullPointerException e) {
+			        throw new IllegalArgumentException("Property is missing '" + propName + "'");
+			    }
 			}
 			else {
 				try {
@@ -190,7 +193,8 @@ abstract class GenericConfig {
 	}
 	
 	interface ValueParser<T> {
-		public T parse(String text);		
+		public T parse(String text);	
+		public T nullValue();
 	}
 	
 	private static class BooleanParser implements ValueParser<Boolean> {
@@ -198,6 +202,11 @@ abstract class GenericConfig {
 		public Boolean parse(String text) {
 			return Boolean.valueOf(text);
 		}
+
+        @Override
+        public Boolean nullValue() {
+            return Boolean.FALSE;
+        }
 	}
 
 	private static class IntegerParser implements ValueParser<Integer> {
@@ -205,6 +214,11 @@ abstract class GenericConfig {
 		public Integer parse(String text) {
 			return Integer.valueOf(text);
 		}
+
+        @Override
+        public Integer nullValue() {
+            throw new NullPointerException();
+        }
 	}
 
 	private static class LongParser implements ValueParser<Long> {
@@ -212,6 +226,11 @@ abstract class GenericConfig {
 		public Long parse(String text) {
 			return Long.valueOf(text);
 		}
+
+        @Override
+        public Long nullValue() {
+            throw new NullPointerException();
+        }
 	}
 
 	private static class StringParser implements ValueParser<String> {
@@ -219,6 +238,11 @@ abstract class GenericConfig {
 		public String parse(String text) {
 			return text;
 		}
+
+        @Override
+        public String nullValue() {
+            return null;
+        }
 	}
 
 	private static class TimeIntervalParser implements ValueParser<Long> {
@@ -226,6 +250,11 @@ abstract class GenericConfig {
 		public Long parse(String text) {
 			return toMillis(text);
 		}
+
+        @Override
+        public Long nullValue() {
+            throw new NullPointerException();
+        }
 	}
 	
 	private static final java.util.Map<String, TimeUnit> timeUnitAlias = new HashMap<String, TimeUnit>();

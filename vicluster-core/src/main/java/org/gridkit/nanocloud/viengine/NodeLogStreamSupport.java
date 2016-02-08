@@ -129,6 +129,10 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
             stream.log(e);
         }
 
+        public void log(String message, Throwable e) {
+            stream.log(message, e);
+        }
+
         public void log(String format, Object... argument) {
             stream.log(format, argument);
         }

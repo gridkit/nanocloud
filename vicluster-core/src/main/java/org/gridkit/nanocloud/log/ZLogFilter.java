@@ -212,6 +212,13 @@ public class ZLogFilter implements ConfigurableZLogger {
 		}
 
 		@Override
+		public void log(String message, Throwable e) {
+		    if (isEnabled()) {
+		        stream.log(message, e);
+		    }
+		}
+
+		@Override
 		public void log(String format, Object... argument) {
 			if (isEnabled()) {
 				stream.log(format, argument);
