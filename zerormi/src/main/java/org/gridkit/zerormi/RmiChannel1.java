@@ -175,8 +175,7 @@ public class RmiChannel1 implements RmiChannel {
         remoteInstanceProxys.clear();
         for (RemoteCallContext context : remoteReturnWaiters.values()) {
             if (context.result == null) {
-                context.result = new RemoteReturn(0, true, new RemoteException("Connection closed"));
-                LockSupport.unpark(context.thread);
+                context.dispatch(new RemoteReturn(0, true, new RemoteException("Connection closed")));
             }
         }
 
