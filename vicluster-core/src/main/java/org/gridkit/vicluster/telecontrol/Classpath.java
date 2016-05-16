@@ -35,6 +35,9 @@ import java.util.List;
 import java.util.WeakHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -261,7 +264,9 @@ public class Classpath {
 		private File file;
 		private boolean lazyJar;
 		private byte[] data;
-		
+		private Boolean isGridKitClasses;
+		private Boolean isTestClasses;
+
 		public URL getUrl() {
 			return url;
 		}
@@ -325,7 +330,49 @@ public class Classpath {
 		public String toString() {
 			return filename;
 		}
-	}	
+
+		public synchronized boolean isGridKitClasses() {
+			if (isGridKitClasses == null){
+				isGridKitClasses = isGridKitClassesImpl();
+			}
+			return isGridKitClasses;
+		}
+
+		public synchronized boolean isTestClasses() {
+			if (isTestClasses == null){
+				isTestClasses = isTestClassesImpl();
+			}
+			return isTestClasses;
+		}
+
+		private boolean isGridKitClassesImpl() {
+			try {
+				if (getLocalFile().isFile()) {
+					ZipFile zipFile = new ZipFile(getLocalFile());
+					final ZipEntry gridKitEntry = zipFile.getEntry("org/gridkit");
+					return gridKitEntry != null;
+				} else if (getLocalFile().isDirectory()) {
+					final File gridKitPackage = new File(new File(getLocalFile(), "org"), "gridkit");
+					return gridKitPackage.exists();
+				} else {
+					final ZipInputStream zipInputStream = new ZipInputStream(getContent());
+					ZipEntry entry;
+					while ((entry = zipInputStream.getNextEntry()) != null) {
+						if (entry.getName().startsWith("org/gridkit/")) {
+							return true;
+						}
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return false;
+		}
+
+		private boolean isTestClassesImpl(){
+			return getFileName().contains("test-classes");
+		}
+	}
 	
 	static class ByteBlob implements FileBlob {
 
