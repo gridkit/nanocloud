@@ -10,8 +10,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
@@ -191,7 +189,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
                 }else {
                     cp = new ArrayList<ClasspathEntry>();
                     for (ClasspathEntry classpathEntry : inheritedClasspath) {
-                        if (isGridKitClasses(classpathEntry) || isTestClasses(classpathEntry)){
+                        if (classpathEntry.isGridKitClasses() || classpathEntry.isTestClasses()){
                             cp.add(classpathEntry);
                         }
                     }
@@ -220,25 +218,6 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 				throw new RuntimeException(e);
 			}
 		}
-
-        private boolean isGridKitClasses(ClasspathEntry classpathEntry){
-            try {
-                final ZipInputStream zipInputStream = new ZipInputStream(classpathEntry.getContent());
-                ZipEntry entry;
-                while ((entry = zipInputStream.getNextEntry()) != null) {
-                    if (entry.getName().startsWith("org/gridkit/")) {
-                        return true;
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return false;
-        }
-
-        private boolean isTestClasses(ClasspathEntry classpathEntry){
-            return classpathEntry.getFileName().contains("test-classes");
-        }
 
         private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
 			ClasspathEntry entry = Classpath.getLocalEntry(path);
