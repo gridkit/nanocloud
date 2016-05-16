@@ -9,7 +9,6 @@ import java.rmi.RemoteException;
 
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.nanocloud.RemoteNode;
 import org.gridkit.vicluster.ViNode;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -49,6 +48,7 @@ public class TunnelerRecoveryTest {
     public static SimpleProxy proxy;
     public static Cloud cloud = CloudFactory.createCloud();
 
+    @SuppressWarnings("deprecation")
     public static void initHost() throws IOException { 
         proxy = new SimpleProxy(InetSocketAddress.createUnresolved("cbox1", 22));
         ViNode host = cloud.node("**");
@@ -61,8 +61,12 @@ public class TunnelerRecoveryTest {
 
     @AfterClass
     public static void dropCloud() {
-        cloud.shutdown();
-        proxy.shutdown();
+        if (cloud != null) {
+            cloud.shutdown();
+        }
+        if (proxy != null) {
+            proxy.shutdown();
+        }
     }
     
     @Test

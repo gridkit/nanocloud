@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
@@ -174,7 +175,9 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 	
 	public static class ClasspathReplicaBuilder extends IdempotentConfigBuilder<List<ClasspathEntry>> {
 
-		public ClasspathReplicaBuilder() {
+		private static final String IS_GRIDKIT_JAR = "isGridkitJar";
+
+        public ClasspathReplicaBuilder() {
 			super(ViConf.SPI_SLAVE_CLASSPATH);
 		}
 		
@@ -222,16 +225,46 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		}
 
         private boolean isGridKitClasses(ClasspathEntry classpathEntry){
+            Boolean cachedResult = classpathEntry.getMark(IS_GRIDKIT_JAR);
+            if (cachedResult != null) {
+                return cachedResult;
+            }
+            File file = classpathEntry.getLocalFile();
             try {
-                final ZipInputStream zipInputStream = new ZipInputStream(classpathEntry.getContent());
-                ZipEntry entry;
-                while ((entry = zipInputStream.getNextEntry()) != null) {
-                    if (entry.getName().startsWith("org/gridkit/")) {
-                        return true;
+                if (file == null) {
+                    boolean result = false;
+                    ZipInputStream zipInputStream = new ZipInputStream(classpathEntry.getContent());
+                    ZipEntry entry;
+                    while ((entry = zipInputStream.getNextEntry()) != null) {
+                        if (entry.getName().startsWith("org/gridkit/")) {
+                            result = true;
+                            break;
+                        }
                     }
+                    try {
+                        zipInputStream.close();
+                    }
+                    catch(IOException e) {
+                        // ignore;
+                    }
+                    classpathEntry.setMark(IS_GRIDKIT_JAR, result);
+                    return result;
+                }
+                else {
+                    boolean result = false;
+                    if (file.isFile()) {
+                        ZipFile zipFile = new ZipFile(file);
+                        ZipEntry gridKitEntry = zipFile.getEntry("org/gridkit");
+                        result =  gridKitEntry != null;
+                    } else if (file.isDirectory()) {
+                        File gridKitPackage = new File(new File(file, "org"), "gridkit");
+                        result = gridKitPackage.isDirectory();
+                    }
+                    classpathEntry.setMark(IS_GRIDKIT_JAR, result);
+                    return result;
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                // ignore
             }
             return false;
         }

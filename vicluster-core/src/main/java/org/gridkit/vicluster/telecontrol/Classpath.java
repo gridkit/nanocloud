@@ -31,7 +31,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -261,11 +263,34 @@ public class Classpath {
 		private File file;
 		private boolean lazyJar;
 		private byte[] data;
+		private Map<String, Object> marks;
+		
+		/**
+		 * {@link ClasspathEntry} is cached, so it make sense
+		 * to cache various features calculated based on entry
+		 * for performance reasons. 
+		 */
+		public synchronized void setMark(String key, Object value) {
+		    if (marks == null) {
+		        marks = new HashMap<String, Object>();
+		    }
+		    marks.put(key, value);
+		}
+		
+        /**
+         * {@link ClasspathEntry} is cached, so it make sense
+         * to cache various features calculated based on entry
+         * for performance reasons. 
+         */
+		@SuppressWarnings("unchecked")
+        public synchronized <T> T getMark(String key) {
+		    return (T) (marks == null ? null : marks.get(key));
+		}
 		
 		public URL getUrl() {
 			return url;
 		}
-		
+				
 		@Override
 		public File getLocalFile() {
 			return file;
@@ -325,8 +350,8 @@ public class Classpath {
 		public String toString() {
 			return filename;
 		}
-	}	
-	
+	}
+
 	static class ByteBlob implements FileBlob {
 
 		private String filename;
