@@ -6,6 +6,9 @@ import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.SPI_SSH_PRIVATE_K
 import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.SSH_PASSWORD;
 import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.SSH_PRIVATE_KEY_FILE;
 
+import java.util.List;
+import java.util.Map;
+
 import org.gridkit.internal.com.jcraft.jsch.JSchException;
 import org.gridkit.internal.com.jcraft.jsch.Session;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
@@ -17,6 +20,7 @@ import org.gridkit.vicluster.CloudContext.ServiceProvider;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
+import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SshHostControlConsole;
@@ -131,7 +135,9 @@ public class RemoteConsoleInitializer implements InductiveRule {
 
 		private ServiceKey<HostControlConsole> key;
 		private QuorumGame game;
+		private CloudContext cloudContext;
 		private HostControlConsole console;
+		private HostConsoleWrapper consoleWrapper = new HostConsoleWrapper(this);
 		
 		public TunnelInitializer(ServiceKey<HostControlConsole> key, QuorumGame game) {
 			this.key = key;
@@ -140,9 +146,20 @@ public class RemoteConsoleInitializer implements InductiveRule {
 
 		@Override
 		public HostControlConsole getService(CloudContext context) {
+		    if (console == null) {
+		        this.cloudContext = context;
+		        ensureConsole();
+		    }
+		    
+		    return consoleWrapper; 
+		}
+		
+        void ensureConsole() {
 			if (console != null) {
-				return console;
+				return;
 			}
+			
+			CloudContext context = cloudContext;
 			
 			String host = getHost(game);
 			String account = getAccount(game);
@@ -199,8 +216,91 @@ public class RemoteConsoleInitializer implements InductiveRule {
 			}
 
 			// TODO shutdown hook
-			
-			return console;
 		}
 	}
+	
+	private class HostConsoleWrapper implements HostControlConsole {
+	    
+	    TunnelInitializer initializer;
+	    
+	    public HostConsoleWrapper(TunnelInitializer initializer) {
+            this.initializer = initializer;
+        }
+	    
+        @Override
+        public String cacheFile(FileBlob blob) {
+            synchronized(initializer) {
+                initializer.ensureConsole();
+                try {
+                    return initializer.console.cacheFile(blob);
+                }
+                catch(Exception e) {
+                    initializer.console = null;
+                    throw throwAny(e);
+                }
+            }
+        }
+
+        @Override
+        public List<String> cacheFiles(List<? extends FileBlob> blobs) {
+            synchronized(initializer) {
+                initializer.ensureConsole();
+                try {
+                    return initializer.console.cacheFiles(blobs);
+                }
+                catch(Exception e) {
+                    initializer.console = null;
+                    throw throwAny(e);
+                }
+            }
+        }
+
+        @Override
+        public Destroyable openSocket(SocketHandler handler) {
+            synchronized(initializer) {
+                initializer.ensureConsole();
+                try {
+                    return initializer.console.openSocket(handler);
+                }
+                catch(Exception e) {
+                    initializer.console = null;
+                    throw throwAny(e);
+                }
+            }
+        }
+
+        @Override
+        public Destroyable startProcess(String workDir, String[] command, Map<String, String> env, ProcessHandler handler) {
+            synchronized(initializer) {
+                initializer.ensureConsole();
+                try {
+                    return initializer.console.startProcess(workDir, command, env, handler);
+                }
+                catch(Exception e) {
+                    initializer.console = null;
+                    throw throwAny(e);
+                }
+            }
+        }
+
+        @Override
+        public void terminate() {
+            synchronized(initializer) {
+                if (initializer.console != null) {
+                    initializer.console.terminate();
+                    initializer.console = null;
+                }
+            }
+        }
+        
+        private RuntimeException throwAny(Throwable e) {
+            RemoteConsoleInitializer.<RuntimeException>doThrow(e);
+            return null;
+        }
+	}
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> E doThrow(Throwable e) throws E {
+        throw (E)e;
+    }    
 }

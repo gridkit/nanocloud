@@ -149,7 +149,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 		String javaCmd = ctx.getJvmExecCmd();
 		String bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
-
+ 
 		List<String> commands = new ArrayList<String>();
 		commands.add(javaCmd);
 		commands.addAll(slaveArgs);

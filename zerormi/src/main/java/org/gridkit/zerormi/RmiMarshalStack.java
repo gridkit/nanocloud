@@ -35,7 +35,7 @@ class RmiMarshalStack implements RmiMarshaler {
 
 	@Override
 	public Object readResolve(Object obj) throws IOException {
-		for(int i = marshalers.length - 1; i >= 0; ++i) {
+		for(int i = marshalers.length - 1; i >= 0; --i) {
 			obj = marshalers[i].readResolve(obj);
 		}
 		return obj;
