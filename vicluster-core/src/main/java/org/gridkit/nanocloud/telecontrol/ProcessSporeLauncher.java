@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -151,7 +152,13 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		String bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
  
 		List<String> commands = new ArrayList<String>();
-		commands.add(javaCmd);
+		if (javaCmd.indexOf('|') >= 0) {
+		    // Pipe char can be used to tokenize command 
+		    commands.addAll(Arrays.asList(javaCmd.split("\\|")));
+		}
+		else {
+		    commands.add(javaCmd);
+		}
 		commands.addAll(slaveArgs);
 
 		if (ctx.getSlaveAgents() != null) {

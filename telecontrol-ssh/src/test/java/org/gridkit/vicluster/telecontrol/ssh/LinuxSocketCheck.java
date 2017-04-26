@@ -1,5 +1,7 @@
 package org.gridkit.vicluster.telecontrol.ssh;
 
+import static org.gridkit.nanocloud.RemoteNode.REMOTE;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -8,7 +10,12 @@ import java.net.Socket;
 import java.util.concurrent.Callable;
 
 import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.RemoteNode;
 import org.gridkit.nanocloud.SimpleCloudFactory;
+import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf;
+import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.ViNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -26,6 +33,22 @@ public class LinuxSocketCheck {
 	@After
 	public void dropCloud() {
 		cloud.shutdown();
+	}
+	
+	@Test
+	public void sudo_check() {
+	    ViNode node = cloud.node("cbox1");
+	    
+	    node.x(REMOTE).setRemoteBootstrapJavaExec("sudo java");
+	    
+	    node.exec(new Callable<Void>(){
+
+            @Override
+            public Void call() throws Exception {
+                System.out.println("ping");
+                return null;
+            }	        
+	    });
 	}
 	
 	@Test

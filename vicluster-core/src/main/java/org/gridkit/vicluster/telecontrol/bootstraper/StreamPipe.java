@@ -16,12 +16,29 @@ class StreamPipe {
 	private boolean closedByReader;
 	private boolean closedByWriter;
 	
+	private long inTotal;
 	private int in = 0;
 	private int out = 0;
 	private int inBuffer = 0;
 	
 	public StreamPipe(int bufferSize) {
 		buffer = new byte[bufferSize];
+	}
+	
+	/**
+	 * Unsynchronized!
+	 * 
+	 * @return number of bytes written to pipe
+	 */
+	public long getWrittenTotal() {
+	    return inTotal;
+	}
+	
+	/**
+	 * @return number of bytes read from pipe
+	 */
+	public synchronized long getReadTotal() {
+	    return inTotal - inBuffer;
 	}
 	
 	public InputStream getInputStream() {
@@ -117,6 +134,7 @@ class StreamPipe {
 	
 	private synchronized void writeNotify(int len) {
 		inBuffer += len;
+		inTotal += len;
 		this.notifyAll();		
 	}
 

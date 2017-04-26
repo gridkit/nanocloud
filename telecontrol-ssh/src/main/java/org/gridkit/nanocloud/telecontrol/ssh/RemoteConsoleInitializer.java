@@ -83,7 +83,10 @@ public class RemoteConsoleInitializer implements InductiveRule {
 	}
 
 	protected String resolveBootCmd(QuorumGame game) {
-		String cmd = game.get(SshSpiConf.SPI_BOOTSTRAP_JVM_EXEC);
+	    String cmd = game.get(SshSpiConf.REMOTE_BOOTSTRAP_JVM_EXEC);
+	    if (cmd == null) {
+	        cmd = game.get(SshSpiConf.SPI_BOOTSTRAP_JVM_EXEC);
+	    }
 		if (cmd == null) {
 			cmd = game.get(ViConf.JVM_EXEC_CMD);
 		}

@@ -586,6 +586,21 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			return conf;
 		}
 		
+		public JvmConf setJavaExec(String... cmd) {
+		    if (cmd.length == 0) {
+		        throw new IllegalArgumentException("JVM command cannot be empty");
+		    }
+            StringBuilder sb = new StringBuilder();
+            for(String arg: cmd) {
+                if (sb.length() > 0) {
+                    sb.append('|');
+                }
+                sb.append(arg);
+            }
+		    conf.setProp(JVM_EXEC_CMD, sb.toString());
+		    return this;
+		}
+		
 		public JvmConf addJvmArg(String string) {
 			conf.setProp(JVM_ARGUMENT + "arg:" + string, string);
 			return this;

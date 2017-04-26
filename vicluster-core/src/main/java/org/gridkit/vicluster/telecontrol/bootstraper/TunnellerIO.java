@@ -598,6 +598,12 @@ class TunnellerIO {
 		return (size + 7) & (~7);
 	}
 	
+	protected synchronized void diagLog(String message) {
+	    if (diagOut != null) {
+	        diagOut.println(message);
+	    }
+	}
+	
 	protected void shutdown() {
     }
 

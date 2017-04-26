@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -132,8 +134,15 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 	}
 
 	private String[] tunnellerCommand(String jarpath) {
-		String[] cmd = new String[]{javaCmd, "-Xmx32m", "-Xms32m", "-cp", jarpath, Tunneller.class.getName()};
-		return cmd;
+	    List<String> cmd = new ArrayList<String>();
+	    if (javaCmd.indexOf('|') >= 0) {
+	        cmd.addAll(Arrays.asList(javaCmd.split("\\|")));
+	    }
+	    else {
+	        cmd.add(javaCmd);
+	    }
+	    cmd.addAll(Arrays.asList("-Xmx32m", "-Xms32m", "-cp", jarpath, Tunneller.class.getName()));
+		return cmd.toArray(new String[cmd.size()]);
 	}
 
 	private String detectCachePath(String jarpath) {

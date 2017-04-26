@@ -123,8 +123,25 @@ public class RemoteNode extends ViConfigurable.Delegate {
 		return this;
 	}
 	
-	public RemoteNode setRemoteJarCachePath(String jarCachePath) {
-		config.setProp(SshSpiConf.REMOTE_JAR_CACHE, jarCachePath);
+	/**
+	 * <p>
+	 * This is command used to start tunneller. For some reason you may
+	 * want to use different commands for tunneller and actual slave process.
+	 * <p>
+	 * E.g. if you want to use sudo for
+	 * <p>
+	 * If command is composite, you should use pipe character. E.g. <code>sudo|java</code>.
+	 * 
+	 * @param jarCachePath
+	 * @return
+	 */
+	public RemoteNode setRemoteBootstrapJavaExec(String jarCachePath) {
+		config.setProp(SshSpiConf.REMOTE_BOOTSTRAP_JVM_EXEC, jarCachePath);
 		return this;
 	}	
+	
+    public RemoteNode setRemoteJarCachePath(String jarCachePath) {
+        config.setProp(SshSpiConf.REMOTE_JAR_CACHE, jarCachePath);
+        return this;
+    }
 }

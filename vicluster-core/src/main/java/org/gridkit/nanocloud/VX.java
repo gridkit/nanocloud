@@ -56,6 +56,8 @@ public class VX {
 			return JvmConf.at(node);
 		}
 	};
+
+	public static final ViConfExtender<JvmConf> JVM = PROCESS;
 	
 	public static final ViConfExtender<IsolateConfig> ISOLATE = new ViConfExtender<IsolateConfig>() {
 		
