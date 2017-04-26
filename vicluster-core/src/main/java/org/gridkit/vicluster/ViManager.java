@@ -591,7 +591,7 @@ public class ViManager implements ViNodeSet {
 							}
 						}
 					}
-					catch(Exception e) {
+					catch(Throwable e) {
 						LOGGER.error("ViNode[" + name + "] initialization has failed", e);
 						activeNode.setError(e);
 					}
