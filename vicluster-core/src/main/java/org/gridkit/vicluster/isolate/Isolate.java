@@ -312,6 +312,14 @@ public class Isolate {
 		this.stdErr = stdErr;
 	}
 	
+	public Properties getSysProps() {
+	    return this.sysProps;
+	}
+	
+	public void replaceSysProps(Properties props) {
+	    this.sysProps = props;
+	}
+	
 	/**
 	 * Silence default print streams. Has no effect if print streams were replaced.
 	 */
