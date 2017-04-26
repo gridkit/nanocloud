@@ -65,6 +65,8 @@ public abstract class AbstractLineProcessingOutputStream extends OutputStream {
 	@Override
 	public synchronized void close() throws IOException {
 		super.flush();
-		dumpBuffer();			
+		if (buffer.size() > 0) {
+		    dumpBuffer();
+		}
 	}
 }
