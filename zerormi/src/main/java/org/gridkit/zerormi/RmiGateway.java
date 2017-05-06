@@ -268,6 +268,7 @@ public class RmiGateway {
 					if (message == null) {
 						logInfo.log("RMI gateway [" + name + "], remote side has requested termination");
 						shutdown();
+						return;
 					}
 					else {
 						channel.handleMessage(message);
