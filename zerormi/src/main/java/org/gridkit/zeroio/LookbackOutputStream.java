@@ -10,7 +10,8 @@ public class LookbackOutputStream extends OutputStream {
 	private int start;
 	private int end;
 	private long byteCounter;
-	private boolean closed;
+	private volatile boolean closed;
+	private volatile boolean clean = true;
 	
 	public LookbackOutputStream(int bufferSize) {
 		buffer = new byte[bufferSize];
@@ -59,6 +60,7 @@ public class LookbackOutputStream extends OutputStream {
 			start = (start + 1) % buffer.length;
 		}
 		++byteCounter;
+		clean = false;
 	}
 
 	private synchronized void pump() throws IOException {
@@ -90,19 +92,31 @@ public class LookbackOutputStream extends OutputStream {
 	}
 
 	@Override
-	public synchronized void flush() throws IOException {
-		if (sink != null) {
-			pump();
-			sink.flush();
-		}
+	public void flush() throws IOException {
+	    if (clean) {
+	        // deadlock protection
+	        return;
+	    }
+	    synchronized(this) {	        
+    		if (sink != null) {
+    		    clean = true;
+    			pump();
+    			sink.flush();
+    		}
+	    }
 	}
 
 	@Override
-	public synchronized void close() throws IOException {
-		if (sink != null) {
-			closed = true;
-			flush();
-			sink.close();
-		}
+	public void close() throws IOException {
+	    if (closed) {
+	        return;
+	    }
+	    synchronized(this) {
+    		if (sink != null) {
+    			closed = true;
+    			flush();
+    			sink.close();
+    		}
+	    }
 	}
 }
