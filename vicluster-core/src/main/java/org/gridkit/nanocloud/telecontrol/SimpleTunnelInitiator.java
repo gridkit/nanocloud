@@ -107,7 +107,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 		
 		Destroyable proc = console.startProcess(null, tunnellerCommand(jarpath), null, th);
 		TunnellerConnection conn;
-		conn = fget(tc);
+		conn = fget(tc, proc);
 		
 		return new CosnoleWrapper(new TunnellerControlConsole(conn, cachePath), proc);
 	}
@@ -157,12 +157,18 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 		return cachePath;
 	}
 
-	private static <T> T fget(Future<T> f) {
+	private static <T> T fget(Future<T> f, Destroyable cleanUp) {
 		try {
 			return f.get();
 		} catch (InterruptedException e) {
+			if (cleanUp != null) {
+				cleanUp.destroy();
+			}
 			throw new RuntimeException(e);
 		} catch (ExecutionException e) {
+			if (cleanUp != null) {
+				cleanUp.destroy();
+			}
 			if (e.getCause() instanceof RuntimeException) {
 				throw (RuntimeException)(e.getCause());
 			}

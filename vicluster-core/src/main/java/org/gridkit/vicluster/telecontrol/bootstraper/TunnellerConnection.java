@@ -53,7 +53,7 @@ public class TunnellerConnection extends TunnellerIO {
 	private FutureBox<Void> magicReceived = new FutureBox<Void>();
 	private boolean terminated;
 	
-	public TunnellerConnection(String name, InputStream is, OutputStream os, PrintStream diagOut, long connTimeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException {
+	public TunnellerConnection(String name, final InputStream is, final OutputStream os, PrintStream diagOut, long connTimeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException {
 		super(":" + name, diagOut);
 		
 		embededMode = true;
@@ -78,6 +78,10 @@ public class TunnellerConnection extends TunnellerIO {
 				}
 				catch(Exception e) {
 					magicReceived.setError(e);
+					// disposing tunneller resources
+					close(is);
+					close(os);
+					return;
 				}
 				super.run();
 			};
