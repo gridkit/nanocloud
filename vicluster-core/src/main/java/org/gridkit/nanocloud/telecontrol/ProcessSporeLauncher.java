@@ -354,7 +354,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 
 		@Override
 		public void bound(String host, int port) {
-			bindAddress.setData(new InetSocketAddress(host, port));
+			bindAddress.setData(InetSocketAddress.createUnresolved(host, port));
 		}
 
 		@Override
