@@ -54,6 +54,11 @@ public class LocalControlConsole implements HostControlConsole {
 	}
 	
 	@Override
+	public boolean isLocalFileSystem() {
+		return true;
+	}
+
+	@Override
 	public String cacheFile(FileBlob blob) {
 		ensureRunning();
 		try {

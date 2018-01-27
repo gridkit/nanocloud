@@ -19,6 +19,7 @@ public class LaunchProcessAction extends AbstractNodeAction {
     InArg<RemoteExecutionSession> remotingSession = required(Pragma.RUNTIME_REMOTING_SESSION);
     InArg<HostControlConsole> controlConsole = required(Pragma.RUNTIME_HOST_CONTROL_CONSOLE);
     InArg<List<ClasspathEntry>> classpath = required(Pragma.RUNTIME_CLASSPATH);
+    InArg<List<String>> shallowClasspath = optional(Pragma.RUNTIME_SHALLOW_CLASSPATH);
     InArg<List<AgentEntry>> agents = required(Pragma.RUNTIME_AGENTS);
     InArg<String> jvmExec = required(JvmConf.JVM_EXEC_CMD);
     InArg<String> jvmWorkDir = optional(JvmConf.JVM_WORK_DIR);
@@ -126,6 +127,11 @@ public class LaunchProcessAction extends AbstractNodeAction {
         }
 
         @Override
+		public List<String> getSlaveShallowClasspath() {
+			return shallowClasspath.get();
+		}
+
+		@Override
         public List<ClasspathEntry> getSlaveClasspath() {
             return classpath.get();
         }

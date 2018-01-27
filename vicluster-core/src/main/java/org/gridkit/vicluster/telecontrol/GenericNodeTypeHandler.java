@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -353,6 +354,44 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		}
 	}
 
+	public static class ShallowClasspathBuilder extends IdempotentConfigBuilder<List<String>> {
+
+		public ShallowClasspathBuilder() {
+			super(ViConf.SPI_SLAVE_SHALLOW_CLASSPATH);
+		}
+
+		@Override
+		protected List<String> buildState(QuorumGame game) {
+	    	boolean useShallow = !Boolean.FALSE.toString().equalsIgnoreCase(game.<String>get(ViConf.CLASSPATH_USE_SHALLOW));
+	    	boolean inheright = !Boolean.FALSE.toString().equalsIgnoreCase(game.<String>get(ViConf.CLASSPATH_INHERIT));
+	    	boolean hasTweak = !game.getConfigProps(ViConf.CLASSPATH_TWEAK).isEmpty();
+			
+	    	if (inheright && !hasTweak && useShallow) {
+	    		return ClasspathUtils.getStartupClasspath();
+	    	}
+	    	else {
+	    		return null;
+	    	}
+		}
+	}
+
+	public static class ClasspathReplicaBuilderLocal extends ClasspathReplicaBuilder {
+
+		@Override
+		protected List<ClasspathEntry> buildState(QuorumGame game) {
+	    	boolean useShallow = !Boolean.FALSE.toString().equalsIgnoreCase(game.<String>get(ViConf.CLASSPATH_USE_SHALLOW));
+	    	boolean inheright = !Boolean.FALSE.toString().equalsIgnoreCase(game.<String>get(ViConf.CLASSPATH_INHERIT));
+	    	boolean hasTweak = !game.getConfigProps(ViConf.CLASSPATH_TWEAK).isEmpty();
+			
+	    	if (inheright && !hasTweak && useShallow) {
+	    		return Collections.emptyList();
+	    	}
+	    	else {
+	    		return super.buildState(game);
+	    	}
+		}
+	}
+	
 	public static class AgentBuilder extends IdempotentConfigBuilder<List<AgentEntry>> {
 
 		public AgentBuilder() {

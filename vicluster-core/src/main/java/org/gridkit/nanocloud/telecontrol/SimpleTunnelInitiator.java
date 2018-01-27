@@ -191,6 +191,11 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 			this.destroyable = destroyable;
 		}
 		
+		@Override
+		public boolean isLocalFileSystem() {
+			return false;
+		}
+
 		public String cacheFile(FileBlob blob) {
 			return delegate.cacheFile(blob);
 		}

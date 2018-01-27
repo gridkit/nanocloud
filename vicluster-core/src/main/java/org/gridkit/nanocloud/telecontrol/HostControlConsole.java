@@ -15,6 +15,11 @@ import org.gridkit.vicluster.telecontrol.FileBlob;
 public interface HostControlConsole {
 
 	/**
+	 * @return <code>true</code> if console shares file system with master process
+	 */
+	public boolean isLocalFileSystem();
+	
+	/**
 	 * @return remote path for binary resource (copy if needed)
 	 */
 	public String cacheFile(FileBlob blob);

@@ -99,8 +99,19 @@ public class ProcessSporeLauncher implements ProcessLauncher {
         byte[] binspore = serialize(planter);
         session.binspore = binspore;
 
-        String javaCmd = config.getSlaveJvmExecCmd();
-        String bootstraper = buildBootJar(console, config.getSlaveClasspath());
+        String javaCmd = config.getSlaveJvmExecCmd();        
+        String bootstraper = null;
+        String shallowClasspath = null;
+        
+        if (config.getSlaveShallowClasspath() != null && !config.getSlaveShallowClasspath().isEmpty()) {
+        	if (!console.isLocalFileSystem()) {
+        		throw new IllegalArgumentException("Shallow classptah cannot be used to remote nodes");
+        	}
+        	shallowClasspath = makeCpLine(config.getSlaveShallowClasspath());
+        }
+        else {       
+        	bootstraper = buildBootJar(console, config.getSlaveClasspath());
+        }
 
         List<String> commands = new ArrayList<String>();
         commands.add(javaCmd);
@@ -114,8 +125,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			}
 		}
 
-        commands.add("-jar");
-        commands.add(bootstraper);
+        if (bootstraper != null) {
+        	commands.add("-jar");
+        	commands.add(bootstraper);
+        }
+        else {
+        	commands.add("-cp");        
+        	commands.add(shallowClasspath);
+        	commands.add(bootstartClass());
+        }
 
         console.startProcess(isEmpty(slaveWD) ? "." : slaveWD, commands.toArray(new String[0]), slaveEnv, session);
 
@@ -149,7 +167,18 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		session.binspore = binspore;
 
 		String javaCmd = ctx.getJvmExecCmd();
-		String bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
+		
+		String shallowpath = null;
+		String bootstraper = null; 
+		if (ctx.getSlaveShallowClasspath() != null && !ctx.getSlaveShallowClasspath().isEmpty()) {
+			if (!console.isLocalFileSystem()) {
+				throw new RuntimeException("Shallow classpath cannot be used with remote console");
+			}
+			shallowpath = makeCpLine(ctx.getSlaveShallowClasspath());
+		}
+		else {		
+			bootstraper = buildBootJar(console, ctx.getSlaveClasspath());
+		}
  
 		List<String> commands = new ArrayList<String>();
 		if (javaCmd.indexOf('|') >= 0) {
@@ -169,8 +198,15 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			}
 		}
 
-		commands.add("-jar");
-		commands.add(bootstraper);
+		if (bootstraper != null) {
+			commands.add("-jar");
+			commands.add(bootstraper);
+		}
+		else {
+			commands.add("-cp");
+			commands.add(shallowpath);
+			commands.add(bootstartClass());
+		}
 
 		console.startProcess(isEmpty(slaveWD) ? "." : slaveWD, commands.toArray(new String[0]), slaveEnv, session);
 
@@ -181,6 +217,18 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		return s == null || s.length() == 0;
 	}
 
+	private String makeCpLine(List<String> cp) {
+		String psep = System.getProperty("path.separator");
+		StringBuilder sb = new StringBuilder();
+		for(String cpe: cp) {
+			if (sb.length() > 0) {
+				sb.append(psep);
+			}
+			sb.append(cpe);
+		}
+		return sb.toString();
+	}
+	
 	private String buildBootJar(HostControlConsole console, List<ClasspathEntry> jvmClasspath) {
 
 		List<String> paths = console.cacheFiles(jvmClasspath);
@@ -196,7 +244,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		Manifest mf = new Manifest();
 		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		mf.getMainAttributes().put(Attributes.Name.CLASS_PATH, remoteClasspath.toString());
-		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, SmartBootstraper.class.getName());
+		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, bootstartClass());
 
 		byte[] booter;
 		try {
@@ -209,6 +257,10 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		String path = console.cacheFile(bb);
 
 		return path;
+	}
+
+	private String bootstartClass() {
+		return SmartBootstraper.class.getName();
 	}
 
 	private Object convertToURI(String path) {

@@ -231,6 +231,11 @@ public class RemoteConsoleInitializer implements InductiveRule {
         }
 	    
         @Override
+		public boolean isLocalFileSystem() {
+			return false;
+		}
+
+		@Override
         public String cacheFile(FileBlob blob) {
             synchronized(initializer) {
                 initializer.ensureConsole();

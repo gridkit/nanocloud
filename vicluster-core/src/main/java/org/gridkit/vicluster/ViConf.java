@@ -65,6 +65,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 	public static final String CLASSPATH_TWEAK = "classpath:tweak:";
     public static final String CLASSPATH_INHERIT = "classpath:inherit";
+    public static final String CLASSPATH_USE_SHALLOW = "classpath:use-shallow";
 
 	public static final String REMOTE_HOST = "remote:host";
 	public static final String REMOTE_ACCOUNT = "remote:account";
@@ -107,6 +108,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	public static final String SPI_SLAVE_ARGS = "#spi:jvm-args";
 	public static final String SPI_SLAVE_ENV = "#spi:slave-env";
 	public static final String SPI_SLAVE_CLASSPATH = "#spi:jvm-classpath";
+	public static final String SPI_SLAVE_SHALLOW_CLASSPATH = "#spi:shallow-jvm-classpath";
 	public static final String SPI_CONTROL_CONSOLE = "#spi:control-console";
 	public static final String SPI_PROCESS_LAUNCHER = "#spi:process-launcher";
 	public static final String SPI_MANAGED_PROCESS = "#spi:managed-process";
@@ -307,6 +309,13 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	@PropName(SPI_JVM_EXEC_CMD)
 	@DefaultNull
 	public String getJvmExecCmd() {
+		return readObject();
+	}
+
+	@Override
+	@PropName(SPI_SLAVE_SHALLOW_CLASSPATH)
+	@DefaultNull
+	public List<String> getSlaveShallowClasspath() {
 		return readObject();
 	}
 
@@ -543,6 +552,16 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
         public ClasspathConf inheritClasspath(boolean inherit){
             conf.setProp(CLASSPATH_INHERIT, String.valueOf(inherit));
             return this;
+        }
+        
+        /**
+         * In shallow mode, classpath string from master is used as is for slave JVM.
+         * <br/>
+         * This works only for non-remote slaves and incompatible with classpath tweaking.
+         */
+        public ClasspathConf useShallowClasspath(boolean shallow) {
+            conf.setProp(CLASSPATH_USE_SHALLOW, String.valueOf(shallow));
+            return this;        	
         }
 
 		private String defaultName(URL url) {

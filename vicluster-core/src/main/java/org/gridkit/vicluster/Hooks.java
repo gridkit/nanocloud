@@ -22,7 +22,7 @@ public class Hooks {
 		}
 		
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			node.exec(runnable);
 		}
 		
@@ -37,7 +37,7 @@ public class Hooks {
 		}
 		
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			// ignore
 		}
 
@@ -58,7 +58,7 @@ public class Hooks {
 		}
 		
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			// ignore
 		}
 		
@@ -79,7 +79,7 @@ public class Hooks {
 		}
 		
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			// ignore
 		}
 		

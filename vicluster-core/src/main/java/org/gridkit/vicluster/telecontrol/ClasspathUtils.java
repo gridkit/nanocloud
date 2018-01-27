@@ -26,6 +26,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -53,6 +54,25 @@ public class ClasspathUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathUtils.class);
 	
 	private static final ConcurrentMap<String, String> MISSING_URL = new ConcurrentHashMap<String, String>(64, 0.75f, 1);
+	
+	public static List<String> getStartupClasspath() {
+		return sanitize(System.getProperty("java.class.path"));
+	}
+	
+	private static List<String> sanitize(String cp) {
+		List<String> scp = new ArrayList<String>();
+		String psep = System.getProperty("path.separator");
+		for(String path: cp.split(psep)) {
+			try {
+				String spath = new File(path).getAbsoluteFile().getCanonicalPath();
+				scp.add(spath);
+			}
+			catch(IOException e) {
+				// ignore erroneous classpath element
+			}
+		}
+		return scp;
+	}
 	
 	public static Collection<URL> listCurrentClasspath() {
 		URLClassLoader classLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();

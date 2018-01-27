@@ -32,6 +32,11 @@ public class SshHostControlConsole extends LocalControlConsole {
 	}
 
 	@Override
+	public boolean isLocalFileSystem() {
+		return false;
+	}
+
+	@Override
 	public String cacheFile(FileBlob blob) {
 		return fileCache.upload(blob);
 	}

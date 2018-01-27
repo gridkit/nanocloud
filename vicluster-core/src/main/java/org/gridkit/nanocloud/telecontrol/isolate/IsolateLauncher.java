@@ -1,11 +1,13 @@
 package org.gridkit.nanocloud.telecontrol.isolate;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,12 +38,26 @@ class IsolateLauncher implements ProcessLauncher {
     public ManagedProcess launchProcess(LaunchConfig config) {
 
 	    RemoteExecutionSession rmiSession = config.getRemotingSession();
-        List<Classpath.ClasspathEntry> cp = config.getSlaveClasspath();
-        
-        List<URL> urls = new ArrayList<URL>();
-        for(Classpath.ClasspathEntry ce: cp) {
-            urls.add(ce.getUrl());
-        }
+	    List<URL> urls = new ArrayList<URL>();
+
+	    List<String> shallowClasspath = config.getSlaveShallowClasspath();
+	    if (shallowClasspath != null && !shallowClasspath.isEmpty()) {
+	    	for(String e: shallowClasspath) {
+	    		File f = new File(e);
+	    		try {
+					urls.add(f.toURI().toURL());
+				} catch (MalformedURLException ee) {
+					throw new RuntimeException(ee);
+				}
+	    	}
+	    }
+	    else {
+	        List<Classpath.ClasspathEntry> cp = config.getSlaveClasspath();
+	        
+	        for(Classpath.ClasspathEntry ce: cp) {
+	            urls.add(ce.getUrl());
+	        }
+	    }
         
         ClassLoader cl = ClasspathUtils.getNearestSystemClassloader(Thread.currentThread().getContextClassLoader());
         if (cl == null) {
@@ -62,15 +78,28 @@ class IsolateLauncher implements ProcessLauncher {
 		
 		ViSpiConfig ctx = ViEngine.Core.asSpiConfig(config);
 		RemoteExecutionSession rmiSession = ctx.getRemotingSession();
+		List<String> scp = ctx.getSlaveShallowClasspath();
 		List<Classpath.ClasspathEntry> cp = ctx.getSlaveClasspath();
 
 		if (ctx.getSlaveAgents() != null && !ctx.getSlaveAgents().isEmpty()) {
 			throw new RuntimeException("Agents is not supported in Isolate mode.");
 		}
-		
+
 		List<URL> urls = new ArrayList<URL>();
-		for(Classpath.ClasspathEntry ce: cp) {
-			urls.add(ce.getUrl());
+		
+		if (scp != null && !scp.isEmpty()) {
+			for(String cpe: scp) {
+				try {
+					urls.add(new File(cpe).toURI().toURL());
+				} catch (MalformedURLException e) {
+					throw new IllegalArgumentException(e);
+				}
+			}
+		}
+		else {
+			for(Classpath.ClasspathEntry ce: cp) {
+				urls.add(ce.getUrl());
+			}
 		}
 		
 		ClassLoader cl = ClasspathUtils.getNearestSystemClassloader(Thread.currentThread().getContextClassLoader());

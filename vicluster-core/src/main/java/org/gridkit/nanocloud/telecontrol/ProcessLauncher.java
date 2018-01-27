@@ -25,6 +25,8 @@ public interface ProcessLauncher {
 
         public List<String> getSlaveArgs();
 
+        public List<String> getSlaveShallowClasspath();
+        
         public List<ClasspathEntry> getSlaveClasspath();
 
         public List<AgentEntry> getAgentEntries();

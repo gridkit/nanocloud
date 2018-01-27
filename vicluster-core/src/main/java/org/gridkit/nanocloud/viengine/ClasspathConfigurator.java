@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -14,6 +15,7 @@ import java.util.zip.ZipInputStream;
 
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 
 public class ClasspathConfigurator implements NodeAction {
@@ -22,7 +24,16 @@ public class ClasspathConfigurator implements NodeAction {
     
     @Override
     public void run(PragmaWriter context) throws ExecutionException {
-        context.set(Pragma.RUNTIME_CLASSPATH, buildClasspath(context));
+    	boolean useShallow = !Boolean.FALSE.toString().equalsIgnoreCase(context.<String>get(ViConf.CLASSPATH_USE_SHALLOW));
+    	boolean inheright = !Boolean.FALSE.toString().equalsIgnoreCase(context.<String>get(ViConf.CLASSPATH_INHERIT));
+    	boolean hasTweak = !context.match(ViConf.CLASSPATH_TWEAK + "**").isEmpty();
+    	if (inheright && !hasTweak && useShallow) {
+    		context.set(Pragma.RUNTIME_SHALLOW_CLASSPATH, ClasspathUtils.getStartupClasspath());
+    		context.set(Pragma.RUNTIME_CLASSPATH, Collections.emptyList());
+    	}
+    	else {
+    		context.set(Pragma.RUNTIME_CLASSPATH, buildClasspath(context));
+    	}
     }
 
     public static List<ClasspathEntry> buildClasspath(PragmaReader config) {

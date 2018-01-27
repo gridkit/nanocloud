@@ -32,6 +32,8 @@ public interface ViSpiConfig {
 
 	public String getSlaveWorkDir();
 
+	public List<String> getSlaveShallowClasspath();
+
 	public List<ClasspathEntry> getSlaveClasspath();
 
 	public List<AgentEntry> getSlaveAgents();

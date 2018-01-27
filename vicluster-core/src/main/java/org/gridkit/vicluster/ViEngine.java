@@ -400,7 +400,7 @@ public interface ViEngine {
 				}
 				
 				@Override
-				public void processAddHoc(String name, ViExecutor node) {
+				public void processAdHoc(String name, ViExecutor node) {
 					throw new IllegalArgumentException("Node is already initialized");
 				}
 			};
@@ -678,6 +678,11 @@ public interface ViEngine {
 		}
 
 		@Override
+		public List<String> getSlaveShallowClasspath() {
+			return getConfig().getSlaveShallowClasspath();
+		}
+
+		@Override
 		public List<ClasspathEntry> getSlaveClasspath() {
 			return getConfig().getSlaveClasspath();
 		}
@@ -767,7 +772,7 @@ public interface ViEngine {
 		
 		public void process(String name, Phase phase, QuorumGame game);
 		
-		public void processAddHoc(String name, ViExecutor node);
+		public void processAdHoc(String name, ViExecutor node);
 		
 	}	
 	
@@ -833,7 +838,7 @@ public interface ViEngine {
 				if (mp != null) {
 					exec = new AdvExecutor2ViExecutor(mp.getExecutionService());
 				}
-				hook.processAddHoc(key, exec);
+				hook.processAdHoc(key, exec);
 			}
 			wc.setProp(key, value);
 		}
@@ -901,7 +906,7 @@ public interface ViEngine {
 		}
 
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			throw new IllegalStateException("Node '" + node + "' is already initialized"); 
 		}
 	}
@@ -923,6 +928,39 @@ public interface ViEngine {
 		}
 	}
 
+	public static class RuleSet implements Interceptor, Rerun {
+		
+		private final List<Interceptor> interceptors = new ArrayList<ViEngine.Interceptor>();
+
+		public RuleSet(Interceptor... interceptors) {
+			for(Interceptor i : interceptors) {
+				this.interceptors.add(i);
+			}
+		}
+		
+		@Override
+		public void rerun(QuorumGame game, Map<String, Object> changes) {
+			for(Interceptor i: interceptors) {
+				if (i instanceof Rerun) {
+					((Rerun) i).rerun(game, changes);
+				}
+			}			
+		}
+
+		@Override
+		public void process(String name, Phase phase, QuorumGame game) {
+			for(Interceptor i: interceptors) {
+				i.process(name, phase, game);
+			}			
+		}
+
+		@Override
+		public void processAdHoc(String name, ViExecutor node) {
+			for(Interceptor i: interceptors) {
+				i.processAdHoc(name, node);
+			}			
+		}
+	}
 	
 	public static abstract class IdempotentConfigBuilder<T> implements Interceptor, Rerun {
 		
@@ -960,7 +998,7 @@ public interface ViEngine {
 		}
 
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			throw new IllegalArgumentException("Node is already initialized");
 		}
 	}

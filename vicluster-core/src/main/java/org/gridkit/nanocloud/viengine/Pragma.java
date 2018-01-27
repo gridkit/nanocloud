@@ -37,6 +37,7 @@ public interface Pragma {
     public String NODE_PRAGMA_HANDLER = "node:pragma-handler:";
 
     public String RUNTIME_CLASSPATH = "node-runtime:classpath";
+    public String RUNTIME_SHALLOW_CLASSPATH = "node-runtime:shallow-classpath";
     public String RUNTIME_AGENTS = "node-runtime:agents";
     public String RUNTIME_HOST_CONTROL_CONSOLE = "node-runtime:host-control-console";
     public String RUNTIME_REMOTING_SESSION = "node-runtime:remoting-session";

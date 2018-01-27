@@ -24,7 +24,7 @@ public class LoggerSupport implements Interceptor {
 	}
 
 	@Override
-	public void processAddHoc(String name, ViExecutor node) {
+	public void processAdHoc(String name, ViExecutor node) {
 		throw new IllegalStateException("Node is initialized");
 	}
 	

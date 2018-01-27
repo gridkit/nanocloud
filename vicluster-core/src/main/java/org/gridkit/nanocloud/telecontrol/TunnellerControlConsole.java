@@ -43,6 +43,11 @@ public class TunnellerControlConsole implements HostControlConsole {
 		this.uploadLimit = new Semaphore(maxParallelUploads);
 	}
 
+	@Override
+	public boolean isLocalFileSystem() {
+		return false;
+	}
+
 	protected FutureEx<String> pushFile(final FileBlob blob, final TaskService taskService) {
 		final FutureBox<String> remotePath = new FutureBox<String>();
 		// free semaphore as soon as operation is completed/aborted

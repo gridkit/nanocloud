@@ -6,6 +6,8 @@ import java.util.Map;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.ViEngine;
+import org.gridkit.vicluster.ViEngine.Interceptor;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.telecontrol.FileBlob;
@@ -36,7 +38,17 @@ public class IsolateNodeTypeHandler extends GenericNodeTypeHandler {
 		return new NoopConsole();
 	}
 	
+	@Override
+	protected Interceptor createClasspathBuilder(QuorumGame game) {
+		return new ViEngine.RuleSet(new ShallowClasspathBuilder(), new ClasspathReplicaBuilderLocal());
+	}
+	
 	private static class NoopConsole implements HostControlConsole {
+
+		@Override
+		public boolean isLocalFileSystem() {
+			return true;
+		}
 
 		@Override
 		public String cacheFile(FileBlob blob) {

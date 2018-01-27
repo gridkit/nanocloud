@@ -199,7 +199,7 @@ public class ConsoleOutputSupport implements PragmaHandler {
 		}
 
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			// ok
 		}
 	}
@@ -219,7 +219,7 @@ public class ConsoleOutputSupport implements PragmaHandler {
 		}
 		
 		@Override
-		public void processAddHoc(String name, ViExecutor node) {
+		public void processAdHoc(String name, ViExecutor node) {
 			// ok
 		}
 	}

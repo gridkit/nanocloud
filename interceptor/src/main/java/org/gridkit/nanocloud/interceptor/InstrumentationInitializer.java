@@ -80,7 +80,7 @@ public class InstrumentationInitializer implements Interceptor {
 	}
 
 	@Override
-	public void processAddHoc(String name, ViExecutor node) {
+	public void processAdHoc(String name, ViExecutor node) {
 		// TODO verify instrumentation support
 	}	
 }
