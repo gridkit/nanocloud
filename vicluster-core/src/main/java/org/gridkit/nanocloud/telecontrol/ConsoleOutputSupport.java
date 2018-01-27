@@ -187,10 +187,12 @@ public class ConsoleOutputSupport implements PragmaHandler {
 	private static void flushMux(ConsoleMultiplexorStream cms) {
 		if (cms != null && cms.outs != null) {
 			for(OutputStream out: cms.outs) {
-				try {
-					out.flush();
-				} catch (IOException e) {
-					// ignore
+				if (out != null) {
+					try {
+						out.flush();
+					} catch (IOException e) {
+						// ignore
+					}
 				}
 			}
 		}

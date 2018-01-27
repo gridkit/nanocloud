@@ -330,6 +330,9 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void setProps(Map<String, String> props) {
+			if (props.isEmpty()) {
+				return;
+			}
 			ensureAlive();
 			config.setProps(props);
 			if (realNode != null) {
@@ -366,6 +369,9 @@ public class ViManager implements ViNodeSet {
 
 		@Override
 		public void setConfigElements(Map<String, Object> config) {
+			if (config.isEmpty()) {
+				return;
+			}
 			ensureAlive();
 			this.config.setConfigElements(config);
 			if (realNode != null) {
