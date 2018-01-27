@@ -303,6 +303,14 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		}
 	}
 
+	static <T> T tryFget(Future<T> future) {
+		try {
+			return future.get();
+		} catch (Exception e) {
+			return null;
+		}		
+	}
+	
 	static <T> T fget(Future<T> future) {
 		try {
 			return future.get();
@@ -428,8 +436,8 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			procStarted = true;
 			ProcessStreams ps = new ProcessStreams();
 			ps.stdIn = stdIn;
-			ps.stdOut = new LookbackOutputStream(4096);
-			ps.stdErr = new LookbackOutputStream(4096);
+			ps.stdOut = new LookbackOutputStream(16 << 10);
+			ps.stdErr = new LookbackOutputStream(16 << 10);
 			ps.eofOut = streamCopyService.link(stdOut, ps.stdOut);
 			ps.eofErr = streamCopyService.link(stdErr, ps.stdErr);
 
@@ -443,6 +451,8 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 				dos.write(binspore);
 				dos.flush();
 			} catch (IOException e) {
+				// need to set stream to allow read console errors
+				procStreams.setData(ps);
 				sepuku(e);
 				return;
 			}
@@ -458,18 +468,25 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 				// ignore
 			}
 			ProcessStreams ps = fget(procStreams);
-			ps.eofOut.flushAndClose();
-			ps.eofErr.flushAndClose();
-			if (ps.stdOut.getOutput() == null) {
-				byte[] bb = ps.stdOut.getLookbackBuffer();
-				if (bb.length > 0) {
-					System.out.println(new String(bb));
+			if (ps != null) {
+				try {
+					ps.eofOut.flushAndClose();
+					ps.eofErr.flushAndClose();
+					if (ps.stdOut.getOutput() == null) {
+						byte[] bb = ps.stdOut.getLookbackBuffer();
+						if (bb.length > 0) {
+							System.out.println(new String(bb));
+						}
+					}
+					if (ps.stdErr.getOutput() == null) {
+						byte[] bb = ps.stdErr.getLookbackBuffer();
+						if (bb.length > 0) {
+							System.err.println(new String(bb));
+						}
+					}
 				}
-			}
-			if (ps.stdErr.getOutput() == null) {
-				byte[] bb = ps.stdErr.getLookbackBuffer();
-				if (bb.length > 0) {
-					System.err.println(new String(bb));
+				catch(Exception e) {
+					// ignore
 				}
 			}
 			sepuku(new RuntimeException("Terminated, exitCode=" + exitCode));
