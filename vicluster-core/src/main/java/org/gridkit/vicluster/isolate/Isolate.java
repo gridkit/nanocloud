@@ -1812,38 +1812,40 @@ public class Isolate {
 		}
 
 		@Override
-		public Class<?> loadClass(String name) throws ClassNotFoundException {
-			if (!isInterallyShared(name)) {
-				String bytepath = name.replace('.', '/') + ".class";
-				URL url = getResource(bytepath);
-				if (url == null) {
-					throw new ClassNotFoundException(name);
-				}
-				URL baseurl = baseClassloader.getResource(bytepath);
-//				if (name.startsWith("sun.reflect")) {
-//					Multiplexer.rootOut.println("java.home=" + System.getProperty("java.home"));
-//					Multiplexer.rootOut.println("CL:" + name + " baseurl: " + baseurl + " shouldIsolate:" + shouldIsolate(url, name));
-//					for(IsolationRule rule: rules.rules) {
-//						Multiplexer.rootOut.println("CL rule: " + rule + " -> " + rule.shouldIsolate(baseurl, name));
-//					}
-//				}
-				if (isInterallyIsolated(name) 
-						|| baseurl == null 
-						|| shouldIsolate(url, name)) {
-					Class<?> cl = findLoadedClass(name);
-					if (cl == null) {
-						cl = findClass(name);
-					}
-					if (cl == null) {
+		protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+			Class<?> cc = findLoadedClass(name);
+			if (cc == null) {
+				if (!isInterallyShared(name)) {
+					String bytepath = name.replace('.', '/') + ".class";
+					URL url = getResource(bytepath);
+					if (url == null) {
 						throw new ClassNotFoundException(name);
-					}					
-					return cl;				
+					}
+					URL baseurl = baseClassloader.getResource(bytepath);
+					if (isInterallyIsolated(name) 
+							|| baseurl == null 
+							|| shouldIsolate(url, name)) {
+						Class<?> cl = findLoadedClass(name);
+						if (cl == null) {
+							cl = findClass(name);
+						}
+						if (cl == null) {
+							throw new ClassNotFoundException(name);
+						}
+						if (resolve) {
+							resolveClass(cl);
+						}
+						return cl;				
+					}
 				}
+//				if (name.equals("sun.awt.AppContext")) {
+//					new Exception("loading AppContext").printStackTrace();
+//				}
+				cc = baseClassloader.loadClass(name);
 			}
-			if (name.equals("sun.awt.AppContext")) {
-				new Exception("loading AppContext").printStackTrace();
+			if (resolve) {
+				resolveClass(cc);
 			}
-			Class<?> cc = baseClassloader.loadClass(name);
 			return cc;
 		}
 		
