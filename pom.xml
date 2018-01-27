@@ -28,7 +28,7 @@
 
     <artifactId>vicluster-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.8.13</version>
+    <version>0.8.14-SNAPSHOT</version>
     <name>${project.groupId}::${project.artifactId}</name>
 
     <licenses>
@@ -51,7 +51,7 @@
       <connection>scm:git:https://github.com/gridkit/nanocloud.git</connection>
       <developerConnection>scm:git:https://github.com/gridkit/nanocloud.git</developerConnection>
       <url>https://github.com/gridkit/nanocloud</url>
-      <tag>vicluster-parent-0.8.13</tag>
+      <tag>HEAD</tag>
     </scm>
 
     <properties>
