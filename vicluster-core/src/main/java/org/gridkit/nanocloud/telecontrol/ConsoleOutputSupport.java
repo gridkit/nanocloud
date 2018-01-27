@@ -158,6 +158,7 @@ public class ConsoleOutputSupport implements PragmaHandler {
 	}
 	
 	private static void flushConsole(ViSpiConfig config) {
+		
 		ManagedProcess mp = config.getManagedProcess();
 		if (mp != null) {
 			try {
@@ -177,6 +178,22 @@ public class ConsoleOutputSupport implements PragmaHandler {
 				// ignore
 			}
 		}		
+		
+		// flush dericted streams if any
+		flushMux(config.<ConsoleMultiplexorStream>get(MUX_STREAM + "out"));
+		flushMux(config.<ConsoleMultiplexorStream>get(MUX_STREAM + "err"));
+	}
+
+	private static void flushMux(ConsoleMultiplexorStream cms) {
+		if (cms != null && cms.outs != null) {
+			for(OutputStream out: cms.outs) {
+				try {
+					out.flush();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
+		}
 	}
 
 	private static void silence(String stream, ViSpiConfig config) {
@@ -212,7 +229,12 @@ public class ConsoleOutputSupport implements PragmaHandler {
 				game.addUniqueProp(ViConf.ACTIVATED_FINALIZER_HOOK + "console-flush", new Runnable() {
 					@Override
 					public void run() {
-						flushConsole(game);
+						try {
+							flushConsole(game);
+						}
+						catch(Exception e) {
+							// suppress
+						}
 					}
 				});
 			}			
