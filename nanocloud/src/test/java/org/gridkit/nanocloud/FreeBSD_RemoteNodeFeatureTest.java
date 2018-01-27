@@ -120,6 +120,12 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
 
     @Test
     @Override
+    public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
+    	super.test_inherit_cp_shallow();
+    }
+
+    @Test
+    @Override
     public void test_inherit_cp_default_true() {
         super.test_inherit_cp_default_true();
     }

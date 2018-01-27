@@ -474,6 +474,22 @@ public abstract class ViNodeFeatureTest {
         });
 	}
 
+	public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
+		
+		ViNode node = testNode();
+		
+		node.x(CLASSPATH).inheritClasspath(true);
+		node.x(CLASSPATH).useShallowClasspath(true);
+		
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				// should NOT throw NoClassDefFoundError because junit should be inherited
+				Assert.assertTrue(true);
+			}
+		});
+	}
+
 	public void test_inherit_cp_default_true() {
 
         ViNode node = testNode();
@@ -626,12 +642,14 @@ public abstract class ViNodeFeatureTest {
         ViNode nodeB = cloud.node(testName.getMethodName() + ".base");
         ViNode nodeC = cloud.node(testName.getMethodName() + ".child");
         nodeC.x(PROCESS).setWorkDir("target");
-        cloud.node("**").touch();
+
         final File base = nodeB.exec(new Callable<File>() {
             @Override
             public File call() throws Exception {
                 File wd = new File(".").getCanonicalFile();
-                new File(wd, "target").mkdirs();
+                File ndir = new File(wd, "target");
+                ndir.mkdirs();
+                System.err.println("Create directory: " + ndir.getAbsolutePath());
                 return wd;
             }
         });
@@ -639,6 +657,7 @@ public abstract class ViNodeFeatureTest {
             @Override
             public Void call() throws Exception {
                 File wd = new File(".").getCanonicalFile();
+                System.err.println("Working directory: " + wd.getAbsolutePath());
                 Assert.assertEquals(new File(base, "target").getCanonicalFile(), wd);
                 return null;
             }
