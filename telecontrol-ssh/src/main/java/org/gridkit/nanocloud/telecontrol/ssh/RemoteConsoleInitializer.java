@@ -218,7 +218,7 @@ public class RemoteConsoleInitializer implements InductiveRule {
 				context.lookup(key3, this);
 			}
 
-			// TODO shutdown hook
+			context.addFinalizer(new KillConsole(console));
 		}
 	}
 	
@@ -310,5 +310,19 @@ public class RemoteConsoleInitializer implements InductiveRule {
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> E doThrow(Throwable e) throws E {
         throw (E)e;
-    }    
+    }
+    
+    private static class KillConsole implements Runnable {
+    	
+    	private final HostControlConsole console;
+
+		public KillConsole(HostControlConsole console) {
+			this.console = console;
+		}
+
+		@Override
+		public void run() {
+			console.terminate();
+		}
+    }
 }
