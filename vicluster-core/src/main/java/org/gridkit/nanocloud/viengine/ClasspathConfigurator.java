@@ -1,5 +1,10 @@
 package org.gridkit.nanocloud.viengine;
 
+import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -12,11 +17,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.telecontrol.Classpath;
-import org.gridkit.vicluster.telecontrol.ClasspathUtils;
-import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 
 public class ClasspathConfigurator implements NodeAction {
 
@@ -56,21 +56,29 @@ public class ClasspathConfigurator implements NodeAction {
                 return cp;
             }
             else {
-                List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
-                
-                for(String k: tweaks) {
-                    String change = config.get(k);
-                    if (change.startsWith("+")) {
-                        String cpe = normalize(toURL(change.substring(1)));
-                        addEntry(entries, cpe);
+                List<ClassPathTweak> classPathTweaks = new ArrayList<ClassPathTweak>(tweaks.size());
+                for (String tweak : tweaks) {
+                    final String description = config.get(tweak);
+                    classPathTweaks.add(new ClassPathTweak(description));
+                }
+                Collections.sort(classPathTweaks);
+
+                List<ClasspathEntry> inheritedEntries = new ArrayList<Classpath.ClasspathEntry>(cp);
+                List<ClasspathEntry> tweaksEntries = new ArrayList<Classpath.ClasspathEntry>();
+
+                for(ClassPathTweak k: classPathTweaks) {
+                    if (k.isAddition) {
+                        addEntry(tweaksEntries, k.classPathEntry);
                     }
-                    else if (change.startsWith("-")) {
-                        String cpe = normalize(toURL(change.substring(1)));
-                        removeEntry(entries, cpe);
+                    else {
+                        removeEntry(inheritedEntries, k.classPathEntry);
+                        removeEntry(tweaksEntries, k.classPathEntry);
                     }
                 }
-                
-                return entries;
+
+                tweaksEntries.addAll(inheritedEntries); // add filtered inherited entries to the end of class-path
+
+                return tweaksEntries;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -99,7 +107,7 @@ public class ClasspathConfigurator implements NodeAction {
     private static void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
         ClasspathEntry entry = Classpath.getLocalEntry(path);
         if (entry != null) {
-            entries.add(0, entry);
+            entries.add(entry);
         }
     }
 
@@ -140,5 +148,31 @@ public class ClasspathConfigurator implements NodeAction {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Malformed URL in classpath: " + url);
         }
-    }            
+    }
+
+    private static class ClassPathTweak implements Comparable<ClassPathTweak>{
+
+        private final int priority;
+        private final boolean isAddition;
+        private final String classPathEntry;
+
+        public ClassPathTweak(String tweak) {
+            final int endOfPriorityPart = tweak.indexOf("!");
+            final char action = tweak.charAt(endOfPriorityPart + 1);
+            priority = Integer.parseInt(tweak.substring(0, endOfPriorityPart));
+            if (action == '+') {
+                isAddition = true;
+            } else if (action == '-') {
+                isAddition = false;
+            } else {
+                throw new AssertionError("Invalid action in tweak: " + tweak);
+            }
+            classPathEntry = normalize(toURL(tweak.substring(endOfPriorityPart + 2)));
+        }
+
+        @Override
+        public int compareTo(ClassPathTweak o) {
+            return Integer.valueOf(this.priority).compareTo(o.priority);
+        }
+    }
 }
