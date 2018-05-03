@@ -5,10 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -39,6 +36,12 @@ public class ClasspathConfigurator implements NodeAction {
     public static List<ClasspathEntry> buildClasspath(PragmaReader config) {
         try {
             List<String> tweaks = config.match(ViConf.CLASSPATH_TWEAK + "**");
+            Collections.sort(tweaks, new Comparator<String>() { // we will add at the beginning, so we should process tweaks in reverse order
+                @Override
+                public int compare(String o1, String o2) {
+                    return -o1.compareTo(o2);
+                }
+            });
             final boolean inheritClassPath = !Boolean.FALSE.toString().equalsIgnoreCase((String)config.get(ViConf.CLASSPATH_INHERIT));
             final List<ClasspathEntry> cp;
             final List<ClasspathEntry> inheritedClasspath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());

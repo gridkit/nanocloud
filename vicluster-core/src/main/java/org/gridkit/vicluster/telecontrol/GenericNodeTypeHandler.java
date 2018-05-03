@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -186,7 +187,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		protected List<ClasspathEntry> buildState(QuorumGame game) {
 			try {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
-				Map<String, String> tweaks = (Map<String, String>) (Map) game.getConfigProps(ViConf.CLASSPATH_TWEAK);
+				TreeMap<String, String> tweaks = new TreeMap<String, String>((Map)game.getConfigProps(ViConf.CLASSPATH_TWEAK));
                 final boolean inheritClassPath = !Boolean.FALSE.toString().equals(game.getAllConfigProps().get(ViConf.CLASSPATH_INHERIT));
                 final List<ClasspathEntry> cp;
                 final List<ClasspathEntry> inheritedClasspath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
@@ -206,7 +207,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 				else {
 					List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
 					
-					for(String k: tweaks.keySet()) {
+					for(String k:  tweaks.descendingMap().keySet()) { // we will add at the beginning, so we should process tweaks in reverse order
 						String change = tweaks.get(k);
 						if (change.startsWith("+")) {
 							String cpe = normalize(toURL(change.substring(1)));

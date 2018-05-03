@@ -10,6 +10,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
@@ -488,7 +489,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	}
 	
 	public static class ClasspathConf extends Delegate {
-		
+		private static final AtomicInteger classPathTweakCounter = new AtomicInteger();
+
 		private ViConfigurable conf;
 
 		public static ClasspathConf at(ViConfigurable conf) {
@@ -569,7 +571,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			name = urlToString(url);
 			name = name.replace(':', '_');
 			name = name.replace('/', '_');
-			return name;
+
+			final int tweakNumber = classPathTweakCounter.incrementAndGet();
+			final String tweakNumberStr = String.format("%010d", tweakNumber); // 10 digits will be enough for ordering any classpath
+
+			return tweakNumberStr+"_"+name;
 		}
 
 		private String urlToString(URL url) {
