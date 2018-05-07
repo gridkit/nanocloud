@@ -36,12 +36,6 @@ public class ClasspathConfigurator implements NodeAction {
     public static List<ClasspathEntry> buildClasspath(PragmaReader config) {
         try {
             List<String> tweaks = config.match(ViConf.CLASSPATH_TWEAK + "**");
-            Collections.sort(tweaks, new Comparator<String>() { // we will add at the beginning, so we should process tweaks in reverse order
-                @Override
-                public int compare(String o1, String o2) {
-                    return -o1.compareTo(o2);
-                }
-            });
             final boolean inheritClassPath = !Boolean.FALSE.toString().equalsIgnoreCase((String)config.get(ViConf.CLASSPATH_INHERIT));
             final List<ClasspathEntry> cp;
             final List<ClasspathEntry> inheritedClasspath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
@@ -59,21 +53,25 @@ public class ClasspathConfigurator implements NodeAction {
                 return cp;
             }
             else {
-                List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
+                List<ClasspathEntry> inheritedEntries = new ArrayList<Classpath.ClasspathEntry>(cp);
+                List<ClasspathEntry> tweaksEntries = new ArrayList<Classpath.ClasspathEntry>();
                 
                 for(String k: tweaks) {
                     String change = config.get(k);
                     if (change.startsWith("+")) {
                         String cpe = normalize(toURL(change.substring(1)));
-                        addEntry(entries, cpe);
+                        addEntry(tweaksEntries, cpe);
                     }
                     else if (change.startsWith("-")) {
                         String cpe = normalize(toURL(change.substring(1)));
-                        removeEntry(entries, cpe);
+                        removeEntry(inheritedEntries, cpe);
+                        removeEntry(tweaksEntries, cpe);
                     }
                 }
+
+                tweaksEntries.addAll(inheritedEntries); // add filtered inherited entries to the end of class-path
                 
-                return entries;
+                return tweaksEntries;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -102,7 +100,7 @@ public class ClasspathConfigurator implements NodeAction {
     private static void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
         ClasspathEntry entry = Classpath.getLocalEntry(path);
         if (entry != null) {
-            entries.add(0, entry);
+            entries.add(entry);
         }
     }
 

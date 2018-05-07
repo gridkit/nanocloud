@@ -317,6 +317,7 @@ public abstract class ViNodeFeatureTest {
 		
 		ViNode node1 = cloud.node(testName.getMethodName()+"_1");
 		ViNode node2 = cloud.node(testName.getMethodName()+"_2");
+		ViNode node3 = cloud.node(testName.getMethodName()+"_3");
 
 		node1.x(CLASSPATH).add(getClass().getResource("/marker-override.jar"));
 		node1.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
@@ -324,10 +325,13 @@ public abstract class ViNodeFeatureTest {
 		node2.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
 		node2.x(CLASSPATH).add(getClass().getResource("/marker-override.jar"));
 
-//		node1.x(VX.PROCESS).addJvmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
+		node3.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
+		node3.x(CLASSPATH).remove(getClass().getResource("/marker-override2.jar"));
+
+//		node3.x(VX.PROCESS).addJvmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
 
 		node1.exec(new Callable<Void>() {
-			
+
 			@Override
 			public Void call() throws Exception {
 				String marker = readMarkerFromResources();
@@ -343,6 +347,17 @@ public abstract class ViNodeFeatureTest {
 			public Void call() throws Exception {
 				String marker = readMarkerFromResources();
 				Assert.assertEquals("Marker from jar 2", marker);
+				return null;
+			}
+
+		});
+
+		node3.exec(new Callable<Void>() {
+
+			@Override
+			public Void call() throws Exception {
+				String marker = readMarkerFromResources();
+				Assert.assertEquals("Default marker", marker);
 				return null;
 			}
 

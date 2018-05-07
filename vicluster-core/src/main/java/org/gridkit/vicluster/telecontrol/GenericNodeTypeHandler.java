@@ -205,21 +205,24 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 					return cp;
 				}
 				else {
-					List<ClasspathEntry> entries = new ArrayList<Classpath.ClasspathEntry>(cp);
-					
-					for(String k:  tweaks.descendingMap().keySet()) { // we will add at the beginning, so we should process tweaks in reverse order
-						String change = tweaks.get(k);
+					List<ClasspathEntry> inheritedEntries = new ArrayList<Classpath.ClasspathEntry>(cp);
+					List<ClasspathEntry> tweaksEntries = new ArrayList<Classpath.ClasspathEntry>();
+
+					for(String change:  tweaks.values()) {
 						if (change.startsWith("+")) {
 							String cpe = normalize(toURL(change.substring(1)));
-							addEntry(entries, cpe);
+							addEntry(tweaksEntries, cpe);
 						}
 						else if (change.startsWith("-")) {
 							String cpe = normalize(toURL(change.substring(1)));
-							removeEntry(entries, cpe);
+							removeEntry(inheritedEntries, cpe);
+							removeEntry(tweaksEntries, cpe);
 						}
 					}
+
+					tweaksEntries.addAll(inheritedEntries); // add filtered inherited entries to the end of class-path
 					
-					return entries;
+					return tweaksEntries;
 				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -278,7 +281,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
         private void addEntry(List<ClasspathEntry> entries, String path) throws IOException {
 			ClasspathEntry entry = Classpath.getLocalEntry(path);
 			if (entry != null) {
-				entries.add(0, entry);
+				entries.add(entry);
 			}
 		}
 
