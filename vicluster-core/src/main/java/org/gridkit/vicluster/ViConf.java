@@ -10,6 +10,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
@@ -488,7 +489,8 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 	}
 	
 	public static class ClasspathConf extends Delegate {
-		
+		private static final AtomicInteger classPathTweakCounter = new AtomicInteger();
+
 		private ViConfigurable conf;
 
 		public static ClasspathConf at(ViConfigurable conf) {
@@ -523,7 +525,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 		public ClasspathConf add(String ruleName, URL url) {
 			checkURL(url);
-			conf.setProp(CLASSPATH_TWEAK + ruleName, "+" + urlToString(url));
+			conf.setProp(CLASSPATH_TWEAK + ruleName, getNextPriorityNumber()+"!+" + urlToString(url));
 			return this;
 		}
 
@@ -541,7 +543,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 		public ClasspathConf remove(String ruleName, URL url) {
 			checkURL(url);
-			conf.setProp(CLASSPATH_TWEAK + ruleName, "-" + urlToString(url));
+			conf.setProp(CLASSPATH_TWEAK + ruleName, getNextPriorityNumber()+"!-" + urlToString(url));
 			return this;
 		}
 
@@ -570,6 +572,11 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			name = name.replace(':', '_');
 			name = name.replace('/', '_');
 			return name;
+		}
+
+		private String getNextPriorityNumber() {
+			final int tweakNumber = classPathTweakCounter.incrementAndGet();
+			return String.format("%010d", tweakNumber);
 		}
 
 		private String urlToString(URL url) {
