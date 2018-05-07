@@ -1,19 +1,22 @@
 package org.gridkit.nanocloud.viengine;
 
+import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.telecontrol.Classpath;
-import org.gridkit.vicluster.telecontrol.ClasspathUtils;
-import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 
 public class ClasspathConfigurator implements NodeAction {
 
@@ -53,19 +56,23 @@ public class ClasspathConfigurator implements NodeAction {
                 return cp;
             }
             else {
+                List<ClassPathTweak> classPathTweaks = new ArrayList<ClassPathTweak>(tweaks.size());
+                for (String tweak : tweaks) {
+                    final String description = config.get(tweak);
+                    classPathTweaks.add(new ClassPathTweak(description));
+                }
+                Collections.sort(classPathTweaks);
+
                 List<ClasspathEntry> inheritedEntries = new ArrayList<Classpath.ClasspathEntry>(cp);
                 List<ClasspathEntry> tweaksEntries = new ArrayList<Classpath.ClasspathEntry>();
                 
-                for(String k: tweaks) {
-                    String change = config.get(k);
-                    if (change.startsWith("+")) {
-                        String cpe = normalize(toURL(change.substring(1)));
-                        addEntry(tweaksEntries, cpe);
+                for(ClassPathTweak k: classPathTweaks) {
+                    if (k.isAddition) {
+                        addEntry(tweaksEntries, k.classPathEntry);
                     }
-                    else if (change.startsWith("-")) {
-                        String cpe = normalize(toURL(change.substring(1)));
-                        removeEntry(inheritedEntries, cpe);
-                        removeEntry(tweaksEntries, cpe);
+                    else {
+                        removeEntry(inheritedEntries, k.classPathEntry);
+                        removeEntry(tweaksEntries, k.classPathEntry);
                     }
                 }
 
@@ -141,5 +148,31 @@ public class ClasspathConfigurator implements NodeAction {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Malformed URL in classpath: " + url);
         }
-    }            
+    }
+
+    private static class ClassPathTweak implements Comparable<ClassPathTweak>{
+
+        private final int priority;
+        private final boolean isAddition;
+        private final String classPathEntry;
+
+        public ClassPathTweak(String tweak) {
+            final int endOfPriorityPart = tweak.indexOf("!");
+            final char action = tweak.charAt(endOfPriorityPart + 1);
+            priority = Integer.parseInt(tweak.substring(0, endOfPriorityPart));
+            if (action == '+') {
+                isAddition = true;
+            } else if (action == '-') {
+                isAddition = false;
+            } else {
+                throw new AssertionError("Invalid action in tweak: " + tweak);
+            }
+            classPathEntry = normalize(toURL(tweak.substring(endOfPriorityPart + 2)));
+        }
+
+        @Override
+        public int compareTo(ClassPathTweak o) {
+            return Integer.valueOf(this.priority).compareTo(o.priority);
+        }
+    }
 }

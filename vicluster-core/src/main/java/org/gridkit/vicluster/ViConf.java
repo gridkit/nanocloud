@@ -525,7 +525,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 		public ClasspathConf add(String ruleName, URL url) {
 			checkURL(url);
-			conf.setProp(CLASSPATH_TWEAK + ruleName, "+" + urlToString(url));
+			conf.setProp(CLASSPATH_TWEAK + ruleName, getNextPriorityNumber()+"!+" + urlToString(url));
 			return this;
 		}
 
@@ -543,7 +543,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
 		public ClasspathConf remove(String ruleName, URL url) {
 			checkURL(url);
-			conf.setProp(CLASSPATH_TWEAK + ruleName, "-" + urlToString(url));
+			conf.setProp(CLASSPATH_TWEAK + ruleName, getNextPriorityNumber()+"!-" + urlToString(url));
 			return this;
 		}
 
@@ -571,11 +571,12 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 			name = urlToString(url);
 			name = name.replace(':', '_');
 			name = name.replace('/', '_');
+			return name;
+		}
 
+		private String getNextPriorityNumber() {
 			final int tweakNumber = classPathTweakCounter.incrementAndGet();
-			final String tweakNumberStr = String.format("%010d", tweakNumber); // 10 digits will be enough for ordering any classpath
-
-			return tweakNumberStr+"_"+name;
+			return String.format("%010d", tweakNumber);
 		}
 
 		private String urlToString(URL url) {

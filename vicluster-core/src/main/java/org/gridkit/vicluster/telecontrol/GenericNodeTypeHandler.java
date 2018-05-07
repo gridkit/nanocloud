@@ -187,7 +187,7 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 		protected List<ClasspathEntry> buildState(QuorumGame game) {
 			try {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
-				TreeMap<String, String> tweaks = new TreeMap<String, String>((Map)game.getConfigProps(ViConf.CLASSPATH_TWEAK));
+				Map<String, String> tweaks = (Map)game.getConfigProps(ViConf.CLASSPATH_TWEAK);
                 final boolean inheritClassPath = !Boolean.FALSE.toString().equals(game.getAllConfigProps().get(ViConf.CLASSPATH_INHERIT));
                 final List<ClasspathEntry> cp;
                 final List<ClasspathEntry> inheritedClasspath = Classpath.getClasspath(Thread.currentThread().getContextClassLoader());
@@ -205,23 +205,27 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 					return cp;
 				}
 				else {
+					List<ClassPathTweak> classPathTweaks = new ArrayList<ClassPathTweak>(tweaks.size());
+					for (String tweak : tweaks.values()) {
+						classPathTweaks.add(new ClassPathTweak(tweak));
+					}
+					Collections.sort(classPathTweaks);
+
 					List<ClasspathEntry> inheritedEntries = new ArrayList<Classpath.ClasspathEntry>(cp);
 					List<ClasspathEntry> tweaksEntries = new ArrayList<Classpath.ClasspathEntry>();
 
-					for(String change:  tweaks.values()) {
-						if (change.startsWith("+")) {
-							String cpe = normalize(toURL(change.substring(1)));
-							addEntry(tweaksEntries, cpe);
+					for(ClassPathTweak k: classPathTweaks) {
+						if (k.isAddition) {
+							addEntry(tweaksEntries, k.classPathEntry);
 						}
-						else if (change.startsWith("-")) {
-							String cpe = normalize(toURL(change.substring(1)));
-							removeEntry(inheritedEntries, cpe);
-							removeEntry(tweaksEntries, cpe);
+						else {
+							removeEntry(inheritedEntries, k.classPathEntry);
+							removeEntry(tweaksEntries, k.classPathEntry);
 						}
 					}
 
 					tweaksEntries.addAll(inheritedEntries); // add filtered inherited entries to the end of class-path
-					
+
 					return tweaksEntries;
 				}
 			} catch (IOException e) {
@@ -355,6 +359,32 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
 
 		private boolean compareContent(ClasspathEntry e1, ClasspathEntry e2) {
 			return e1.getContentHash().equals(e2.getContentHash());
+		}
+
+		private class ClassPathTweak implements Comparable<ClassPathTweak>{
+
+			private final int priority;
+			private final boolean isAddition;
+			private final String classPathEntry;
+
+			public ClassPathTweak(String tweak) {
+				final int endOfPriorityPart = tweak.indexOf("!");
+				final char action = tweak.charAt(endOfPriorityPart + 1);
+				priority = Integer.parseInt(tweak.substring(0, endOfPriorityPart));
+				if (action == '+') {
+					isAddition = true;
+				} else if (action == '-') {
+					isAddition = false;
+				} else {
+					throw new AssertionError("Invalid action in tweak: " + tweak);
+				}
+				classPathEntry = normalize(toURL(tweak.substring(endOfPriorityPart + 2)));
+			}
+
+			@Override
+			public int compareTo(ClassPathTweak o) {
+				return Integer.valueOf(this.priority).compareTo(o.priority);
+			}
 		}
 	}
 
