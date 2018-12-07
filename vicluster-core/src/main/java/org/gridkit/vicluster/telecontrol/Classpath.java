@@ -26,7 +26,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,7 +52,7 @@ public class Classpath {
 		List<ClasspathEntry> classpath = CLASSPATH_CACHE.get(classloader);
 		if (classpath == null) {
 			classpath = new ArrayList<Classpath.ClasspathEntry>();
-			fillClasspath(classpath, ClasspathUtils.listCurrentClasspath(((URLClassLoader)classloader)));
+			fillClasspath(classpath, ClasspathUtils.listCurrentClasspath(classloader));
 			classpath = Collections.unmodifiableList(classpath);
 			CLASSPATH_CACHE.put(classloader, classpath);
 		}

@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -58,7 +61,32 @@ public class ClasspathUtils {
 	public static List<String> getStartupClasspath() {
 		return sanitize(System.getProperty("java.class.path"));
 	}
-	
+
+	private static Class urlClassPath;
+
+	private static Method urlClassPathGetUrlsField;
+
+	private static Class builtinClassLoader;
+
+	private static Field builtinClassLoaderUcpField;
+
+	static {
+		try {
+			builtinClassLoader = Class.forName("jdk.internal.loader.BuiltinClassLoader");
+			builtinClassLoaderUcpField = builtinClassLoader.getDeclaredField("ucp");
+		} catch (Exception e) {
+			builtinClassLoader = null;
+			builtinClassLoaderUcpField = null;
+		}
+		try {
+			urlClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+			urlClassPathGetUrlsField = urlClassPath.getMethod("getURLs");
+		} catch (Exception e) {
+			urlClassPath = null;
+			urlClassPathGetUrlsField = null;
+		}
+	}
+
 	private static List<String> sanitize(String cp) {
 		List<String> scp = new ArrayList<String>();
 		String psep = System.getProperty("path.separator");
@@ -91,11 +119,11 @@ public class ClasspathUtils {
 		
 		return null;
 	}
-	
-    public static Collection<URL> listCurrentClasspath(URLClassLoader classLoader) {
+
+    public static Collection<URL> listCurrentClasspath(ClassLoader classLoader) {
 		Set<URL> result = new LinkedHashSet<URL>();
 		while(true) {
-			for(URL url: classLoader.getURLs()) {
+			for(URL url: getUrlClasspath(classLoader)) {
 				addEntriesFromManifest(result, url);
 			}		
 			ClassLoader cls = classLoader.getParent();
@@ -111,7 +139,50 @@ public class ClasspathUtils {
 		}
 		return new ArrayList<URL>(result);
 	}
-	
+
+	private static URL[] getUrlClasspath(ClassLoader classLoader) {
+		if (classLoader instanceof URLClassLoader) {
+			return ((URLClassLoader) classLoader).getURLs();
+		} else {
+			if (builtinClassLoader != null && builtinClassLoaderUcpField != null
+					&& builtinClassLoader.isAssignableFrom(classLoader.getClass())) {
+				return getJava9ClassloaderUrls(classLoader);
+			}
+		}
+		throw new IllegalArgumentException("Classloader classpath is not available " + classLoader.getClass().getName(), null);
+	}
+
+	private static URL[] getJava9ClassloaderUrls(ClassLoader classLoader) {
+		try {
+			synchronized (builtinClassLoaderUcpField) {
+				boolean accessible = builtinClassLoaderUcpField.isAccessible();
+				try {
+					if (!accessible) {
+						builtinClassLoaderUcpField.setAccessible(true);
+					}
+					Object ucpValue = builtinClassLoaderUcpField.get(classLoader);
+					if (ucpValue instanceof URLClassLoader) {
+						return ((URLClassLoader) ucpValue).getURLs();
+					} else {
+						if (urlClassPath != null && urlClassPath.isInstance(ucpValue)) {
+							return (URL[]) urlClassPathGetUrlsField.invoke(ucpValue);
+						} else {
+							throw new IllegalArgumentException("Classloader classpath is not available " + classLoader.getClass().getName());
+						}
+					}
+				} finally {
+					if (!accessible) {
+						builtinClassLoaderUcpField.setAccessible(false);
+					}
+				}
+			}
+		} catch (InvocationTargetException ex) {
+			throw new IllegalArgumentException("Classloader classpath is not available " + classLoader.getClass().getName(), ex);
+		} catch (IllegalAccessException ex) {
+			throw new IllegalArgumentException("Classloader classpath is not available " + classLoader.getClass().getName(), ex);
+		}
+	}
+
 	private static void addEntriesFromManifest(Set<URL> list, URL url) {
 	    if (list.contains(url)) {
 	        // avoid duplicates in list
