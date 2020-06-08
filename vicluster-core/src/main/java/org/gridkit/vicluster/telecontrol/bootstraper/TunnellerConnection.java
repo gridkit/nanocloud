@@ -374,10 +374,10 @@ public class TunnellerConnection extends TunnellerIO {
 		}
 
 		private void processAccepted() throws IOException {
-			AcceptedCmd cmd = new AcceptedCmd();
+			final AcceptedCmd cmd = new AcceptedCmd();
 			cmd.read(ctrlRep);
 			
-			AcceptContext ctx;
+			final AcceptContext ctx;
 			synchronized(TunnellerConnection.this) {
 				
 				ctx = accepts.remove(cmd.cmdId);
@@ -385,8 +385,16 @@ public class TunnellerConnection extends TunnellerIO {
 					throw new RuntimeException("Unknown acceptor ID: " + cmd.cmdId);
 				}
 				addAcceptor(ctx.context);
-			}			
-			ctx.context.handler.accepted(cmd.remoteHost, cmd.remotePort, ctx.soIn, ctx.soOut);
+			}
+			new Thread(
+					new Runnable() {
+						@Override
+						public void run() {
+							ctx.context.handler.accepted(cmd.remoteHost, cmd.remotePort, ctx.soIn, ctx.soOut);
+						}
+					},
+					"process accepted " + cmd.remoteHost + ":" + cmd.remotePort
+			).start();
 		}
 
 		private void processFileResponse() throws IOException {
