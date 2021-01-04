@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.gridkit.lab</groupId>
         <artifactId>vicluster-parent</artifactId>
-        <version>0.8.19</version>        
+        <version>0.8.20-SNAPSHOT</version>        
         <relativePath>..</relativePath>
     </parent>
 
