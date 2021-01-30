@@ -9,8 +9,8 @@ import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.SSH_PRIVATE_KEY_F
 import java.util.List;
 import java.util.Map;
 
-import org.gridkit.internal.com.jcraft.jsch.JSchException;
-import org.gridkit.internal.com.jcraft.jsch.Session;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.SimpleTunnelInitiator;
 import org.gridkit.nanocloud.telecontrol.TunnellerInitiator;

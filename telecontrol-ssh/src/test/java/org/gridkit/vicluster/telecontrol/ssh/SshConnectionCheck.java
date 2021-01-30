@@ -17,9 +17,9 @@ package org.gridkit.vicluster.telecontrol.ssh;
 
 import junit.framework.Assert;
 
-import org.gridkit.internal.com.jcraft.jsch.JSch;
-import org.gridkit.internal.com.jcraft.jsch.JSchException;
-import org.gridkit.internal.com.jcraft.jsch.Session;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

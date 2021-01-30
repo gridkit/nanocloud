@@ -32,9 +32,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import org.gridkit.internal.com.jcraft.jsch.ChannelExec;
-import org.gridkit.internal.com.jcraft.jsch.JSchException;
-import org.gridkit.internal.com.jcraft.jsch.Session;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
@@ -76,10 +76,10 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 	private Session session;
 	private RemotingHub hub;
 	private TunnellerConnection control;
-	
+
 	private RemoteFileCache jarCache;
 	private String tunnellerJarPath;
-	
+
 	private String tunnelHost;
 	private int tunnelPort;
 	private long connectTimeoutMS = DEFAULT_CONN_TIMEOUT;
@@ -300,7 +300,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		verifyJavaVersion();
 		
 		ChannelExec exec = (ChannelExec) session.openChannel("exec");
-		
+
 		String cmd = rconfig.getJavaExec() + " -Xms32m -Xmx32m -jar " + tunnellerJarPath;
 		exec.setCommand(cmd);
 
@@ -316,7 +316,7 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		exec.connect();
 
 		PrintStream diagLog = new LoggerPrintStream(logger.get("console", LogLevel.WARN));
-		
+
 		try {
 			control = new TunnellerConnection(rconfig.getHost(), cin, cout, diagLog, connectTimeoutMS, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {

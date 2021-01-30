@@ -4,8 +4,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
 
-import org.gridkit.internal.com.jcraft.jsch.JSchException;
-import org.gridkit.internal.com.jcraft.jsch.Session;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole.ProcessHandler;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
