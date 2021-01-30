@@ -14,7 +14,7 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ProcessShellCommandFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.junit.*;
 import org.springframework.util.SocketUtils;
 
@@ -46,7 +46,7 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
         });
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshServer.setShellFactory(new InteractiveProcessShellFactory());
-        sshServer.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(
+        sshServer.setSubsystemFactories(Collections.<SubsystemFactory>singletonList(
                 new SftpSubsystemFactory()
         ));
         sshServer.setCommandFactory(new ProcessShellCommandFactory());
