@@ -188,9 +188,9 @@ public class SftFileCache implements RemoteFileCache {
 
 	private String upload(ChannelSftp sftp, FileBlob blob) {
 	    String blobPath = blob.getContentHash() + "/" + blob.getFileName();
-		String rname = absoluteCachePath + "/" + blobPath;
+		String rname = blobPath;
 		try {
-			sftpMkdirs(sftp, absoluteCachePath + "/" + blob.getContentHash());
+			sftpMkdirs(sftp, blob.getContentHash());
 		} catch (SftpException e) {
 			new RuntimeException("SFT error: " + e.getMessage());
 		}
