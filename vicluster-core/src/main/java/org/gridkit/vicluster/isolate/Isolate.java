@@ -1635,7 +1635,7 @@ public class Isolate {
         }
 
         protected boolean shouldTraceIsolation() {
-            return true;//"true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.trace-classes"));
+            return "true".equalsIgnoreCase(sysProps.getProperty("gridkit.isolate.trace-classes"));
         }
 
         protected boolean shouldTraceInstrumentation() {
