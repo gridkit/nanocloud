@@ -128,7 +128,7 @@ public class RemotingHub implements MasterHub {
 				if (ctx != null) {
 					ctx.listener.closed();
 					silentClose(ctx.stream);
-					ctx.gateway.shutdown();
+					ctx.gateway.shutdown(null);
 					connections.remove(id);
 					
 					// done
@@ -212,7 +212,7 @@ public class RemotingHub implements MasterHub {
 		}
 
 		@Override
-		public void streamClosed(DuplexStream socket, Object stream) {
+		public void streamClosed(DuplexStream socket, Object stream, Exception error) {
 			gateway.disconnect();
 			this.stream = null;
 			logInfo.log("Closed: " + stream);

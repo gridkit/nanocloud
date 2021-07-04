@@ -96,8 +96,8 @@ public class RmiChannelPipeTest {
 	
 	@After
 	public void stopRmi() {
-		left.shutdown();
-		right.shutdown();
+		left.shutdown(null);
+		right.shutdown(null);
 	}
 	
 	private Object[] createSocketPair() {

@@ -177,4 +177,10 @@ public class LocalShallowNodeFeatureTest extends ViNodeFeatureTest {
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_with_options();
     }
+
+    @Test
+    @Override
+    public void verify_exit_code_is_reported() {
+        super.verify_exit_code_is_reported();
+    }
 }

@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -694,6 +696,46 @@ public abstract class ViNodeFeatureTest {
             }
         });
     }
+
+	public void verify_exit_code_is_reported() {
+		ViNode node = cloud.node(testName.getMethodName());
+
+		// Schedule node crush after some time.
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(1000);
+							Runtime.getRuntime().halt(42);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}).start();
+			}
+		});
+
+		try {
+			Thread.sleep(2000); // halt timeout was 1000, after 2000 all processing should be done
+			node.exec(new Runnable() {
+				@Override
+				public void run() {
+					System.out.println("ping");
+				}
+			});
+			throw new AssertionError("Halt failed");
+		} catch (AssertionError e) {
+			throw e;
+		} catch (Throwable t) {
+			t.printStackTrace();
+			StringWriter writer = new StringWriter();
+			t.printStackTrace(new PrintWriter(writer));
+			assertThat(writer.toString()).contains("Terminated, exitCode=42");
+		}
+	}
     
 	private static String readMarkerFromResources() throws IOException {
     	URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");

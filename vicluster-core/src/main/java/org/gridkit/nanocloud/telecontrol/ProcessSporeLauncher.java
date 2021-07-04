@@ -570,7 +570,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 		}
 
 		protected synchronized void sepuku(Throwable e) {
-			session.terminate();
+			session.terminate(e);
 			procStreams.setErrorIfWaiting(e);
 			executor.setErrorIfWaiting(e);
 			// do not add exception to exit code as it may be used even in case of abnormal termination

@@ -36,6 +36,8 @@ import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.LogStream;
 import org.gridkit.zerormi.zlog.ZLogger;
 
+import static org.gridkit.zerormi.JdkUtils.addSuppressedIfSupported;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -65,6 +67,7 @@ public class RmiChannel1 implements RmiChannel {
     private long debugRpcDelay = 0;
 
     private volatile boolean terminated = false;
+    private volatile Throwable terminatedCause;
 
     public RmiChannel1(String name, OutputChannel output, Executor callDispatcher, RmiMarshaler marshaler, ZLogger logger, Map<String, Object> props) {
         this.name = name;
@@ -115,13 +118,13 @@ public class RmiChannel1 implements RmiChannel {
                             remoteReturn = delegateCall(remoteCall);
                         } catch (Exception e) {
                             e.printStackTrace();
-                            RmiChannel1.this.close();
+                            RmiChannel1.this.close(e);
                             return;
                         }
                         try {
                             sendMessage(remoteReturn);
                         } catch (IOException e) {
-                            RmiChannel1.this.close();
+                            RmiChannel1.this.close(e);
                         }
                     }
                     finally {
@@ -151,7 +154,7 @@ public class RmiChannel1 implements RmiChannel {
                     try {
                         sendMessage(remoteReturn);
                     } catch (IOException e) {
-                        RmiChannel1.this.close();
+                        RmiChannel1.this.close(e);
                     }
                 }
             };
@@ -162,11 +165,17 @@ public class RmiChannel1 implements RmiChannel {
         }
     }
 
-    public synchronized void close() {
+    public synchronized void close(Throwable cause) {
         // TODO global synchronization somehow
         if (terminated) {
+            if (terminatedCause != null){
+                addSuppressedIfSupported(terminatedCause, cause);
+            }else {
+                terminatedCause = cause;
+            }
             return;
         }
+        terminatedCause = cause;
         terminated = true;
 
         object2remote.clear();
@@ -175,7 +184,7 @@ public class RmiChannel1 implements RmiChannel {
         remoteInstanceProxys.clear();
         for (RemoteCallContext context : remoteReturnWaiters.values()) {
             if (context.result == null) {
-                context.dispatch(new RemoteReturn(0, true, new RemoteException("Connection closed")));
+                context.dispatch(new RemoteReturn(0, true, new RemoteException("Connection closed", cause)));
             }
         }
 
@@ -273,7 +282,7 @@ public class RmiChannel1 implements RmiChannel {
 		RemoteCallContext ctx = new RemoteCallContext(future);
 
         if (terminated) {
-            throw new IllegalStateException("Connection closed");
+            throw new IllegalStateException("Connection closed", terminatedCause);
         }
         remoteReturnWaiters.put(future.remoteCall.callId, ctx);
 	}
@@ -288,7 +297,7 @@ public class RmiChannel1 implements RmiChannel {
         RemoteCallContext context = new RemoteCallContext(Thread.currentThread());
 
         if (terminated) {
-            throw new RemoteException("Connection closed");
+            throw new RemoteException("Connection closed", terminatedCause);
         }
         // TODO race condition on close
         remoteReturnWaiters.put(id, context);
@@ -308,14 +317,14 @@ public class RmiChannel1 implements RmiChannel {
         
         while (true) {
             if (terminated) {
-            	throw decorateException(method, new RemoteException("Connection closed"));
+            	throw decorateException(method, new RemoteException("Connection closed", terminatedCause));
             }
             long period = TimeUnit.SECONDS.toNanos(5);
             LockSupport.parkNanos(period);
             if (context.result != null) {
                 break;
             } else if (terminated) {
-                throw decorateException(method, new RemoteException("Connection closed"));
+                throw decorateException(method, new RemoteException("Connection closed", terminatedCause));
             } else if (Thread.interrupted()) {
                 // TODO handle interruption
                 throw decorateException(method, new InterruptedException());

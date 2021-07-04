@@ -30,7 +30,7 @@ interface RmiChannel {
 
 	public FutureEx<Object> asyncRemoteInvocation(RemoteStub remoteStub, Object proxy, Method method, Object[] args);
 
-	public void close();
+	public void close(Throwable cause);
 
 	public void handleMessage(RemoteMessage message);
 

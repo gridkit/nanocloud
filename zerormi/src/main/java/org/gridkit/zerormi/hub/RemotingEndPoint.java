@@ -208,7 +208,7 @@ public class RemotingEndPoint implements Runnable, RmiGateway.StreamErrorHandler
 	}
 
 	@Override
-	public void streamClosed(DuplexStream socket, Object stream) {
+	public void streamClosed(DuplexStream socket, Object stream, Exception error) {
 		synchronized(pingSingnal) {
 			pingSingnal.notifyAll();
 		}
