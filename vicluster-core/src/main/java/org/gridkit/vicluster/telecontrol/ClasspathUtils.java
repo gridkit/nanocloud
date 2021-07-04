@@ -285,7 +285,7 @@ public class ClasspathUtils {
     public static byte[] jarFiles(String path) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         JarOutputStream jarOut = new JarOutputStream(bos);
-        int size = addFiles(jarOut, "", new File(path));
+        int size = addFiles(jarOut, new File(path));
         if (size == 0) {
             // no files in folder
             return null;
@@ -294,20 +294,31 @@ public class ClasspathUtils {
         return bos.toByteArray();
     }
 
-    private static int addFiles(JarOutputStream jarOut, String base, File path) throws IOException {
-        int count = 0;
-        for(File file : path.listFiles()) {
-            if (file.isDirectory()) {
-                final String dirName = base + file.getName() + "/";
 
-                JarEntry entry = new JarEntry(dirName);
-                entry.setTime(0l);// this to ensure equal hash for equal content
-                jarOut.putNextEntry(entry);
-                jarOut.closeEntry();
-                count += addFiles(jarOut, dirName, file);
+    private static int addFiles(JarOutputStream jarOut, File path) throws IOException {
+        return addFiles(jarOut, "", path);
+    }
+
+    private static int addFiles(JarOutputStream jarOut, String dirName, File path) throws IOException {
+        if (!path.isDirectory()){
+            throw new IllegalArgumentException("path is not directory "+path);
+        }else {
+            JarEntry entry = new JarEntry(dirName);
+            entry.setTime(0L);// this to ensure equal hash for equal content
+            jarOut.putNextEntry(entry);
+            jarOut.closeEntry();
+        }
+        File[] children = path.listFiles();
+        if (children == null){
+            return 0;
+        }
+        int count = 0;
+        for(File file : children) {
+            if (file.isDirectory()) {
+                count += addFiles(jarOut, dirName + file.getName() + "/", file);
             }
             else {
-                JarEntry entry = new JarEntry(base + file.getName());
+                JarEntry entry = new JarEntry(dirName + file.getName());
                 entry.setTime(file.lastModified());
                 jarOut.putNextEntry(entry);
                 StreamHelper.copy(new FileInputStream(file), jarOut);
