@@ -47,6 +47,8 @@ import org.gridkit.zerormi.zlog.LogStream;
 import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.gridkit.zerormi.zlog.ZLogger;
 
+import static org.gridkit.zerormi.JdkUtils.addSuppressedIfSupported;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -58,7 +60,8 @@ public class RmiGateway {
 	
 	private boolean connected = false;
 	private boolean terminated = false; 
-	
+	private Throwable terminatedCause;
+
 	private String name;
 	private DuplexStream socket;
 	private InboundMessageStream in;
@@ -75,12 +78,12 @@ public class RmiGateway {
 	private StreamErrorHandler streamErrorHandler = new StreamErrorHandler() {
 		@Override
 		public void streamError(DuplexStream socket, Object stream, Exception error) {
-			shutdown();
+			shutdown(error);
 		}
 
 		@Override
-		public void streamClosed(DuplexStream socket, Object stream) {
-			shutdown();
+		public void streamClosed(DuplexStream socket, Object stream, Exception error) {
+			shutdown(error);
 		}
 	};
 	
@@ -182,12 +185,21 @@ public class RmiGateway {
 		return connected && !terminated && !socket.isClosed();
 	}
 	
-	public synchronized void shutdown() {
+	public synchronized void shutdown(Throwable cause) {
 		if (terminated) {
+			/*
+			For local node SocketException will come first that reporting with exit code from LocalControlConsole.ProcessObserver.run
+			 */
+			if (terminatedCause != null) {
+				addSuppressedIfSupported(terminatedCause, cause);
+			} else {
+				terminatedCause = cause;
+			}
 			return;
 		}
 		logInfo.log("RMI gateway [" + name +"] terminated.");
 		terminated = true;
+		terminatedCause = cause;
 		
 		try {
 			out.close();
@@ -221,7 +233,7 @@ public class RmiGateway {
 			// ignore
 		}
 		try {
-			channel.close();
+			channel.close(cause);
 		}
 		catch(Exception e) {
 			// ignore
@@ -266,8 +278,9 @@ public class RmiGateway {
 				while(!terminated) {
 					RemoteMessage message = ims.readMessage();
 					if (message == null) {
-						logInfo.log("RMI gateway [" + name + "], remote side has requested termination");
-						shutdown();
+						String msg = "RMI gateway [" + name + "], remote side has requested termination";
+						logInfo.log(msg);
+						shutdown(new Exception(msg));
 					}
 					else {
 						channel.handleMessage(message);
@@ -287,7 +300,7 @@ public class RmiGateway {
 				logVerbose.log("disconnecting");
 				disconnect();
 				if (IOHelper.isSocketTerminationException(e)) {
-					streamErrorHandler.streamClosed(socket, in);
+					streamErrorHandler.streamClosed(socket, in, e);
 				}
 				else {
 					streamErrorHandler.streamError(socket, in, e);
@@ -691,7 +704,7 @@ public class RmiGateway {
 			}
 			catch (NullPointerException e) {
 				if (out == null) {
-					throw new IOException("RMI gatway [" + name + "] channel is not connected");
+					throw new IOException("RMI gatway [" + name + "] channel is not connected", RmiGateway.this.terminatedCause);
 				}
 				else throw e;
 			}
@@ -709,7 +722,7 @@ public class RmiGateway {
 		
 		public void streamError(DuplexStream socket, Object stream, Exception error);
 		
-		public void streamClosed(DuplexStream socket, Object stream);
+		public void streamClosed(DuplexStream socket, Object stream, Exception error);
 		
 	}
 
@@ -759,7 +772,7 @@ public class RmiGateway {
 		}
 
 		public void shutdown() {
-			RmiGateway.this.shutdown();
+			RmiGateway.this.shutdown(null);
 		}
 
 		public List<Runnable> shutdownNow() {

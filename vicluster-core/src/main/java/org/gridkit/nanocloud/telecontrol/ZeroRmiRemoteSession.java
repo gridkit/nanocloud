@@ -39,10 +39,10 @@ public class ZeroRmiRemoteSession implements RemoteExecutionSession {
 	}
 
 	@Override
-	public void terminate() {
-		gateway.shutdown();
+	public void terminate(Throwable cause) {
+		gateway.shutdown(cause);
 	}
-	
+
 	public static class Spore implements SlaveSpore {
 		
 		private static final long serialVersionUID = 20130806L;
