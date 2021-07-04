@@ -19,9 +19,15 @@ import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 
+import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.VX;
 import org.gridkit.nanocloud.testutil.JvmVersionCheck;
+import org.gridkit.vicluster.ViNode;
 import org.junit.Assume;
 import org.junit.Test;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Component;
@@ -84,5 +90,28 @@ public class ClasspathUtilsTest {
         assertEquals(1, beansWithAnnotation.size());
         assertTrue(beansWithAnnotation.containsKey("test"));
         assertEquals(classname, beansWithAnnotation.get("test").getClass().getName());
+    }
+
+    @Test
+    public void verify_spring_data_jpa_can_be_fallbacked_to_default_package(){
+        // if package does not exists, then spring-data-jpa fallback to default package.
+        // See org.springframework.orm.jpa.persistenceunit.DefaultPersistenceUnitManager.defaultPersistenceUnitRootLocation
+        ViNode node = CloudFactory.createCloud().node("node");
+        node.x(VX.TYPE).setLocal();
+        node.x(VX.CLASSPATH).useShallowClasspath(false);
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                JpaSpringApplication.main(new String[0]);
+            }
+        });
+    }
+
+    @EntityScan("com.unexisting.package")
+    @SpringBootApplication
+    public static class JpaSpringApplication{
+        public static void main(String[] args) {
+            SpringApplication.run(JpaSpringApplication.class);
+        }
     }
 }
