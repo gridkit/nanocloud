@@ -45,8 +45,8 @@ public class Classpath {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Classpath.class);
 	private static final String DIGEST_ALGO = "SHA-1";
 	
-	private static WeakHashMap<ClassLoader, List<ClasspathEntry>> CLASSPATH_CACHE = new WeakHashMap<ClassLoader, List<ClasspathEntry>>();
-	private static WeakHashMap<URL, WeakReference<ClasspathEntry>> CUSTOM_ENTRIES = new WeakHashMap<URL, WeakReference<ClasspathEntry>>();
+	private static final WeakHashMap<ClassLoader, List<ClasspathEntry>> CLASSPATH_CACHE = new WeakHashMap<ClassLoader, List<ClasspathEntry>>();
+	private static final WeakHashMap<URL, WeakReference<ClasspathEntry>> CUSTOM_ENTRIES = new WeakHashMap<URL, WeakReference<ClasspathEntry>>();
 	
 	public static synchronized List<ClasspathEntry> getClasspath(ClassLoader classloader) {
 		List<ClasspathEntry> classpath = CLASSPATH_CACHE.get(classloader);
@@ -65,7 +65,9 @@ public class Classpath {
 			WeakReference<ClasspathEntry> wr = CUSTOM_ENTRIES.get(url);
 			if (wr != null) {
 				ClasspathEntry entry = wr.get();
-				return entry;
+				if (entry != null) {
+					return entry;
+				}
 			}
 			ClasspathEntry entry = newEntry(url);
 			CUSTOM_ENTRIES.put(url, new WeakReference<ClasspathEntry>(entry));
