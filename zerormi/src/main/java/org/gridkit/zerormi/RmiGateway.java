@@ -47,8 +47,6 @@ import org.gridkit.zerormi.zlog.LogStream;
 import org.gridkit.zerormi.zlog.ZLogFactory;
 import org.gridkit.zerormi.zlog.ZLogger;
 
-import static org.gridkit.zerormi.JdkUtils.addSuppressedIfSupported;
-
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -191,7 +189,9 @@ public class RmiGateway {
 			For local node SocketException will come first that reporting with exit code from LocalControlConsole.ProcessObserver.run
 			 */
 			if (terminatedCause != null) {
-				addSuppressedIfSupported(terminatedCause, cause);
+				if (cause != null){
+					terminatedCause.addSuppressed(cause);
+				}
 			} else {
 				terminatedCause = cause;
 			}

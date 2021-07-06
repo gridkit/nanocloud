@@ -36,8 +36,6 @@ import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.LogStream;
 import org.gridkit.zerormi.zlog.ZLogger;
 
-import static org.gridkit.zerormi.JdkUtils.addSuppressedIfSupported;
-
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
@@ -168,9 +166,11 @@ public class RmiChannel1 implements RmiChannel {
     public synchronized void close(Throwable cause) {
         // TODO global synchronization somehow
         if (terminated) {
-            if (terminatedCause != null){
-                addSuppressedIfSupported(terminatedCause, cause);
-            }else {
+            if (terminatedCause != null) {
+                if (cause != null) {
+                    terminatedCause.addSuppressed(cause);
+                }
+            } else {
                 terminatedCause = cause;
             }
             return;
