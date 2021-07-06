@@ -595,6 +595,11 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		@Override
 		public void finished(int exitCode) {
 			this.exitCode.setData(exitCode);
+			try {
+				stdIn.write(("\nProcess exited with code "+exitCode+"\n").getBytes());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		@Override

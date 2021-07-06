@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -694,6 +695,31 @@ public abstract class ViNodeFeatureTest {
             }
         });
     }
+
+	public void verify_exit_code_is_printed_to_logs() throws Exception {
+		ViNode node = cloud.node(testName.getMethodName());
+		StringWriter writer = new StringWriter();
+		node.x(VX.CONSOLE).bindOut(writer);
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						System.exit(42);
+					}
+				}).start();
+			}
+		});
+
+		Thread.sleep(2000);
+		assertThat(writer.toString()).contains("Process exited with code 42");
+	}
     
 	private static String readMarkerFromResources() throws IOException {
     	URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
