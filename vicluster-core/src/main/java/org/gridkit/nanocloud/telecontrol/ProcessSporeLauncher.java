@@ -470,6 +470,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
 			ProcessStreams ps = fget(procStreams);
 			if (ps != null) {
 				try {
+					ps.stdOut.write(("\nProcess exited with code "+exitCode+"\n").getBytes());
 					ps.eofOut.flushAndClose();
 					ps.eofErr.flushAndClose();
 					if (ps.stdOut.getOutput() == null) {

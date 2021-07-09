@@ -697,6 +697,31 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+	public void verify_exit_code_is_printed_to_logs() throws Exception {
+		ViNode node = cloud.node(testName.getMethodName());
+		StringWriter writer = new StringWriter();
+		node.x(VX.CONSOLE).bindOut(writer);
+		node.exec(new Runnable() {
+			@Override
+			public void run() {
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						System.exit(42);
+					}
+				}).start();
+			}
+		});
+
+		Thread.sleep(2000);
+		assertThat(writer.toString()).contains("Process exited with code 42");
+	}
+
 	public void verify_exit_code_is_reported() {
 		ViNode node = cloud.node(testName.getMethodName());
 
@@ -736,7 +761,7 @@ public abstract class ViNodeFeatureTest {
 			assertThat(writer.toString()).contains("Terminated, exitCode=42");
 		}
 	}
-    
+
 	private static String readMarkerFromResources() throws IOException {
     	URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
     	Assert.assertNotNull(url);

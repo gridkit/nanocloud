@@ -160,6 +160,12 @@ public class LocalNodeFeatureTest extends ViNodeFeatureTest {
         super.verify_slave_working_dir();
     }
 
+	@Test
+    @Override
+    public void verify_exit_code_is_printed_to_logs() throws Exception {
+        super.verify_exit_code_is_printed_to_logs();
+    }
+
     @Test
     public void verify_jvm_agent() throws Exception {
         super.verify_jvm_agent();

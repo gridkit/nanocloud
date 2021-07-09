@@ -231,4 +231,15 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_multiple_agents();
     }
+    @Test
+    @Override
+    public void verify_exit_code_is_printed_to_logs() throws Exception {
+        super.verify_exit_code_is_printed_to_logs();
+    }
+
+    @Test
+    @Override
+    public void verify_exit_code_is_reported() {
+        super.verify_exit_code_is_reported();
+    }
 }
