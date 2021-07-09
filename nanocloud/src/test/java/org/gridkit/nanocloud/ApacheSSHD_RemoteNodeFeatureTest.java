@@ -1,37 +1,68 @@
 package org.gridkit.nanocloud;
 
-import static org.gridkit.nanocloud.RemoteNode.REMOTE;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-
-import org.junit.Assume;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.AsyncAuthException;
+import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
+import org.apache.sshd.server.shell.ProcessShellCommandFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.util.SocketUtils;
 
-public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.security.PublicKey;
+import java.util.Collections;
 
-	@BeforeClass
-	public static void check_fbox1() {
-		Cloud c = CloudFactory.createCloud();
-		try {
-			c.node("**").x(REMOTE)
-				.useSimpleRemoting()
-				.setRemoteHost("fbox");
-			
-			c.node("test").touch();
-			c.shutdown();
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			Assume.assumeTrue(false);
-		}
-		finally {
-			c.shutdown();
-		}
-	}
+import static org.gridkit.nanocloud.RemoteNode.REMOTE;
+
+public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
+
+    private static SshServer sshServer;
+    private static final String javaExec = getJavaExec();
+
+    @BeforeClass
+	public static void setupSshd() throws IOException {
+        sshServer = SshServer.setUpDefaultServer();
+        sshServer.setPort(SocketUtils.findAvailableTcpPort());
+        sshServer.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
+        sshServer.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
+            public boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException {
+                return true;
+            }
+        });
+        sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
+        sshServer.setShellFactory(new InteractiveProcessShellFactory());
+        sshServer.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(
+                new SftpSubsystemFactory()
+        ));
+        sshServer.setCommandFactory(new ProcessShellCommandFactory());
+        sshServer.start();
+    }
+
+    private static String getJavaExec(){
+        String javaHome = System.getProperty("java.home");
+        File f = new File(javaHome);
+        f = new File(f, "bin");
+        f = new File(f, "java.exe");
+        return f.getAbsolutePath();
+    }
+
+    @AfterClass
+    public static void stopSshd() throws IOException {
+        sshServer.stop(/*immediately*/true);
+    }
 	
 	@Before
 	@Override
@@ -39,7 +70,12 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
 		cloud = CloudFactory.createCloud();
 		cloud.node("**").x(REMOTE)
 			.useSimpleRemoting()
-			.setRemoteHost("fbox");
+            .setHostsConfigFile("?na")
+			.setRemoteHost("localhost:"+sshServer.getPort())
+            .setRemoteAccount("agent.smith")
+            .setPassword("matrix")
+            .setRemoteJavaExec('"'+javaExec+'"')
+            .setRemoteJarCachePath("./target/cache");
 	}
 
     @Test
@@ -123,7 +159,7 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
     	super.test_inherit_cp_shallow();
     }
-
+    
     @Test
     @Override
     public void test_inherit_cp_default_true() {
@@ -195,7 +231,6 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_multiple_agents();
     }
-
     @Test
     @Override
     public void verify_exit_code_is_printed_to_logs() throws Exception {

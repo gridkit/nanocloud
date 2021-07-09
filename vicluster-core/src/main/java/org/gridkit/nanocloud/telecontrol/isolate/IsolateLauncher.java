@@ -203,7 +203,7 @@ class IsolateLauncher implements ProcessLauncher {
 
 		@Override
 		public void destroy() {
-			session.terminate();
+			session.terminate(null);
 			// TODO hardshutdown
 		}
 

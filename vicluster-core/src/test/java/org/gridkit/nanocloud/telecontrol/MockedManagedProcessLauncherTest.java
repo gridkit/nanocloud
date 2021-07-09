@@ -68,7 +68,7 @@ public class MockedManagedProcessLauncherTest {
 	@After
 	public void destroyConsole() {
 		console.terminate();
-		session.terminate();
+		session.terminate(null);
 	}
 
 	@Test	

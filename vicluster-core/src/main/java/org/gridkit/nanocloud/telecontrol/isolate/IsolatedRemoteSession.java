@@ -38,8 +38,8 @@ class IsolatedRemoteSession implements RemoteExecutionSession {
 	}
 
 	@Override
-	public void terminate() {
-		nested.terminate();		
+	public void terminate(Throwable cause) {
+		nested.terminate(cause);
 	}
 
 	private static class IsolatedSpore implements SlaveSpore, Serializable {

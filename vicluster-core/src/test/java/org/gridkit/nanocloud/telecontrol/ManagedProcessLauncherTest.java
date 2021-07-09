@@ -39,7 +39,7 @@ public class ManagedProcessLauncherTest {
 	@After
 	public void destroyConsole() {
 		console.terminate();
-		session.terminate();
+		session.terminate(null);
 	}
 
 	@Test(timeout = 10000)

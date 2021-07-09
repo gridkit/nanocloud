@@ -9,8 +9,8 @@ public interface RemoteExecutionSession {
 	public SlaveSpore getMobileSpore();
 	
 	public AdvancedExecutor getRemoteExecutor();
-	
+
 	public void setTransportConnection(DuplexStream stream);
-	
-	public void terminate();
+
+	public void terminate(Throwable cause);
 }

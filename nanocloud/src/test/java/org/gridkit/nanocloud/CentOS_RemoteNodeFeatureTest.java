@@ -198,6 +198,12 @@ public class CentOS_RemoteNodeFeatureTest extends ViNodeFeatureTest {
 
     @Test
     @Override
+    public void verify_exit_code_is_reported() {
+        super.verify_exit_code_is_reported();
+    }
+
+    @Test
+    @Override
     public void verify_exit_code_is_printed_to_logs() throws Exception {
         super.verify_exit_code_is_printed_to_logs();
     }
