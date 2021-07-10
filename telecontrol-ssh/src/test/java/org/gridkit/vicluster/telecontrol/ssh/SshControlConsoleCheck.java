@@ -122,6 +122,13 @@ public class SshControlConsoleCheck  {
 			}
 			
 			@Override
+            public void execFailed(OutputStream stdIn, InputStream stdOut, InputStream stdErr, String error) {
+                // mimic old event sequence
+                started(stdIn, stdOut, stdErr);
+                finished(Integer.MIN_VALUE);
+            }
+
+            @Override
 			public void finished(int exitCode) {
 				pexit.setData(exitCode);
 			}
@@ -158,6 +165,13 @@ public class SshControlConsoleCheck  {
 			}
 			
 			@Override
+            public void execFailed(OutputStream stdIn, InputStream stdOut, InputStream stdErr, String error) {
+                // mimic old event sequence
+                started(stdIn, stdOut, stdErr);
+                finished(Integer.MIN_VALUE);
+            }
+
+            @Override
 			public void finished(int exitCode) {
 				pexit.setData(exitCode);
 			}

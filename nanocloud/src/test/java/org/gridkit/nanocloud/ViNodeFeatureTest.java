@@ -34,8 +34,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
@@ -44,6 +46,8 @@ import java.util.zip.ZipOutputStream;
 
 import org.gridkit.nanocloud.agent.SampleAgent;
 import org.gridkit.nanocloud.agent.SampleAgent2;
+import org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf;
+import org.gridkit.nanocloud.viengine.ProcessLifecycleListener;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
@@ -55,218 +59,219 @@ import org.junit.rules.TestName;
 
 public abstract class ViNodeFeatureTest {
 
-	protected Cloud cloud;
+    protected Cloud cloud;
 
-	@Rule
-	public TestName testName = new TestName();
-	
-	@Before
-	public abstract void initCloud();
-	
-	@After
-	public void shutdownCloud() {
-		cloud.shutdown();
-	}
-	
-	public ViNode testNode() {
-	    return cloud.node(testName.getMethodName());
-	}
-	
+    @Rule
+    public TestName testName = new TestName();
+
+    @Before
+    public abstract void initCloud();
+
+    @After
+    public void shutdownCloud() {
+        cloud.shutdown();
+    }
+
+    public ViNode testNode() {
+        return cloud.node(testName.getMethodName());
+    }
+
     public void verify_isolated_static_with_void_callable() {
-		
-		ViNode viHost1 = cloud.node("node-1");
-		ViNode viHost2 = cloud.node("node-2");
-		
-		viHost1.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 1";
-				return null;
-			}
-		});
 
-		viHost2.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 2";
-				return null;
-			}
-		});
-		
-		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				return StaticVarHost.TEST_STATIC_VAR;
-			}
-		});
-		
-		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
-	}
+        ViNode viHost1 = cloud.node("node-1");
+        ViNode viHost2 = cloud.node("node-2");
 
-	public void verify_isolated_static_with_callable() {
-		
-		ViNode viHost1 = cloud.node("node-1");
-		ViNode viHost2 = cloud.node("node-2");
-		
-		viHost1.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 1";
-				return null;
-			}
-		});
-		
-		viHost2.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 2";
-				return null;
-			}
-		});
-		
-		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				return StaticVarHost.TEST_STATIC_VAR;
-			}
-		});
-		
-		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
-	}
+        viHost1.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 1";
+                return null;
+            }
+        });
 
-	public void verify_isolated_static_with_runnable() {
-		
-		ViNode viHost1 = cloud.node("node-1");
-		ViNode viHost2 = cloud.node("node-2");
-		
-		viHost1.exec(new Runnable() {
-			@Override
-			public void run() {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 1";
-			}
-		});
-		
-		viHost2.exec(new Runnable() {
-			@Override
-			public void run() {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 2";
-			}
-		});
-		
-		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				return StaticVarHost.TEST_STATIC_VAR;
-			}
-		});
-		
-		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
-	}
-	
-	public void verify_class_exclusion() {
-		
-		ViNode viHost1 = cloud.node("node-1");
-		ViNode viHost2 = cloud.node("node-2");
-		
-		IsolateProps.at(cloud.node("**")).shareClass(StaticVarHost.class);
-		
-		viHost1.exec(new Runnable() {
-			@Override
-			public void run() {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 1";
-			}
-		});
-		
-		viHost2.exec(new Runnable() {
-			@Override
-			public void run() {
-				StaticVarHost.TEST_STATIC_VAR = "isolate 2";
-			}
-		});
-		
-		List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				return StaticVarHost.TEST_STATIC_VAR;
-			}
-		});
-		
-		Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 2, isolate 2]", results.toString());
-	}	
-	
-	public void verify_property_isolation() throws Exception {
-		
-		ViNode node1 = cloud.node("node-1");
-		ViNode node2 = cloud.node("node-2");
+        viHost2.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 2";
+                return null;
+            }
+        });
 
-		node1.exec(new Runnable() {
-			@Override
-			public void run() {
-				System.setProperty("local-prop", "Isolate1");				
-			}
-		});
+        List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return StaticVarHost.TEST_STATIC_VAR;
+            }
+        });
 
-		node2.exec(new Runnable() {
-			@Override
-			public void run() {
-				System.setProperty("local-prop", "Isolate2");				
-			}
-		});
+        Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
+    }
 
-		node1.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals("Isolate1", System.getProperty("local-prop"));				
-			}
-		});
-		
-		node2.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals("Isolate2", System.getProperty("local-prop"));				
-			}
-		});		
+    public void verify_isolated_static_with_callable() {
 
-		final String xxx = new String("Hallo from Isolate2");
-		node2.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals("Hallo from Isolate2", xxx);				
-			}
-		});		
-		
-		Assert.assertNull(System.getProperty("local-prop"));
-	}
-	
-	public void verify_exec_stack_trace_locality() {
+        ViNode viHost1 = cloud.node("node-1");
+        ViNode viHost2 = cloud.node("node-2");
 
-		ViNode node = testNode();
-		
-		try {
-			node.exec(new Runnable() {
-				@Override
-				public void run() {
-					throw new IllegalArgumentException("test");
-				}
-			});
-			Assert.assertFalse("Should throw an exception", true);
-		}
-		catch(IllegalArgumentException e) {
-			e.printStackTrace();
-			Assert.assertEquals(e.getMessage(), "test");
-			assertLocalStackTrace(e);
-		}
-	}
+        viHost1.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 1";
+                return null;
+            }
+        });
+
+        viHost2.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 2";
+                return null;
+            }
+        });
+
+        List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return StaticVarHost.TEST_STATIC_VAR;
+            }
+        });
+
+        Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
+    }
+
+    public void verify_isolated_static_with_runnable() {
+
+        ViNode viHost1 = cloud.node("node-1");
+        ViNode viHost2 = cloud.node("node-2");
+
+        viHost1.exec(new Runnable() {
+            @Override
+            public void run() {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 1";
+            }
+        });
+
+        viHost2.exec(new Runnable() {
+            @Override
+            public void run() {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 2";
+            }
+        });
+
+        List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return StaticVarHost.TEST_STATIC_VAR;
+            }
+        });
+
+        Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
+    }
+
+    public void verify_class_exclusion() {
+
+        ViNode viHost1 = cloud.node("node-1");
+        ViNode viHost2 = cloud.node("node-2");
+
+        IsolateProps.at(cloud.node("**")).shareClass(StaticVarHost.class);
+
+        viHost1.exec(new Runnable() {
+            @Override
+            public void run() {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 1";
+            }
+        });
+
+        viHost2.exec(new Runnable() {
+            @Override
+            public void run() {
+                StaticVarHost.TEST_STATIC_VAR = "isolate 2";
+            }
+        });
+
+        List<String> results = cloud.nodes("node-1", "node-2").massExec(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return StaticVarHost.TEST_STATIC_VAR;
+            }
+        });
+
+        Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 2, isolate 2]", results.toString());
+    }
+
+    public void verify_property_isolation() throws Exception {
+
+        ViNode node1 = cloud.node("node-1");
+        ViNode node2 = cloud.node("node-2");
+
+        node1.exec(new Runnable() {
+            @Override
+            public void run() {
+                System.setProperty("local-prop", "Isolate1");
+            }
+        });
+
+        node2.exec(new Runnable() {
+            @Override
+            public void run() {
+                System.setProperty("local-prop", "Isolate2");
+            }
+        });
+
+        node1.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("Isolate1", System.getProperty("local-prop"));
+            }
+        });
+
+        node2.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("Isolate2", System.getProperty("local-prop"));
+            }
+        });
+
+        final String xxx = new String("Hallo from Isolate2");
+        node2.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("Hallo from Isolate2", xxx);
+            }
+        });
+
+        Assert.assertNull(System.getProperty("local-prop"));
+    }
+
+    public void verify_exec_stack_trace_locality() {
+
+        ViNode node = testNode();
+
+        try {
+            node.exec(new Runnable() {
+                @Override
+                public void run() {
+                    throw new IllegalArgumentException("test");
+                }
+            });
+            Assert.assertFalse("Should throw an exception", true);
+        }
+        catch(IllegalArgumentException e) {
+            e.printStackTrace();
+            Assert.assertEquals(e.getMessage(), "test");
+            assertLocalStackTrace(e);
+        }
+    }
 
     public void verify_transparent_proxy_stack_trace() {
 
         ViNode node = testNode();
-        
+
         try {
             Runnable r = node.exec(new Callable<Runnable>() {
+                @Override
                 public Runnable call() {
                     return new RemoteRunnable() {
-                        
+
                         @Override
                         public void run() {
                             throw new IllegalArgumentException("test2");
@@ -276,29 +281,30 @@ public abstract class ViNodeFeatureTest {
             });
 
             r.run();
-            
+
             Assert.assertFalse("Should throw an exception", true);
         }
         catch(IllegalArgumentException e) {
             e.printStackTrace();
             assertLocalStackTrace(e);
         }
-    }   
+    }
 
     public void verify_transitive_transparent_proxy_stack_trace() {
 
         ViNode node = testNode();
-        
+
         final RemoteRunnable explosive = new RemoteRunnable() {
-            
+
             @Override
             public void run() {
                 throw new IllegalArgumentException("test2");
             }
         };
-        
+
         try {
             node.exec(new Callable<Void>() {
+                @Override
                 public Void call() {
                     explosive.run();
                     return null;
@@ -313,86 +319,86 @@ public abstract class ViNodeFeatureTest {
             assertStackTraceContains(e, "[master] java.lang.Runnable.run(Remote call)");
             assertStackTraceContains(e, "[" + node + "] org.gridkit.zerormi.RemoteExecutor.exec(Remote call)");
         }
-    }       
-    
-	public void test_classpath_extention() throws IOException, URISyntaxException {
-		
-		ViNode node1 = cloud.node(testName.getMethodName()+"_1");
-		ViNode node2 = cloud.node(testName.getMethodName()+"_2");
-		ViNode node3 = cloud.node(testName.getMethodName()+"_3");
+    }
 
-		node1.x(CLASSPATH).add(getClass().getResource("/marker-override.jar"));
-		node1.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
+    public void test_classpath_extention() throws IOException, URISyntaxException {
 
-		node2.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
-		node2.x(CLASSPATH).add(getClass().getResource("/marker-override.jar"));
+        ViNode node1 = cloud.node(testName.getMethodName()+"_1");
+        ViNode node2 = cloud.node(testName.getMethodName()+"_2");
+        ViNode node3 = cloud.node(testName.getMethodName()+"_3");
 
-		node3.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
-		node3.x(CLASSPATH).remove(getClass().getResource("/marker-override2.jar"));
+        node1.x(CLASSPATH).add(getClass().getResource("/marker-override.jar"));
+        node1.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
+
+        node2.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
+        node2.x(CLASSPATH).add(getClass().getResource("/marker-override.jar"));
+
+        node3.x(CLASSPATH).add(getClass().getResource("/marker-override2.jar"));
+        node3.x(CLASSPATH).remove(getClass().getResource("/marker-override2.jar"));
 
 //		node3.x(VX.PROCESS).addJvmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
 
-		node1.exec(new Callable<Void>() {
+        node1.exec(new Callable<Void>() {
 
-			@Override
-			public Void call() throws Exception {
-				String marker = readMarkerFromResources();
-				Assert.assertEquals("Marker from jar", marker);
-				return null;
-			}
+            @Override
+            public Void call() throws Exception {
+                String marker = readMarkerFromResources();
+                Assert.assertEquals("Marker from jar", marker);
+                return null;
+            }
 
-		});
+        });
 
-		node2.exec(new Callable<Void>() {
+        node2.exec(new Callable<Void>() {
 
-			@Override
-			public Void call() throws Exception {
-				String marker = readMarkerFromResources();
-				Assert.assertEquals("Marker from jar 2", marker);
-				return null;
-			}
+            @Override
+            public Void call() throws Exception {
+                String marker = readMarkerFromResources();
+                Assert.assertEquals("Marker from jar 2", marker);
+                return null;
+            }
 
-		});
+        });
 
-		node3.exec(new Callable<Void>() {
+        node3.exec(new Callable<Void>() {
 
-			@Override
-			public Void call() throws Exception {
-				String marker = readMarkerFromResources();
-				Assert.assertEquals("Default marker", marker);
-				return null;
-			}
+            @Override
+            public Void call() throws Exception {
+                String marker = readMarkerFromResources();
+                Assert.assertEquals("Default marker", marker);
+                return null;
+            }
 
-		});
-		
-		Assert.assertEquals("Default marker", readMarkerFromResources());
-	}
+        });
 
-	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
-    	
-	    ViNode node = testNode();
-    	
-    	URL url = getClass().getResource("/org/junit/Assert.class");
-    	Assert.assertNotNull(url);
-    	
-    	String jarUrl = url.toString();
-    	jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));
-    	jarUrl = jarUrl.substring("jar:".length());
-    	node.x(CLASSPATH).remove(new File(new URI(jarUrl)).getAbsolutePath());
-    
-    	try {
-    		node.exec(new Runnable() {
-    			@Override
-    			public void run() {
-    				// should throw NoClassDefFoundError because junit was removed from isolate classpath
-    				Assert.assertTrue(true);
-    			}
-    		});
-    		Assert.fail("Exception is expected");
-    	}
-    	catch(Error e) {
-    	    assertThat(e).isInstanceOf(NoClassDefFoundError.class);
-	}
+        Assert.assertEquals("Default marker", readMarkerFromResources());
+    }
+
+    public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
+
+        ViNode node = testNode();
+
+        URL url = getClass().getResource("/org/junit/Assert.class");
+        Assert.assertNotNull(url);
+
+        String jarUrl = url.toString();
+        jarUrl = jarUrl.substring(0, jarUrl.lastIndexOf('!'));
+        jarUrl = jarUrl.substring("jar:".length());
+        node.x(CLASSPATH).remove(new File(new URI(jarUrl)).getAbsolutePath());
+
+        try {
+            node.exec(new Runnable() {
+                @Override
+                public void run() {
+                    // should throw NoClassDefFoundError because junit was removed from isolate classpath
+                    Assert.assertTrue(true);
+                }
+            });
+            Assert.fail("Exception is expected");
+        }
+        catch(Error e) {
+            assertThat(e).isInstanceOf(NoClassDefFoundError.class);
+    }
     }
 
     public void test_dont_inherit_cp() {
@@ -414,45 +420,45 @@ public abstract class ViNodeFeatureTest {
         catch(Error e) {
             assertThat(e).isInstanceOf(NoClassDefFoundError.class);
         }
-	}
+    }
 
-	public void test_handle_NoDefClassFound(){
-		ViNode node = testNode();
+    public void test_handle_NoDefClassFound(){
+        ViNode node = testNode();
 
-		node.x(CLASSPATH).inheritClasspath(false);
-		
-		try {
-			node.exec(new Runnable() {
-				@SuppressWarnings("unused")
+        node.x(CLASSPATH).inheritClasspath(false);
+
+        try {
+            node.exec(new Runnable() {
+                @SuppressWarnings("unused")
                 Assert anAssert = new Assert(){}; // NoClassDefFoundError during deserialization
 
-				@Override
-				public void run() {
-				}
-			});
-			Assert.fail("Exception is expected");
-		}
-		catch(Exception e) {
-			assertThat(e).isInstanceOf(RemoteException.class);
-			assertThat(e.getCause()).isInstanceOf(NoClassDefFoundError.class);
-		}
-		
-		// Verify that node is still live
-		node.exec(new Runnable() {
-            
+                @Override
+                public void run() {
+                }
+            });
+            Assert.fail("Exception is expected");
+        }
+        catch(Exception e) {
+            assertThat(e).isInstanceOf(RemoteException.class);
+            assertThat(e.getCause()).isInstanceOf(NoClassDefFoundError.class);
+        }
+
+        // Verify that node is still live
+        node.exec(new Runnable() {
+
             @Override
             public void run() {
                 System.out.println("ping");
             }
         });
-	}
+    }
 
-	public void test_handle_NoDefClassFound_on_return(){
-	    ViNode node = testNode();
-	    
-	    node.x(CLASSPATH).inheritClasspath(false);
+    public void test_handle_NoDefClassFound_on_return(){
+        ViNode node = testNode();
 
-	    final Callable<Runnable> factory = new RemoteCallable<Runnable>() {
+        node.x(CLASSPATH).inheritClasspath(false);
+
+        final Callable<Runnable> factory = new RemoteCallable<Runnable>() {
 
             @Override
             public Runnable call() throws Exception {
@@ -464,35 +470,35 @@ public abstract class ViNodeFeatureTest {
                     public void run() {
                     }
                 };
-            }	        
-	    };
-	    
-	    try {
-	        node.exec(new Callable<Void>() {
-	            @Override
-	            public Void call() throws Exception {
-	                factory.call().run();
-	                return null;
-	            }
-	        });
-	        Assert.fail("Exception is expected");
-	    }
-	    catch(Exception e) {
-	        assertThat(e).isInstanceOf(RemoteException.class);
-	        assertThat(e.getCause()).isInstanceOf(NoClassDefFoundError.class);
-	    }
-	    
-	    // Verify that node is still live
-	    node.exec(new Runnable() {
-	        
-	        @Override
-	        public void run() {
-	            System.out.println("ping");
-	        }
-	    });
-	}
+            }
+        };
 
-	public void test_inherit_cp_true() throws IOException, URISyntaxException {
+        try {
+            node.exec(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    factory.call().run();
+                    return null;
+                }
+            });
+            Assert.fail("Exception is expected");
+        }
+        catch(Exception e) {
+            assertThat(e).isInstanceOf(RemoteException.class);
+            assertThat(e.getCause()).isInstanceOf(NoClassDefFoundError.class);
+        }
+
+        // Verify that node is still live
+        node.exec(new Runnable() {
+
+            @Override
+            public void run() {
+                System.out.println("ping");
+            }
+        });
+    }
+
+    public void test_inherit_cp_true() throws IOException, URISyntaxException {
 
         ViNode node = testNode();
 
@@ -505,25 +511,25 @@ public abstract class ViNodeFeatureTest {
                 Assert.assertTrue(true);
             }
         });
-	}
+    }
 
-	public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
-		
-		ViNode node = testNode();
-		
-		node.x(CLASSPATH).inheritClasspath(true);
-		node.x(CLASSPATH).useShallowClasspath(true);
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				// should NOT throw NoClassDefFoundError because junit should be inherited
-				Assert.assertTrue(true);
-			}
-		});
-	}
+    public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
 
-	public void test_inherit_cp_default_true() {
+        ViNode node = testNode();
+
+        node.x(CLASSPATH).inheritClasspath(true);
+        node.x(CLASSPATH).useShallowClasspath(true);
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                // should NOT throw NoClassDefFoundError because junit should be inherited
+                Assert.assertTrue(true);
+            }
+        });
+    }
+
+    public void test_inherit_cp_default_true() {
 
         ViNode node = testNode();
 
@@ -536,30 +542,30 @@ public abstract class ViNodeFeatureTest {
                 Assert.assertTrue(true);
             }
         });
-	}
+    }
 
-	public void test_annonimous_primitive_in_args() {
+    public void test_annonimous_primitive_in_args() {
 
         ViNode node = testNode();
-		
-		final boolean fb = trueConst();
-		final int fi = int_10();
-		final double fd = double_10_1();
-		
-		node.exec(new Callable<Void>() {
 
-			@Override
-			public Void call() throws Exception {
-				Assert.assertEquals("fb", true, fb);
-				Assert.assertEquals("fi", 10, fi);
-				Assert.assertEquals("fd", 10.1d, fd, 0d);
-				return null;
-			}			
-		});
-	}
+        final boolean fb = trueConst();
+        final int fi = int_10();
+        final double fd = double_10_1();
+
+        node.exec(new Callable<Void>() {
+
+            @Override
+            public Void call() throws Exception {
+                Assert.assertEquals("fb", true, fb);
+                Assert.assertEquals("fi", 10, fi);
+                Assert.assertEquals("fd", 10.1d, fd, 0d);
+                return null;
+            }
+        });
+    }
 
     public void verify_new_env_variable() {
-        
+
         ViNode node = testNode();
         node.x(PROCESS).setEnv("TEST_VAR", "TEST");
         node.exec(new Runnable() {
@@ -571,21 +577,21 @@ public abstract class ViNodeFeatureTest {
     }
 
     public void verify_env_variable_removal() {
-        
+
         ViNode node = testNode();
         node.x(PROCESS).setEnv("HOME", null);
         node.x(PROCESS).setEnv("HOMEPATH", null);
         node.exec(new Runnable() {
             @Override
-            public void run() {             
+            public void run() {
                 Assert.assertFalse("HOME expected to be empty", System.getenv().containsKey("HOME"));
                 Assert.assertFalse("HOMEPATH expected to be empty", System.getenv().containsKey("HOMEPATH"));
             }
         });
     }
-    
+
     public void verify_jvm_single_arg_passing() {
-        
+
         ViNode node = testNode();
         node.x(PROCESS).addJvmArg("-DtestProp=TEST");
         node.exec(new Runnable() {
@@ -597,7 +603,7 @@ public abstract class ViNodeFeatureTest {
     }
 
     public void verify_jvm_multiple_args_passing() {
-        
+
         ViNode node = testNode();
         node.x(PROCESS).addJvmArg("-DtestProp=TEST");
         node.x(PROCESS).addJvmArgs("-DtestProp1=A", "-DtestProp2=B");
@@ -611,47 +617,47 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-	public void verify_jvm_agent() throws Exception {
-		ViNode node = testNode();
-		node.x(PROCESS).addAgent(packAgent(SampleAgent.class));
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertNull(SampleAgent.options.get());
-			}
-		});
-	}
+    public void verify_jvm_agent() throws Exception {
+        ViNode node = testNode();
+        node.x(PROCESS).addAgent(packAgent(SampleAgent.class));
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertNull(SampleAgent.options.get());
+            }
+        });
+    }
 
-	public void verify_jvm_agent_with_options() throws Exception {
-		ViNode node = testNode();
-		final String options = "my-super-options=abc";
-		node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options);
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals(options, SampleAgent.options.get());
-			}
-		});
-	}
+    public void verify_jvm_agent_with_options() throws Exception {
+        ViNode node = testNode();
+        final String options = "my-super-options=abc";
+        node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options);
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals(options, SampleAgent.options.get());
+            }
+        });
+    }
 
-	public void verify_jvm_agent_multiple_agents() throws Exception {
-		ViNode node = testNode();
-		final String options1 = "my-super-options=abc";
-		final String options2 = "my-super-options=bcd";
+    public void verify_jvm_agent_multiple_agents() throws Exception {
+        ViNode node = testNode();
+        final String options1 = "my-super-options=abc";
+        final String options2 = "my-super-options=bcd";
 
-		node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options1);
-		node.x(PROCESS).addAgent(packAgent(SampleAgent2.class), options2);
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals(options1, SampleAgent.options.get());
-				Assert.assertEquals(options2, SampleAgent2.options.get());
-			}
-		});
-	}
+        node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options1);
+        node.x(PROCESS).addAgent(packAgent(SampleAgent2.class), options2);
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals(options1, SampleAgent.options.get());
+                Assert.assertEquals(options2, SampleAgent2.options.get());
+            }
+        });
+    }
 
-	public void verify_jvm_invalid_arg_error() {
-        
+    public void verify_jvm_invalid_arg_error() {
+
         ViNode node = testNode();
         JvmProps.addJvmArg(node, "-XX:+InvalidOption");
 
@@ -668,10 +674,10 @@ public abstract class ViNodeFeatureTest {
             e.printStackTrace();
             // expected
         }
-    }   
-    
+    }
+
     public void verify_slave_working_dir() throws IOException {
-        
+
         ViNode nodeB = cloud.node(testName.getMethodName() + ".base");
         ViNode nodeC = cloud.node(testName.getMethodName() + ".child");
         nodeC.x(PROCESS).setWorkDir("target");
@@ -697,62 +703,174 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-	public void verify_exit_code_is_reported() {
-		ViNode node = cloud.node(testName.getMethodName());
+    public void verify_exit_code_is_available() throws Exception {
+        ViNode node = cloud.node(testName.getMethodName());
 
-		// Schedule node crush after some time.
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				new Thread(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							Thread.sleep(1000);
-							Runtime.getRuntime().halt(42);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-				}).start();
-			}
-		});
+        // Schedule node crush after some time.
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(50);
+                            Runtime.getRuntime().halt(42);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+        });
 
-		try {
-			Thread.sleep(2000); // halt timeout was 1000, after 2000 all processing should be done
-			node.exec(new Runnable() {
-				@Override
-				public void run() {
-					System.out.println("ping");
-				}
-			});
-			throw new AssertionError("Halt failed");
-		} catch (AssertionError e) {
-			throw e;
-		} catch (Throwable t) {
-			t.printStackTrace();
-			StringWriter writer = new StringWriter();
-			t.printStackTrace(new PrintWriter(writer));
-			assertThat(writer.toString()).contains("Terminated, exitCode=42");
-		}
-	}
-    
-	private static String readMarkerFromResources() throws IOException {
-    	URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
-    	Assert.assertNotNull(url);
-    	BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
-    	String marker = r.readLine();
-    	r.close();
-    	return marker;
+        Thread.sleep(500);
+
+        Integer exitCode = node.x(VX.RUNTIME).exitCodeFuture().get();
+        Assert.assertEquals((Object)42, exitCode);
+    }
+
+    public void verify_exit_code_is_reported() {
+        ViNode node = cloud.node(testName.getMethodName());
+
+        // Schedule node crush after some time.
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);
+                            Runtime.getRuntime().halt(42);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+        });
+
+        try {
+            Thread.sleep(2000); // halt timeout was 1000, after 2000 all processing should be done
+            node.exec(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("ping");
+                }
+            });
+            throw new AssertionError("Halt failed");
+        } catch (AssertionError e) {
+            throw e;
+        } catch (Throwable t) {
+            t.printStackTrace();
+            StringWriter writer = new StringWriter();
+            t.printStackTrace(new PrintWriter(writer));
+            assertThat(writer.toString()).contains("Terminated, exitCode=42");
+        }
+    }
+
+    public void verify_lifecycle_listener_receive_exit_code() throws Exception {
+        ViNode node = cloud.node(testName.getMethodName());
+
+        ProcListener pll = new ProcListener();
+        node.x(VX.JVM).addProcessListener(pll);
+
+        // Schedule node crush after some time.
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(50);
+                            Runtime.getRuntime().halt(42);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+        });
+
+        long start = System.nanoTime();
+        try {
+            while(true) {
+                node.exec(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("ping");
+                    }
+                });
+                if (System.nanoTime() > start + TimeUnit.SECONDS.toNanos(5)) {
+                    Assert.fail("Node lives too long");
+                }
+            }
+        } catch (Exception e) {
+            // execution failed;
+        }
+
+        pll.assertNodeStarted(node.toString());
+        pll.waitNodeExitCode(node.toString(), 42);
+
+    }
+
+    public void verify_lifecycle_listener_with_invalid_executable() throws Exception {
+        ViNode node = cloud.node(testName.getMethodName());
+
+        ProcListener pll = new ProcListener();
+        node.x(VX.JVM).addProcessListener(pll);
+        // valid JVM to start tunneler
+        node.setProp(SshSpiConf.SPI_BOOTSTRAP_JVM_EXEC, "java");
+        // broken JVM for node
+        node.x(VX.JVM).setJavaExec("nosuchfile");
+
+        try {
+            node.touch();
+            Assert.fail("Expected to fail");
+        } catch (Exception e) {
+            // ignore
+        }
+
+        pll.assertNodeNotStarted(node.toString());
+        pll.assertExecFail(node.toString());
+    }
+
+    public void verify_lifecycle_listener_with_invalid_arg() throws Exception {
+        ViNode node = cloud.node(testName.getMethodName());
+
+        ProcListener pll = new ProcListener();
+        node.x(VX.JVM).addProcessListener(pll);
+        node.x(VX.JVM).addJvmArg("-XX:+InvalidOption");
+
+        try {
+            node.touch();
+            Assert.fail("Expected to fail");
+        } catch (Exception e) {
+            // ignore
+        }
+
+        pll.assertNodeStarted(node.toString());
+        pll.waitNodeExitCode(node.toString(), 1);
+    }
+
+    private static String readMarkerFromResources() throws IOException {
+        URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
+        Assert.assertNotNull(url);
+        BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
+        String marker = r.readLine();
+        r.close();
+        return marker;
     }
 
     private void assertLocalStackTrace(Exception e) {
-    	Exception local = new Exception();
-    	int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
-    	Assert.assertEquals(
-    			printStackTop(new Exception().getStackTrace(), depth), 
-    			printStackTop(e.getStackTrace(),depth)
-    	);
+        Exception local = new Exception();
+        int depth = local.getStackTrace().length - 2; // ignoring local and calling frame
+        Assert.assertEquals(
+                printStackTop(new Exception().getStackTrace(), depth),
+                printStackTop(e.getStackTrace(),depth)
+        );
     }
 
     private void assertStackTraceContains(Exception e, String line) {
@@ -765,82 +883,155 @@ public abstract class ViNodeFeatureTest {
     }
 
     private static String printStackTop(StackTraceElement[] stack, int depth) {
-    	StringBuilder sb = new StringBuilder();
-    	int n = stack.length - depth;
-    	n = n < 0 ? 0 : n;
-    	for(int i = n; i != stack.length; ++i) {
-    		sb.append(stack[i]).append("\n");
-    	}
-    	return sb.toString();
+        StringBuilder sb = new StringBuilder();
+        int n = stack.length - depth;
+        n = n < 0 ? 0 : n;
+        for(int i = n; i != stack.length; ++i) {
+            sb.append(stack[i]).append("\n");
+        }
+        return sb.toString();
     }
 
     private double double_10_1() {
-		return 10.1d;
-	}
+        return 10.1d;
+    }
 
-	private int int_10() {
-		return 9 + 1;
-	}
+    private int int_10() {
+        return 9 + 1;
+    }
 
-	private boolean trueConst() {
-		return true & true;
-	}
-	
+    private boolean trueConst() {
+        return true & true;
+    }
+
     public interface RemoteRunnable extends Runnable, Remote {
-        
+
     }
-    
+
     public interface RemoteCallable<T> extends Callable<T>, Remote {
-        
+
     }
 
-	private File packAgent(Class<?> agentClass) throws Exception {
-		File agentJar = File.createTempFile("agent", ".jar");
+    private File packAgent(Class<?> agentClass) throws Exception {
+        File agentJar = File.createTempFile("agent", ".jar");
 
-		Manifest manifest = new Manifest();
-		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-		manifest.getMainAttributes().put(new Attributes.Name("PreMain-Class"), agentClass.getName());
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifest.getMainAttributes().put(new Attributes.Name("PreMain-Class"), agentClass.getName());
 
-		ZipOutputStream jarOut = new JarOutputStream(new FileOutputStream(agentJar), manifest);
+        ZipOutputStream jarOut = new JarOutputStream(new FileOutputStream(agentJar), manifest);
 
-		String path = agentClass.getName().replace('.', '/') + ".class";
-		InputStream classStream = this.getClass().getClassLoader().getResourceAsStream(path);
+        String path = agentClass.getName().replace('.', '/') + ".class";
+        InputStream classStream = this.getClass().getClassLoader().getResourceAsStream(path);
 
-		ZipEntry classEntry = new ZipEntry(path);
-		jarOut.putNextEntry(classEntry);
-		copyNoClose(classStream, jarOut);
-		jarOut.closeEntry();
+        ZipEntry classEntry = new ZipEntry(path);
+        jarOut.putNextEntry(classEntry);
+        copyNoClose(classStream, jarOut);
+        jarOut.closeEntry();
 
-		jarOut.closeEntry();
-		jarOut.close();
-		return agentJar;
-	}
+        jarOut.closeEntry();
+        jarOut.close();
+        return agentJar;
+    }
 
-	public static void copyNoClose(InputStream in, OutputStream out) throws IOException {
-		boolean doClose = true;
-		try {
-			byte[] buf = new byte[1 << 12];
-			while(true) {
-				int n = in.read(buf);
-				if(n >= 0) {
-					out.write(buf, 0, n);
-				}
-				else {
-					break;
-				}
-			}
-			doClose = false;
+    public static void copyNoClose(InputStream in, OutputStream out) throws IOException {
+        boolean doClose = true;
+        try {
+            byte[] buf = new byte[1 << 12];
+            while(true) {
+                int n = in.read(buf);
+                if(n >= 0) {
+                    out.write(buf, 0, n);
+                }
+                else {
+                    break;
+                }
+            }
+            doClose = false;
 
-		} finally {
-			if (doClose) {
-				// close if there were exception thrown
-				try {
-					in.close();
-				}
-				catch(Exception e) {
-					// ignore
-				}
-			}
-		}
-	}	
+        } finally {
+            if (doClose) {
+                // close if there were exception thrown
+                try {
+                    in.close();
+                }
+                catch(Exception e) {
+                    // ignore
+                }
+            }
+        }
+    }
+
+    private static class ProcListener implements ProcessLifecycleListener {
+
+        List<ExecInfo> execInfos = new ArrayList<ProcessLifecycleListener.ExecInfo>();
+        List<ExecFailedInfo> execFailedInfos = new ArrayList<ProcessLifecycleListener.ExecFailedInfo>();
+        List<TerminationInfo> termInfos = new ArrayList<ProcessLifecycleListener.TerminationInfo>();
+
+        @Override
+        public synchronized void processStarted(String nodeName, ExecInfo launchInfo) {
+            this.execInfos.add(launchInfo);
+        }
+
+        @Override
+        public synchronized void processExecFailed(String nodeName, ExecFailedInfo launchInfo) {
+            this.execFailedInfos.add(launchInfo);
+
+        }
+
+        @Override
+        public synchronized void processTerminated(String nodeName, TerminationInfo termInfo) {
+            this.termInfos.add(termInfo);
+        }
+
+        public synchronized void assertNodeStarted(String nodename) {
+            for (ExecInfo ei: execInfos) {
+                if (ei.getNodeName().equals(nodename)) {
+                    return;
+                }
+            }
+            Assert.fail("No launch event for [" + nodename + "]");
+        }
+
+        public synchronized void assertNodeNotStarted(String nodename) {
+            for (ExecInfo ei: execInfos) {
+                if (ei.getNodeName().equals(nodename)) {
+                    Assert.fail("Should be no start event for [" + nodename + "], but one is found");
+                }
+            }
+        }
+
+        public synchronized void assertExecFail(String nodename) {
+            for (ExecFailedInfo ei: execFailedInfos) {
+                if (ei.getNodeName().equals(nodename)) {
+                    System.err.println("Exec failed on [" + nodename + "] - " + ei.getError());
+                    return;
+                }
+            }
+            Assert.fail("No exec fail event for [" + nodename + "]");
+        }
+
+        public void waitNodeExitCode(String nodename, int exitCode) {
+            long start = System.nanoTime();
+            while(true) {
+                synchronized(this) {
+                    for (TerminationInfo ei: termInfos) {
+                        if (ei.getNodeName().equals(nodename)) {
+                            Assert.assertEquals("exitCode", exitCode, ei.getExitCode());
+                            return;
+                        }
+                    }
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    break;
+                }
+                if (System.nanoTime() > start + TimeUnit.SECONDS.toNanos(5)) {
+                    break;
+                }
+            }
+            Assert.fail("No termination event for [" + nodename + "]");
+        }
+    }
 }

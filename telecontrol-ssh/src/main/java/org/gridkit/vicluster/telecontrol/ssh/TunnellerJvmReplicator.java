@@ -593,6 +593,13 @@ public class TunnellerJvmReplicator implements RemoteJmvReplicator {
 		}
 
 		@Override
+        public void execFailed(OutputStream stdIn, InputStream stdOut, InputStream stdErr, String error) {
+            // mimic old sequence of events
+            started(stdIn, stdOut, stdErr);
+            finished(Integer.MIN_VALUE);
+        }
+
+        @Override
 		public void finished(int exitCode) {
 			this.exitCode.setData(exitCode);
 		}

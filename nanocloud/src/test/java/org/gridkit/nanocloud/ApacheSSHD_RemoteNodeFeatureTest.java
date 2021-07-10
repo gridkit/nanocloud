@@ -32,7 +32,7 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     private static final String javaExec = getJavaExec();
 
     @BeforeClass
-	public static void setupSshd() throws IOException {
+    public static void setupSshd() throws IOException {
         sshServer = SshServer.setUpDefaultServer();
         sshServer.setPort(SocketUtils.findAvailableTcpPort());
         sshServer.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
@@ -63,20 +63,21 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public static void stopSshd() throws IOException {
         sshServer.stop(/*immediately*/true);
     }
-	
-	@Before
-	@Override
-	public void initCloud() {
-		cloud = CloudFactory.createCloud();
-		cloud.node("**").x(REMOTE)
-			.useSimpleRemoting()
+
+    @SuppressWarnings("deprecation")
+    @Before
+    @Override
+    public void initCloud() {
+        cloud = CloudFactory.createCloud();
+        cloud.node("**").x(REMOTE)
+            .useSimpleRemoting()
             .setHostsConfigFile("?na")
-			.setRemoteHost("localhost:"+sshServer.getPort())
+            .setRemoteHost("localhost:"+sshServer.getPort())
             .setRemoteAccount("agent.smith")
             .setPassword("matrix")
             .setRemoteJavaExec('"'+javaExec+'"')
             .setRemoteJarCachePath("./target/cache");
-	}
+    }
 
     @Test
     @Override
@@ -96,16 +97,17 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
         super.verify_isolated_static_with_runnable();
     }
 
-    public void verify_class_exclusion() {
+    @Override
+	public void verify_class_exclusion() {
         // class sharing is not supported by local nodes, obviously
-    }       
+    }
 
     @Test
     @Override
     public void verify_property_isolation() throws Exception {
         super.verify_property_isolation();
     }
-    
+
     @Test
     @Override
     public void verify_exec_stack_trace_locality() {
@@ -147,7 +149,7 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public void test_handle_NoDefClassFound_on_return(){
         super.test_handle_NoDefClassFound_on_return();
     }
-    
+
     @Test
     @Override
     public void test_inherit_cp_true() throws IOException, URISyntaxException {
@@ -157,9 +159,9 @@ public class ApacheSSHD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     @Test
     @Override
     public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
-    	super.test_inherit_cp_shallow();
+        super.test_inherit_cp_shallow();
     }
-    
+
     @Test
     @Override
     public void test_inherit_cp_default_true() {

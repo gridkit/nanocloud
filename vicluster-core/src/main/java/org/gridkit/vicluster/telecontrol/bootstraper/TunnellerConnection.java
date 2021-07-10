@@ -32,527 +32,566 @@ import org.gridkit.util.concurrent.FutureBox;
 
 public class TunnellerConnection extends TunnellerIO {
 
-	private InboundDemux inbound;
-	private OutboundMux outbound;
-	private Control control;
-	
-	private long nextChannel = 0;
-	private long nextProc = 0;
-	private long nextSocket = 0;
-	private long nextAccept = 0;
-	private long nextFile = 0;
-	
-	private DataOutputStream ctrlReq;
-	private DataInputStream ctrlRep;
+    private InboundDemux inbound;
+    private OutboundMux outbound;
+    private Control control;
 
-	private Map<Long, ExecContext> execs = new HashMap<Long, ExecContext>();
-	private Map<Long, SocketContext> socks = new HashMap<Long, SocketContext>();
-	private Map<Long, AcceptContext> accepts = new HashMap<Long, AcceptContext>();
-	private Map<Long, FileContext> files = new HashMap<Long, FileContext>();
-	
-	private FutureBox<Void> magicReceived = new FutureBox<Void>();
-	private boolean terminated;
-	
-	public TunnellerConnection(String name, final InputStream is, final OutputStream os, PrintStream diagOut, long connTimeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException {
-		super(":" + name, diagOut);
-		
-		embededMode = true;
-		
-		Channel rq = new Channel(CTRL_REQ, Direction.OUTBOUND, 4 << 10);
-		Channel rp = new Channel(CTRL_REP, Direction.INBOUND, 4 << 10);
-		
-		addChannel(rq);
-		addChannel(rp);
-		
-		ctrlReq = new DataOutputStream(rq.outbound);
-		ctrlRep = new DataInputStream(rp.inbound);
-		
-		outbound = new OutboundMux(os);
-		outbound.start();
-		
-		inbound = new InboundDemux(is) {
-			public void run() {
-				try {
-					readMagic(in);
-					magicReceived.setData(null);
-				}
-				catch(Exception e) {
-					magicReceived.setError(e);
-					// disposing tunneller resources
-					close(is);
-					close(os);
-					return;
-				}
-				super.run();
-			};
-		};
-		inbound.start();
+    private long nextChannel = 0;
+    private long nextProc = 0;
+    private long nextSocket = 0;
+    private long nextAccept = 0;
+    private long nextFile = 0;
 
-		try {
-			magicReceived.get(connTimeout, tu);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof IOException) {
-				throw ((IOException)e.getCause());
-			}
-			else {
-				throw new IOException(e.getCause());
-			}
-		}
-		
-		control = new Control(name);
-		control.start();		
-	}
+    private DataOutputStream ctrlReq;
+    private DataInputStream ctrlRep;
 
-	public synchronized long newSocket(SocketHandler handler) throws IOException {
-		long sockId = nextSocket++;
-		SocketContext ctx = new SocketContext();
-		ctx.sockId = sockId;
-		ctx.handler = handler;
-		socks.put(sockId, ctx);
-		try {
-			sendBind(sockId);
-		} catch (IOException e) {
-			shutdown();
-			throw new IOException("Broken tunnel");
-		}
-		return sockId;
-	}
+    private Map<Long, ExecContext> execs = new HashMap<Long, ExecContext>();
+    private Map<Long, SocketContext> socks = new HashMap<Long, SocketContext>();
+    private Map<Long, AcceptContext> accepts = new HashMap<Long, AcceptContext>();
+    private Map<Long, FileContext> files = new HashMap<Long, FileContext>();
 
-	public synchronized void pushFile(String path, FileHandler handler) throws IOException {
-		long fileId = nextFile++;
-		FileContext ctx = new FileContext();
-		ctx.chanId = newChannelId();
-		ctx.handler = handler;
-		files.put(fileId, ctx);
-		try {
-			sendPush(fileId, path, ctx.chanId);
-		} catch (IOException e) {
-			shutdown();
-			throw new IOException("Broken tunnel");
-		}
-	}
-	
-	public synchronized long exec(String wd, String[] cmd, Map<String, String> env, ExecHandler handler) throws IOException {
-		long procId = nextProc++;
-		ExecContext ctx = new ExecContext();
-		ctx.procId = procId;
-		ctx.handler = handler;
-		
-		long stdIn = newChannelId();
-		long stdOut = newChannelId();
-		long stdErr = newChannelId();
-		
-		ctx.stdIn = newOutbound(stdIn);
-		ctx.stdOut = newInbound(stdOut);
-		ctx.stdErr = newInbound(stdErr);
-		
-		execs.put(ctx.procId, ctx);
-		
-		try {
-			sendExec(procId, wd, cmd, env, stdIn, stdOut, stdErr);
-			return procId;
-		} catch (IOException e) {
-			shutdown();
-			throw new IOException("Broken tunnel");
-		}		
-	}
-	
-	public synchronized void killProc(long execId) throws IOException {
-		if (execs.containsKey(execId)) {
-		
-			try {
-				sendKill(execId);
-			} catch (IOException e) {
-				shutdown();
-				throw new IOException("Broken tunnel");
-			}
-		}
-	}
-	
-	public void close() {
-		shutdown();
-	}
-	
-	protected void shutdown() {
-	    super.shutdown();
-		close(ctrlRep);
-		close(ctrlReq);
-		
-		terminated = true;
-		inbound.interrupt();
-		outbound.interrupt();
-		control.interrupt();
-		
-		join(inbound);
-		join(outbound);
-		join(control);
-	}
-	
-	private void close(Closeable c) {
-		try {
-			if (c != null) {
-				c.close();
-			}
-		} catch (IOException e) {
-			// do nothing
-		}
-	}
+    private FutureBox<Void> magicReceived = new FutureBox<Void>();
+    private boolean terminated;
 
-	private void join(Thread p) {
-		try {
-			if (p != null && p != Thread.currentThread()) {
-				p.join();
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			// do nothing
-		}
-	}
-	
+    public TunnellerConnection(String name, final InputStream is, final OutputStream os, PrintStream diagOut, long connTimeout, TimeUnit tu) throws IOException, InterruptedException, TimeoutException {
+        super(":" + name, diagOut);
 
-	private synchronized void addAcceptor(SocketContext context) throws IOException {
-		AcceptContext ac = new AcceptContext();
-		ac.cmdId = nextAccept++;
-		ac.context = context;
-		
-		long inId = newChannelId();
-		long outId = newChannelId();
-		ac.soIn = newInbound(inId);
-		ac.soOut = newOutbound(outId);
-		
-		accepts.put(ac.cmdId, ac);
-		
-		sendAccept(ac.context.sockId, ac.cmdId,inId, outId);		
-	}
-	
-	private synchronized void sendExec(long procId, String wd, String[] command, Map<String, String> env, long stdIn, long stdOut, long stdErr) throws IOException {
-		ExecCmd cmd = new ExecCmd();
-		cmd.procId = procId;
-		cmd.workingDir = wd;
-		cmd.command = command;
-		cmd.env = env;
-		cmd.inId = stdIn;
-		cmd.outId = stdOut;
-		cmd.errId = stdErr;
-		
-		cmd.write(ctrlReq);
-	}
+        embededMode = true;
 
-	private synchronized void sendAccept(long sockId, long cmdId, long inId, long outId) throws IOException {
-		AcceptCmd cmd = new AcceptCmd();
-		cmd.sockId = sockId;
-		cmd.cmdId = cmdId;
-		cmd.inId = outId; // crossing channels
-		cmd.outId = inId; // 
-		
-		cmd.write(ctrlReq);
-	}
+        Channel rq = new Channel(CTRL_REQ, Direction.OUTBOUND, 4 << 10);
+        Channel rp = new Channel(CTRL_REP, Direction.INBOUND, 4 << 10);
 
-	private synchronized void sendBind(long sockId) throws IOException {
-		BindCmd cmd = new BindCmd();
-		cmd.sockId = sockId;
-		
-		cmd.write(ctrlReq);
-	}
+        addChannel(rq);
+        addChannel(rp);
 
-	private synchronized void sendPush(long fileId, String path, long outId) throws IOException {
-		FilePushCmd cmd = new FilePushCmd();
-		cmd.fileId = fileId;
-		cmd.path = path;
-		cmd.inId = outId;
-		
-		cmd.write(ctrlReq);
-	}
+        ctrlReq = new DataOutputStream(rq.outbound);
+        ctrlRep = new DataInputStream(rp.inbound);
 
-	private synchronized void sendKill(long procId) throws IOException {
-		KillCmd cmd = new KillCmd();
-		cmd.procId = procId;
-		
-		cmd.write(ctrlReq);
-	}
+        outbound = new OutboundMux(os);
+        outbound.start();
 
-	private InputStream newInbound(long id) {
-		Channel ch = new Channel(id, Direction.INBOUND, 16 << 10);
-		addChannel(ch);
-		return ch.inbound;
-	}
+        inbound = new InboundDemux(is) {
+            @Override
+            public void run() {
+                try {
+                    readMagic(in);
+                    magicReceived.setData(null);
+                }
+                catch(Exception e) {
+                    magicReceived.setError(e);
+                    // disposing tunneller resources
+                    close(is);
+                    close(os);
+                    return;
+                }
+                super.run();
+            };
+        };
+        inbound.start();
 
-	private OutputStream newOutbound(long id) {
-		Channel ch = new Channel(id, Direction.OUTBOUND, 16 << 10);
-		addChannel(ch);
-		return new NotifyingOutputStream(ch.outbound);
-	}
+        try {
+            magicReceived.get(connTimeout, tu);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException) {
+                throw ((IOException)e.getCause());
+            }
+            else {
+                throw new IOException(e.getCause());
+            }
+        }
+
+        control = new Control(name);
+        control.start();
+    }
+
+    public synchronized long newSocket(SocketHandler handler) throws IOException {
+        long sockId = nextSocket++;
+        SocketContext ctx = new SocketContext();
+        ctx.sockId = sockId;
+        ctx.handler = handler;
+        socks.put(sockId, ctx);
+        try {
+            sendBind(sockId);
+        } catch (IOException e) {
+            shutdown();
+            throw new IOException("Broken tunnel");
+        }
+        return sockId;
+    }
+
+    public synchronized void pushFile(String path, FileHandler handler) throws IOException {
+        long fileId = nextFile++;
+        FileContext ctx = new FileContext();
+        ctx.chanId = newChannelId();
+        ctx.handler = handler;
+        files.put(fileId, ctx);
+        try {
+            sendPush(fileId, path, ctx.chanId);
+        } catch (IOException e) {
+            shutdown();
+            throw new IOException("Broken tunnel");
+        }
+    }
+
+    public synchronized long exec(String wd, String[] cmd, Map<String, String> env, ExecHandler handler) throws IOException {
+        long procId = nextProc++;
+        ExecContext ctx = new ExecContext();
+        ctx.procId = procId;
+        ctx.handler = handler;
+
+        long stdIn = newChannelId();
+        long stdOut = newChannelId();
+        long stdErr = newChannelId();
+
+        ctx.stdIn = newOutbound(stdIn);
+        ctx.stdOut = newInbound(stdOut);
+        ctx.stdErr = newInbound(stdErr);
+
+        execs.put(ctx.procId, ctx);
+
+        try {
+            sendExec(procId, wd, cmd, env, stdIn, stdOut, stdErr);
+            return procId;
+        } catch (IOException e) {
+            shutdown();
+            throw new IOException("Broken tunnel");
+        }
+    }
+
+    public synchronized void killProc(long execId) throws IOException {
+        if (execs.containsKey(execId)) {
+
+            try {
+                sendKill(execId);
+            } catch (IOException e) {
+                shutdown();
+                throw new IOException("Broken tunnel");
+            }
+        }
+    }
+
+    public void close() {
+        shutdown();
+    }
+
+    @Override
+    protected void shutdown() {
+        super.shutdown();
+        close(ctrlRep);
+        close(ctrlReq);
+
+        terminated = true;
+        inbound.interrupt();
+        outbound.interrupt();
+        control.interrupt();
+
+        join(inbound);
+        join(outbound);
+        join(control);
+    }
+
+    private void close(Closeable c) {
+        try {
+            if (c != null) {
+                c.close();
+            }
+        } catch (IOException e) {
+            // do nothing
+        }
+    }
+
+    private void join(Thread p) {
+        try {
+            if (p != null && p != Thread.currentThread()) {
+                p.join();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // do nothing
+        }
+    }
 
 
-	private synchronized long newChannelId() {
-		return nextChannel++;
-	}
+    private synchronized void addAcceptor(SocketContext context) throws IOException {
+        AcceptContext ac = new AcceptContext();
+        ac.cmdId = nextAccept++;
+        ac.context = context;
 
-	private static class ExecContext {
-		
-		long procId;
-		ExecHandler handler;
-		boolean started;
-		
-		OutputStream stdIn;
-		InputStream stdOut;
-		InputStream stdErr;	
-		
-		public synchronized void started() {
-		    if (!started) {
-		        started = true;
-		        handler.started(stdIn, stdOut, stdErr);
-		    }
-		}		
+        long inId = newChannelId();
+        long outId = newChannelId();
+        ac.soIn = newInbound(inId);
+        ac.soOut = newOutbound(outId);
 
-		public synchronized void finished(int exitCode) {
-		    if (!started) {
-		        handler.started(stdIn, stdOut, stdErr);
-		    }
-		    handler.finished(exitCode);
-		}		
-	}
+        accepts.put(ac.cmdId, ac);
 
-	private static class SocketContext {
-		
-		long sockId;
-		SocketHandler handler;
+        sendAccept(ac.context.sockId, ac.cmdId,inId, outId);
+    }
 
-		String hostname;
-		int port;		
-	}
+    private synchronized void sendExec(long procId, String wd, String[] command, Map<String, String> env, long stdIn, long stdOut, long stdErr) throws IOException {
+        ExecCmd cmd = new ExecCmd();
+        cmd.procId = procId;
+        cmd.workingDir = wd;
+        cmd.command = command;
+        cmd.env = env;
+        cmd.inId = stdIn;
+        cmd.outId = stdOut;
+        cmd.errId = stdErr;
 
-	private static class AcceptContext {
-		
-		long cmdId;
-		SocketContext context;
+        cmd.write(ctrlReq);
+    }
 
-		InputStream soIn;
-		OutputStream soOut;
-	}
+    private synchronized void sendAccept(long sockId, long cmdId, long inId, long outId) throws IOException {
+        AcceptCmd cmd = new AcceptCmd();
+        cmd.sockId = sockId;
+        cmd.cmdId = cmdId;
+        cmd.inId = outId; // crossing channels
+        cmd.outId = inId; //
 
-	private static class FileContext {
+        cmd.write(ctrlReq);
+    }
 
-		String rpath;
-		FileHandler handler;
-		long chanId;
-		OutputStream channel;		
-	}
-	
-	private class Control extends Thread {
-		
-		public Control(String name) {
-			setName("TunnelControl:" + name);
-		}
-		
-		@Override
-		public void run() {
-			try {
-				try {
-					while(!terminated) {
-						int cmd = ctrlRep.readInt();
-						switch(cmd) {
-							case StartedCmd.ID: processStarted(); break;
-							case ExitCodeCmd.ID: processExitCode(); break;
-							case BoundCmd.ID: processBound(); break;
-							case AcceptedCmd.ID: processAccepted(); break;
-							case FilePushResponseCmd.ID: processFileResponse(); break;
-							default:
-								System.out.println("ERROR: Unexpected command: " + cmd);
-								break;
-						}
-					}		
-				} catch (IOException e) {
-					diagOut.println("Control thread stopped");
-				} catch (Exception e) {
-					diagOut.println("Error in control thread: " + e.toString());
-				}
-			}
-			finally {
-				shutdown();
-			}
-		}
+    private synchronized void sendBind(long sockId) throws IOException {
+        BindCmd cmd = new BindCmd();
+        cmd.sockId = sockId;
 
-		private void processAccepted() throws IOException {
-			final AcceptedCmd cmd = new AcceptedCmd();
-			cmd.read(ctrlRep);
-			
-			final AcceptContext ctx;
-			synchronized(TunnellerConnection.this) {
-				
-				ctx = accepts.remove(cmd.cmdId);
-				if (ctx == null) {
-					throw new RuntimeException("Unknown acceptor ID: " + cmd.cmdId);
-				}
-				addAcceptor(ctx.context);
-			}
-			new Thread(
-					new Runnable() {
-						@Override
-						public void run() {
-							ctx.context.handler.accepted(cmd.remoteHost, cmd.remotePort, ctx.soIn, ctx.soOut);
-						}
-					},
-					"process accepted " + cmd.remoteHost + ":" + cmd.remotePort
-			).start();
-		}
+        cmd.write(ctrlReq);
+    }
 
-		private void processFileResponse() throws IOException {
-			FilePushResponseCmd cmd = new FilePushResponseCmd();
-			cmd.read(ctrlRep);
-			
-			if (cmd.error.length() == 0 && cmd.size == -1) {
-				// request accepted
-				FileContext ctx;
-				synchronized(TunnellerConnection.this) {
-					ctx = files.get(cmd.fileId);
-					if (ctx == null) {
-						throw new RuntimeException("Unknown file ID: " + cmd.fileId);
-					}
-				}
-				ctx.rpath = cmd.path;
-				ctx.channel = newOutbound(ctx.chanId);
-				ctx.handler.accepted(ctx.channel);
-			}
-			else {
-				FileContext ctx;
-				synchronized(TunnellerConnection.this) {
-					ctx = files.remove(cmd.fileId);
-					if (ctx == null) {
-						throw new RuntimeException("Unknown file ID: " + cmd.fileId);
-					}
-				}
-				ctx.rpath = cmd.path;
-				close(ctx.channel);
-				
-				if (cmd.error.length() != 0) {
-					ctx.handler.failed(ctx.rpath, cmd.error);
-				}
-				else {
-					ctx.handler.confirmed(ctx.rpath, cmd.size);
-				}
-			}
-		}
+    private synchronized void sendPush(long fileId, String path, long outId) throws IOException {
+        FilePushCmd cmd = new FilePushCmd();
+        cmd.fileId = fileId;
+        cmd.path = path;
+        cmd.inId = outId;
 
-		private void processBound() throws IOException {
-			BoundCmd cmd = new BoundCmd();
-			cmd.read(ctrlRep);
-			
-			SocketContext ctx;
-			synchronized(TunnellerConnection.this) {
-				ctx = socks.get(cmd.sockId);
-				if (ctx == null) {
-					throw new RuntimeException("Unknown socket ID: " + cmd.sockId);
-				}
-				ctx.hostname = cmd.host;
-				ctx.port = cmd.port;
-				addAcceptor(ctx);
-				addAcceptor(ctx);
-			}			
+        cmd.write(ctrlReq);
+    }
 
-			ctx.handler.bound(ctx.hostname, ctx.port);
-		}
+    private synchronized void sendKill(long procId) throws IOException {
+        KillCmd cmd = new KillCmd();
+        cmd.procId = procId;
 
-		private void processStarted() throws IOException {
-			StartedCmd cmd = new StartedCmd();
-			cmd.read(ctrlRep);
-			
-			ExecContext ctx;
-			synchronized(TunnellerConnection.this) {
-				ctx = execs.get(cmd.procId);
-				if (ctx == null) {
-					throw new RuntimeException("Unknown exec ID: " + cmd.procId);
-				}
-			}
-			
-			ctx.started();
-		}		
+        cmd.write(ctrlReq);
+    }
 
-		private void processExitCode() throws IOException {
-			ExitCodeCmd cmd = new ExitCodeCmd();
-			cmd.read(ctrlRep);
-			
-			ExecContext ctx;
-			synchronized(TunnellerConnection.this) {
-				ctx = execs.remove(cmd.procId);
-				if (ctx == null) {
-					throw new RuntimeException("Unknown exec ID: " + cmd.procId);
-				}
-			}
-						
-			ctx.finished(cmd.code);
-		}		
-	}
-	
-	public interface ExecHandler {
-		
-		public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr);
+    private InputStream newInbound(long id) {
+        Channel ch = new Channel(id, Direction.INBOUND, 16 << 10);
+        addChannel(ch);
+        return ch.inbound;
+    }
 
-		public void finished(int exitCode);
-		
-	}
+    private OutputStream newOutbound(long id) {
+        Channel ch = new Channel(id, Direction.OUTBOUND, 16 << 10);
+        addChannel(ch);
+        return new NotifyingOutputStream(ch.outbound);
+    }
 
-	public interface FileHandler {
-		
-		public void accepted(OutputStream out);
-		
-		public void confirmed(String path, long size);
 
-		public void failed(String path, String error);
-		
-	}
+    private synchronized long newChannelId() {
+        return nextChannel++;
+    }
 
-	public interface SocketHandler {
-		
-		public void bound(String host, int port);
-		
-		public void accepted(String remoteHost, int remotePort, InputStream soIn, OutputStream soOut);
-	}
-	
-	public interface DuplexStream extends Closeable {
-		
-		public InputStream getInput() throws IOException;
-		
-		public OutputStream getOutput() throws IOException;
-		
-		public void close() throws IOException;
+    private static class ExecContext {
 
-	}
-	
-	private class NotifyingOutputStream extends OutputStream {
-		
-		private final OutputStream delegate;
+        long procId;
+        ExecHandler handler;
+        boolean started;
 
-		public NotifyingOutputStream(OutputStream delegate) {
-			this.delegate = delegate;
-		}
+        OutputStream stdIn;
+        InputStream stdOut;
+        InputStream stdErr;
 
-		public void write(int b) throws IOException {
-			delegate.write(b);
-			writePending();
-		}
+        public synchronized void started() {
+            if (!started) {
+                started = true;
+                handler.started(stdIn, stdOut, stdErr);
+            }
+        }
 
-		public void write(byte[] b) throws IOException {
-			delegate.write(b);
-			writePending();
-		}
+        private synchronized void failed(String error) {
+            if (!started) {
+                handler.execFailed(stdIn, stdOut, stdErr, error);
+            }
+        }
 
-		public void write(byte[] b, int off, int len) throws IOException {
-			delegate.write(b, off, len);
-			writePending();
-		}
+        public synchronized void finished(int exitCode) {
+            if (!started) {
+                handler.started(stdIn, stdOut, stdErr);
+            }
+            handler.finished(exitCode);
+        }
+    }
 
-		public void flush() throws IOException {
-			delegate.flush();
-		}
+    private static class SocketContext {
 
-		public void close() throws IOException {
-			delegate.close();
-			writePending();
-		}
+        long sockId;
+        SocketHandler handler;
 
-		public String toString() {
-			return delegate.toString();
-		}
-	}
+        String hostname;
+        int port;
+    }
+
+    private static class AcceptContext {
+
+        long cmdId;
+        SocketContext context;
+
+        InputStream soIn;
+        OutputStream soOut;
+    }
+
+    private static class FileContext {
+
+        String rpath;
+        FileHandler handler;
+        long chanId;
+        OutputStream channel;
+    }
+
+    private class Control extends Thread {
+
+        public Control(String name) {
+            setName("TunnelControl:" + name);
+        }
+
+        @Override
+        public void run() {
+            try {
+                try {
+                    while(!terminated) {
+                        int cmd = ctrlRep.readInt();
+                        switch(cmd) {
+                            case StartedCmd.ID: processStarted(); break;
+                            case ExitCodeCmd.ID: processExitCode(); break;
+                            case ExecFailedCmd.ID: processExecFailed(); break;
+                            case BoundCmd.ID: processBound(); break;
+                            case AcceptedCmd.ID: processAccepted(); break;
+                            case FilePushResponseCmd.ID: processFileResponse(); break;
+                            default:
+                                System.out.println("ERROR: Unexpected command: " + cmd);
+                                break;
+                        }
+                    }
+                } catch (IOException e) {
+                    diagOut.println("Control thread stopped");
+                } catch (Exception e) {
+                    diagOut.println("Error in control thread: " + e.toString());
+                }
+            }
+            finally {
+                shutdown();
+            }
+        }
+
+        private void processAccepted() throws IOException {
+            final AcceptedCmd cmd = new AcceptedCmd();
+            cmd.read(ctrlRep);
+
+            final AcceptContext ctx;
+            synchronized(TunnellerConnection.this) {
+
+                ctx = accepts.remove(cmd.cmdId);
+                if (ctx == null) {
+                    throw new RuntimeException("Unknown acceptor ID: " + cmd.cmdId);
+                }
+                addAcceptor(ctx.context);
+            }
+            new Thread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            ctx.context.handler.accepted(cmd.remoteHost, cmd.remotePort, ctx.soIn, ctx.soOut);
+                        }
+                    },
+                    "process accepted " + cmd.remoteHost + ":" + cmd.remotePort
+            ).start();
+        }
+
+        private void processFileResponse() throws IOException {
+            FilePushResponseCmd cmd = new FilePushResponseCmd();
+            cmd.read(ctrlRep);
+
+            if (cmd.error.length() == 0 && cmd.size == -1) {
+                // request accepted
+                FileContext ctx;
+                synchronized(TunnellerConnection.this) {
+                    ctx = files.get(cmd.fileId);
+                    if (ctx == null) {
+                        throw new RuntimeException("Unknown file ID: " + cmd.fileId);
+                    }
+                }
+                ctx.rpath = cmd.path;
+                ctx.channel = newOutbound(ctx.chanId);
+                ctx.handler.accepted(ctx.channel);
+            }
+            else {
+                FileContext ctx;
+                synchronized(TunnellerConnection.this) {
+                    ctx = files.remove(cmd.fileId);
+                    if (ctx == null) {
+                        throw new RuntimeException("Unknown file ID: " + cmd.fileId);
+                    }
+                }
+                ctx.rpath = cmd.path;
+                close(ctx.channel);
+
+                if (cmd.error.length() != 0) {
+                    ctx.handler.failed(ctx.rpath, cmd.error);
+                }
+                else {
+                    ctx.handler.confirmed(ctx.rpath, cmd.size);
+                }
+            }
+        }
+
+        private void processBound() throws IOException {
+            BoundCmd cmd = new BoundCmd();
+            cmd.read(ctrlRep);
+
+            SocketContext ctx;
+            synchronized(TunnellerConnection.this) {
+                ctx = socks.get(cmd.sockId);
+                if (ctx == null) {
+                    throw new RuntimeException("Unknown socket ID: " + cmd.sockId);
+                }
+                ctx.hostname = cmd.host;
+                ctx.port = cmd.port;
+                addAcceptor(ctx);
+                addAcceptor(ctx);
+            }
+
+            ctx.handler.bound(ctx.hostname, ctx.port);
+        }
+
+        private void processStarted() throws IOException {
+            StartedCmd cmd = new StartedCmd();
+            cmd.read(ctrlRep);
+
+            ExecContext ctx;
+            synchronized(TunnellerConnection.this) {
+                ctx = execs.get(cmd.procId);
+                if (ctx == null) {
+                    throw new RuntimeException("Unknown exec ID: " + cmd.procId);
+                }
+            }
+
+            ctx.started();
+        }
+
+        private void processExitCode() throws IOException {
+            ExitCodeCmd cmd = new ExitCodeCmd();
+            cmd.read(ctrlRep);
+
+            ExecContext ctx;
+            synchronized(TunnellerConnection.this) {
+                ctx = execs.remove(cmd.procId);
+                if (ctx == null) {
+                    throw new RuntimeException("Unknown exec ID: " + cmd.procId);
+                }
+            }
+
+            ctx.finished(cmd.code);
+        }
+
+        private void processExecFailed() throws IOException {
+            ExecFailedCmd cmd = new ExecFailedCmd();
+            cmd.read(ctrlRep);
+
+            ExecContext ctx;
+            synchronized(TunnellerConnection.this) {
+                ctx = execs.remove(cmd.procId);
+                if (ctx == null) {
+                    throw new RuntimeException("Unknown exec ID: " + cmd.procId);
+                }
+            }
+
+            ctx.failed(cmd.error);
+        }
+    }
+
+    public interface ExecHandler {
+
+        public void started(OutputStream stdIn, InputStream stdOut, InputStream stdErr);
+
+        /**
+         * Starting command has failed. Additional information could be read from console streams.
+         * No finished event will follow.
+         *
+         * @param error error description (may be dubbed to console streams)
+         */
+        public void execFailed(OutputStream stdIn, InputStream stdOut, InputStream stdErr, String error);
+
+        public void finished(int exitCode);
+
+    }
+
+    public interface FileHandler {
+
+        public void accepted(OutputStream out);
+
+        public void confirmed(String path, long size);
+
+        public void failed(String path, String error);
+
+    }
+
+    public interface SocketHandler {
+
+        public void bound(String host, int port);
+
+        public void accepted(String remoteHost, int remotePort, InputStream soIn, OutputStream soOut);
+    }
+
+    public interface DuplexStream extends Closeable {
+
+        public InputStream getInput() throws IOException;
+
+        public OutputStream getOutput() throws IOException;
+
+        @Override
+        public void close() throws IOException;
+
+    }
+
+    private class NotifyingOutputStream extends OutputStream {
+
+        private final OutputStream delegate;
+
+        public NotifyingOutputStream(OutputStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            delegate.write(b);
+            writePending();
+        }
+
+        @Override
+        public void write(byte[] b) throws IOException {
+            delegate.write(b);
+            writePending();
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            delegate.write(b, off, len);
+            writePending();
+        }
+
+        @Override
+        public void flush() throws IOException {
+            delegate.flush();
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+            writePending();
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
+    }
 }

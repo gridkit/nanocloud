@@ -94,6 +94,13 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
             }
 
             @Override
+            public void execFailed(OutputStream stdIn, InputStream stdOut, InputStream stdErr, String error) {
+                // mimic old event sequence
+                started(stdIn, stdOut, stdErr);
+                finished(Integer.MIN_VALUE);
+            }
+
+            @Override
             public void finished(int exitCode) {
                 try {
                     Thread.sleep(100);
@@ -109,7 +116,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
         TunnellerConnection conn;
         conn = fget(tc, proc);
 
-        return new CosnoleWrapper(new TunnellerControlConsole(conn, cachePath), proc);
+        return new CosnoleWrapper(console.getHostname(), new TunnellerControlConsole(conn, cachePath), proc);
     }
 
     private void verifyVersion(String jversion) {
@@ -183,10 +190,12 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
 
     private static class CosnoleWrapper implements HostControlConsole {
 
+        private final String hostname;
         private final HostControlConsole delegate;
         private final Destroyable destroyable;
 
-        public CosnoleWrapper(HostControlConsole delegate,	Destroyable destroyable) {
+        public CosnoleWrapper(String hostname, HostControlConsole delegate,	Destroyable destroyable) {
+            this.hostname = hostname;
             this.delegate = delegate;
             this.destroyable = destroyable;
         }
@@ -194,6 +203,11 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
         @Override
         public boolean isLocalFileSystem() {
             return false;
+        }
+
+        @Override
+        public String getHostname() {
+            return hostname;
         }
 
         @Override
@@ -245,6 +259,13 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
                     }
                     lout = streamCopyService.link(out, stdOut);
                     lerr = streamCopyService.link(err, stdErr);
+                }
+
+                @Override
+                public void execFailed(OutputStream stdIn, InputStream stdOut, InputStream stdErr, String error) {
+                    // mimic old event sequence
+                    started(stdIn, stdOut, stdErr);
+                    finished(Integer.MIN_VALUE);
                 }
 
                 @Override

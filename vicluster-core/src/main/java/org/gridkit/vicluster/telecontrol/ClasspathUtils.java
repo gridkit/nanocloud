@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class ClasspathUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathUtils.class);

@@ -13,21 +13,21 @@ public class RuntimePragmaSupport implements PragmaHandler {
 
     @Override
     public Object get(String key, ViEngine engine) {
-        if (key.equals(ViConf.RUNTIME_EXIT_CODE)) {            
+        if (key.equals(ViConf.RUNTIME_EXIT_CODE)) {
             return exitCode(engine.getConfig().getManagedProcess());
         }
         else if (key.equals(ViConf.RUNTIME_EXIT_CODE_FUTURE)) {
             return exitCodeFuture(engine.getConfig().getManagedProcess());
         }
         else if (key.equals(ViConf.RUNTIME_HOST)) {
-            throw new UnsupportedOperationException("TODO implement slave hostname retrival");
+               return engine.getConfig().getControlConsole().getHostname();
         }
         else if (key.equals(ViConf.RUNTIME_PID)) {
             throw new UnsupportedOperationException("TODO implement slave PID retrival");
         }
         else if (key.equals(ViConf.RUNTIME_EXECUTION_SUSPENDED)) {
             String suspended = engine.getConfig().get(key);
-            return suspended == null ? "false" : suspended;                                    
+            return suspended == null ? "false" : suspended;
         }
         else {
             throw new IllegalArgumentException("Unknown pragma '" + key + "'");
@@ -43,7 +43,7 @@ public class RuntimePragmaSupport implements PragmaHandler {
             throw new IllegalArgumentException("Pragma '" + key + "' is not known or not writable");
         }
     }
-    
+
     private Object exitCode(ManagedProcess managedProcess) {
         try {
             FutureEx<Integer> exitCode = managedProcess.getExitCodeFuture();
@@ -59,7 +59,7 @@ public class RuntimePragmaSupport implements PragmaHandler {
             throw new RuntimeException(e.getCause());
         }
     }
-    
+
     private Object exitCodeFuture(ManagedProcess managedProcess) {
         return managedProcess.getExitCodeFuture();
     }

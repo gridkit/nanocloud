@@ -14,65 +14,72 @@ import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.GenericNodeTypeHandler;
 
 public class IsolateNodeTypeHandler extends GenericNodeTypeHandler {
-	
-	@Override
-	public boolean apply(QuorumGame game) {
+
+    @Override
+    public boolean apply(QuorumGame game) {
 //		game.setProp(ViConf.PRAGMA_HANDLER + "isolate", new ViEngine.InitTimePragmaHandler());
-		game.setProp(ViConf.PRAGMA_HANDLER + "isolate", new IsolatePragmaSupport());
-		return super.apply(game);
-	}
+        game.setProp(ViConf.PRAGMA_HANDLER + "isolate", new IsolatePragmaSupport());
+        return super.apply(game);
+    }
 
+    @Override
 	protected String defaultJavaExecCmd(QuorumGame game) {
-		return "[embeded]";
-	}
-	
-	@Override
-	protected ProcessLauncher createProcessLauncher(QuorumGame game) {
-		IsolateLauncher launcher = new IsolateLauncher();
-		game.setProp(ViConf.CONSOLE_STD_OUT_ECHO_STREAM, Isolate.getRootStdOut());
-		game.setProp(ViConf.CONSOLE_STD_ERR_ECHO_STREAM, Isolate.getRootStdErr());
-		return launcher;
-	}
+        return "[embeded]";
+    }
 
+    @Override
+    protected ProcessLauncher createProcessLauncher(QuorumGame game) {
+        IsolateLauncher launcher = new IsolateLauncher();
+        game.setProp(ViConf.CONSOLE_STD_OUT_ECHO_STREAM, Isolate.getRootStdOut());
+        game.setProp(ViConf.CONSOLE_STD_ERR_ECHO_STREAM, Isolate.getRootStdErr());
+        return launcher;
+    }
+
+    @Override
 	protected HostControlConsole createControlConsole(QuorumGame game) {
-		return new NoopConsole();
-	}
-	
-	@Override
-	protected Interceptor createClasspathBuilder(QuorumGame game) {
-		return new ViEngine.RuleSet(new ShallowClasspathBuilder(), new ClasspathReplicaBuilderLocal());
-	}
-	
-	private static class NoopConsole implements HostControlConsole {
+        return new NoopConsole();
+    }
 
-		@Override
-		public boolean isLocalFileSystem() {
-			return true;
-		}
+    @Override
+    protected Interceptor createClasspathBuilder(QuorumGame game) {
+        return new ViEngine.RuleSet(new ShallowClasspathBuilder(), new ClasspathReplicaBuilderLocal());
+    }
 
-		@Override
-		public String cacheFile(FileBlob blob) {
-			throw new UnsupportedOperationException();
-		}
+    private static class NoopConsole implements HostControlConsole {
 
-		@Override
-		public List<String> cacheFiles(List<? extends FileBlob> blobs) {
-			throw new UnsupportedOperationException();
-		}
+        @Override
+        public boolean isLocalFileSystem() {
+            return true;
+        }
 
-		@Override
-		public Destroyable openSocket(SocketHandler handler) {
-			throw new UnsupportedOperationException();
-		}
+        @Override
+        public String getHostname() {
+            return "localhost";
+        }
 
-		@Override
-		public Destroyable startProcess(String workDir, String[] command, Map<String, String> env, ProcessHandler handler) {
-			throw new UnsupportedOperationException();
-		}
+        @Override
+        public String cacheFile(FileBlob blob) {
+            throw new UnsupportedOperationException();
+        }
 
-		@Override
-		public void terminate() {
-			throw new UnsupportedOperationException();
-		}
-	}
+        @Override
+        public List<String> cacheFiles(List<? extends FileBlob> blobs) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Destroyable openSocket(SocketHandler handler) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Destroyable startProcess(String workDir, String[] command, Map<String, String> env, ProcessHandler handler) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void terminate() {
+            throw new UnsupportedOperationException();
+        }
+    }
 }

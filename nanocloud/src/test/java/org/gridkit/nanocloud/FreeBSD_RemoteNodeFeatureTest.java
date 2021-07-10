@@ -13,34 +13,34 @@ import org.junit.Test;
 
 public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
 
-	@BeforeClass
-	public static void check_fbox1() {
-		Cloud c = CloudFactory.createCloud();
-		try {
-			c.node("**").x(REMOTE)
-				.useSimpleRemoting()
-				.setRemoteHost("fbox");
-			
-			c.node("test").touch();
-			c.shutdown();
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			Assume.assumeTrue(false);
-		}
-		finally {
-			c.shutdown();
-		}
-	}
-	
-	@Before
-	@Override
-	public void initCloud() {
-		cloud = CloudFactory.createCloud();
-		cloud.node("**").x(REMOTE)
-			.useSimpleRemoting()
-			.setRemoteHost("fbox");
-	}
+    @BeforeClass
+    public static void check_fbox1() {
+        Cloud c = CloudFactory.createCloud();
+        try {
+            c.node("**").x(REMOTE)
+                .useSimpleRemoting()
+                .setRemoteHost("fbox");
+
+            c.node("test").touch();
+            c.shutdown();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            Assume.assumeTrue(false);
+        }
+        finally {
+            c.shutdown();
+        }
+    }
+
+    @Before
+    @Override
+    public void initCloud() {
+        cloud = CloudFactory.createCloud();
+        cloud.node("**").x(REMOTE)
+            .useSimpleRemoting()
+            .setRemoteHost("fbox");
+    }
 
     @Test
     @Override
@@ -60,16 +60,17 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
         super.verify_isolated_static_with_runnable();
     }
 
+    @Override
     public void verify_class_exclusion() {
         // class sharing is not supported by local nodes, obviously
-    }       
+    }
 
     @Test
     @Override
     public void verify_property_isolation() throws Exception {
         super.verify_property_isolation();
     }
-    
+
     @Test
     @Override
     public void verify_exec_stack_trace_locality() {
@@ -111,7 +112,7 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     public void test_handle_NoDefClassFound_on_return(){
         super.test_handle_NoDefClassFound_on_return();
     }
-    
+
     @Test
     @Override
     public void test_inherit_cp_true() throws IOException, URISyntaxException {
@@ -121,7 +122,7 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     @Test
     @Override
     public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
-    	super.test_inherit_cp_shallow();
+        super.test_inherit_cp_shallow();
     }
 
     @Test
@@ -194,6 +195,31 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     @Override
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_multiple_agents();
+    }
+
+    @Test
+    @Override
+    public void verify_exit_code_is_available() throws Exception {
+        super.verify_exit_code_is_available();
+    }
+
+    @Test
+    @Override
+    public void verify_lifecycle_listener_receive_exit_code() throws Exception {
+        super.verify_lifecycle_listener_receive_exit_code();
+    }
+
+
+    @Test
+    @Override
+    public void verify_lifecycle_listener_with_invalid_executable() throws Exception {
+        super.verify_lifecycle_listener_with_invalid_executable();
+    }
+
+    @Test
+    @Override
+    public void verify_lifecycle_listener_with_invalid_arg() throws Exception {
+        super.verify_lifecycle_listener_with_invalid_arg();
     }
 
     @Test

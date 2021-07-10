@@ -5,6 +5,7 @@ class LazyClassInstantiator implements LazyPragma {
     public static LazyClassInstantiator INSTANCE = new LazyClassInstantiator();
 
     @Override
+    @SuppressWarnings("deprecation")
     public Object resolve(String key, PragmaReader context) {
         int c = key.lastIndexOf(':');
         if (c < 0) {
@@ -22,6 +23,6 @@ class LazyClassInstantiator implements LazyPragma {
         } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("Cannot instantiate '" + key + "'", e);
         }
-        return bean;        
-    } 
+        return bean;
+    }
 }

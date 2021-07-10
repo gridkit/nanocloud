@@ -12,15 +12,16 @@ import java.util.regex.Pattern;
 class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
 
     private Set<String> keys = new LinkedHashSet<String>();
-    
+
     private Map<String, String> links = new HashMap<String, String>();
     private Map<String, Object> values = new HashMap<String, Object>();
-    
+
     private List<String> defaultWildCards = new ArrayList<String>();
-    
-    public PragmaMap() {        
+
+    public PragmaMap() {
     }
-    
+
+    @Override
     public PragmaMap clone() {
         try {
             PragmaMap that = (PragmaMap) super.clone();
@@ -38,7 +39,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
     public void copyTo(PragmaWriter target) {
         copyTo(target, false);
     }
-    
+
     @Override
     public void copyTo(PragmaWriter target, boolean omitExisting) {
         for(String key: keys) {
@@ -64,7 +65,8 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             }
         }
     }
-    
+
+    @Override
     public void set(String key, Object value) {
         if (key == null) {
             throw new NullPointerException("'key' should not be null");
@@ -74,6 +76,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
         values.put(key, value);
     }
 
+    @Override
     public void setLazy(String key, LazyPragma lazy) {
         if (key == null) {
             throw new NullPointerException("'key' should not be null");
@@ -85,6 +88,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
         set(lazyKey(key), lazy);
     }
 
+    @Override
     public void link(String key, String link) {
         if (key == null) {
             throw new NullPointerException("'key' should not be null");
@@ -94,7 +98,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
         }
         addKey(key);
         values.remove(key);
-        links.put(key, link);        
+        links.put(key, link);
     }
 
     @Override
@@ -208,13 +212,27 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
     }
 
     @Override
+    public <T> List<T> collect(String glob, Class<T> type) {
+        List<T> result = new ArrayList<T>();
+
+        for (String key: match(glob)) {
+            Object val = get(key);
+            if (type.isInstance(val)) {
+                result.add(type.cast(val));
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public String describe(String key) {
         if (!keys.contains(key)) {
             return null;
         }
         else {
             if (getFactory(key) != null) {
-                return "{" + getFactory(key) + "} " + String.valueOf(values.get(key)); 
+                return "{" + getFactory(key) + "} " + String.valueOf(values.get(key));
             }
             else if (values.containsKey(key)) {
                 return String.valueOf(values.get(key));
@@ -259,7 +277,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
                     popLink(linkKey);
                 }
             }
-            else {                
+            else {
                 return null;
             }
         }
@@ -279,7 +297,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             }
         }
     }
-    
+
     private String lazyKey(String key) {
         if (key.startsWith(Pragma.DEFAULT)) {
             return Pragma.DEFAULT + Pragma.LAZY + key.substring(Pragma.DEFAULT.length());
@@ -288,9 +306,9 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             return Pragma.LAZY + key;
         }
     }
-    
+
     private static final Pattern NAME_REF = Pattern.compile("\\$\\{([^\\}]+)\\}");
-    
+
     private String tryLinkKey(String link) {
         try {
             return linkKey(link);
@@ -299,7 +317,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             return "";
         }
     }
-    
+
     private String linkKey(String link) {
         String key = link;
         if (link.startsWith("?")) {
@@ -318,11 +336,11 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
                     }
                     n = m.end();
                     continue;
-                }             
+                }
                 key = key.replace(p, String.valueOf(v));
                 n = 0;
                 continue;
-            }            
+            }
             else {
                 break;
             }
@@ -331,7 +349,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
     }
 
     private static ThreadLocal<Set<String>> LINK_STACK = new ThreadLocal<Set<String>>();
-    
+
     private void pushLink(String link) {
         Set<String> stack = LINK_STACK.get();
         if (stack == null) {
@@ -343,20 +361,20 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
         }
         stack.add(link);
     }
-    
+
     private void popLink(String link) {
         Set<String> stack = LINK_STACK.get();
         if (stack != null) {
             stack.remove(link);
-        }        
+        }
     }
-    
+
 //    private Set<String> swapLinkStack(Set<String> stack) {
 //        Set<String> copy = LINK_STACK.get();
 //        LINK_STACK.set(stack);
 //        return copy;
 //    }
-    
+
     private static class UnresolvableLinkException extends IllegalArgumentException {
 
         private static final long serialVersionUID = 20140619L;

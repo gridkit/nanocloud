@@ -16,87 +16,87 @@
 package org.gridkit.vicluster;
 
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class ViProps implements ViNodeProps {
 
-	/**
-	 * Type of ViNode (e.g. isolate, local ...). Types have associated provider.
-	 */
-	public static final String NODE_TYPE = "node:type";
-	
-	public static final String NODE_TYPE_ISOLATE = "isolate";
-	public static final String NODE_TYPE_IN_PROCESS = "in-process";
-	public static final String NODE_TYPE_LOCAL = "local";
-	public static final String NODE_TYPE_REMOTE = "remote";
-	public static final String NODE_TYPE_ALIAS = "alias";
-	
-	/**
-	 * System property there name of node could be found
-	 */
-	public static final String NAME_PROP = "vinode.name";
+    /**
+     * Type of ViNode (e.g. isolate, local ...). Types have associated provider.
+     */
+    public static final String NODE_TYPE = "node:type";
 
-	/**
-	 * Arbitrary UID of ViNode. May be used by certain providers.
-	 */
-	@Deprecated
-	public static final String NODE_UID = "node:uid";
+    public static final String NODE_TYPE_ISOLATE = "isolate";
+    public static final String NODE_TYPE_IN_PROCESS = "in-process";
+    public static final String NODE_TYPE_LOCAL = "local";
+    public static final String NODE_TYPE_REMOTE = "remote";
+    public static final String NODE_TYPE_ALIAS = "alias";
 
-	/**
-	 * Logical "host" of which node is meant to run (might be another vinode name for example).
-	 */	
-	public static final String HOST = "node:host";
+    /**
+     * System property there name of node could be found
+     */
+    public static final String NAME_PROP = "vinode.name";
 
-	/**
-	 * Label
-	 */	
-	@Deprecated
-	public static final String LABEL = "label:";	
+    /**
+     * Arbitrary UID of ViNode. May be used by certain providers.
+     */
+    @Deprecated
+    public static final String NODE_UID = "node:uid";
 
-	/**
-	 * If <code>true</code> provider is expected to suppress node output
-	 * after shutdown.
-	 */
-	public static final String NODE_SILENT_SHUTDOWN = "node:silent-shutdown";
-	
-	public static ViProps at(ViConfigurable config) {
-		return new ViProps(config);
-	}
-	
-	private final ViConfigurable config;
+    /**
+     * Logical "host" of which node is meant to run (might be another vinode name for example).
+     */
+    public static final String HOST = "node:host";
 
-	private ViProps(ViConfigurable config) {
-		this.config = config;
-	}
+    /**
+     * Label
+     */
+    @Deprecated
+    public static final String LABEL = "label:";
 
-	public ViProps setType(String type) {
-		config.setProp(NODE_TYPE, type);
-		return this;
-	}
+    /**
+     * If <code>true</code> provider is expected to suppress node output
+     * after shutdown.
+     */
+    public static final String NODE_SILENT_SHUTDOWN = "node:silent-shutdown";
 
-	public ViProps setIsolateType() {
-		config.setProp(NODE_TYPE, NODE_TYPE_ISOLATE);
-		return this;
-	}
+    public static ViProps at(ViConfigurable config) {
+        return new ViProps(config);
+    }
 
-	public ViProps setInProcessType() {
-		config.setProp(NODE_TYPE, NODE_TYPE_IN_PROCESS);
-		return this;
-	}
+    private final ViConfigurable config;
 
-	public ViProps setLocalType() {
-		config.setProp(NODE_TYPE, NODE_TYPE_LOCAL);
-		return this;
-	}
+    private ViProps(ViConfigurable config) {
+        this.config = config;
+    }
 
-	public ViProps setRemoteType() {
-		config.setProp(NODE_TYPE, NODE_TYPE_REMOTE);
-		return this;
-	}
-	
-	public ViProps setSilentShutdown() {
-		config.setProp(NODE_SILENT_SHUTDOWN, "true");
-		return this;
-	}	
+    public ViProps setType(String type) {
+        config.setProp(NODE_TYPE, type);
+        return this;
+    }
+
+    public ViProps setIsolateType() {
+        config.setProp(NODE_TYPE, NODE_TYPE_ISOLATE);
+        return this;
+    }
+
+    public ViProps setInProcessType() {
+        config.setProp(NODE_TYPE, NODE_TYPE_IN_PROCESS);
+        return this;
+    }
+
+    public ViProps setLocalType() {
+        config.setProp(NODE_TYPE, NODE_TYPE_LOCAL);
+        return this;
+    }
+
+    public ViProps setRemoteType() {
+        config.setProp(NODE_TYPE, NODE_TYPE_REMOTE);
+        return this;
+    }
+
+    public ViProps setSilentShutdown() {
+        config.setProp(NODE_SILENT_SHUTDOWN, "true");
+        return this;
+    }
 }
