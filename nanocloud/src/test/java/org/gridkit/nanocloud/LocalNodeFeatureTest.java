@@ -194,6 +194,12 @@ public class LocalNodeFeatureTest extends ViNodeFeatureTest {
 
     @Test
     @Override
+    public void verify_transparent_proxy_over_classes() throws Exception {
+        super.verify_transparent_proxy_over_classes();
+    }
+
+    @Test
+    @Override
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_with_options();
     }

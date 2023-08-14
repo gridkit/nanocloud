@@ -18,16 +18,34 @@ package org.gridkit.zerormi;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
+import org.objenesis.ObjenesisStd;
+
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.description.modifier.Visibility;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.FieldAccessor;
+import net.bytebuddy.implementation.InvocationHandlerAdapter;
+
+import static net.bytebuddy.matcher.ElementMatchers.isDeclaredBy;
+import static net.bytebuddy.matcher.ElementMatchers.not;
 
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class RemoteStub implements InvocationHandler  {
+
+	/**
+	 * Interface to simplify interaction with Proxy instances.
+	 * Methods are started with ___ to not interfere with methods of original class.
+	 */
+	public interface ProxyHandlerSetterGetter {
+		InvocationHandler ___getHandler();
+		void ___setHandler(InvocationHandler handler);
+	}
 
 	private RemoteInstance identity;
 	private RmiChannel channel;
@@ -77,30 +95,54 @@ public class RemoteStub implements InvocationHandler  {
             return channel.asyncRemoteInvocation(this, proxy, method, args);
         }	    
 	}
-	
+
 	@SuppressWarnings("rawtypes")
 	public static Object buildProxy(RemoteInstance remoteInstance, RmiChannel channel) throws ClassNotFoundException {
-		String[] classNames = remoteInstance.interfaces;
-		Class[] classes = new Class[classNames.length];
-		for(int i = 0; i != classNames.length; ++i) {
-			classes[i] = channel.classForName(classNames[i]);
-		}
-		
-		return Proxy.newProxyInstance(channel.getClassLoader(), classes, new RemoteStub(remoteInstance, channel));
+		Class<?> clazz = Class.forName(remoteInstance.className);
+		Class<?> proxyClass = new ByteBuddy()
+				.subclass(clazz)
+
+				.defineField("handler", InvocationHandler.class, Visibility.PUBLIC)
+
+				.method(not(isDeclaredBy(ProxyHandlerSetterGetter.class)))
+				.intercept(InvocationHandlerAdapter.toField("handler"))
+
+				.implement(ProxyHandlerSetterGetter.class)
+				.intercept(FieldAccessor.ofField("handler"))
+
+				.make()
+				.load(RemoteStub.class.getClassLoader(), ClassLoadingStrategy.Default.INJECTION)
+				.getLoaded();
+		Object result = new ObjenesisStd().newInstance(proxyClass);
+		((ProxyHandlerSetterGetter)result).___setHandler(new RemoteStub(remoteInstance, channel));
+		return result;
 	}
 
-    public static boolean isRemoteStub(Object proxy) {
-        if (Proxy.isProxyClass(proxy.getClass()) && Proxy.getInvocationHandler(proxy) instanceof RemoteStub) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }	
+	private static InvocationHandler getInvocationHandler(Object proxy) {
+		if (proxy instanceof ProxyHandlerSetterGetter) {
+			return ((ProxyHandlerSetterGetter) proxy).___getHandler();
+		}
+		else {
+			throw new IllegalArgumentException("Not a proxy instance");
+		}
+	}
+
+	public static boolean isRemoteStub(Object proxy) {
+        return proxy instanceof ProxyHandlerSetterGetter;
+    }
+
+	public static Class<?> getOriginalClass(Object proxy){
+		if (proxy instanceof ProxyHandlerSetterGetter) {
+			return proxy.getClass().getSuperclass();
+		}
+		else {
+			throw new IllegalArgumentException("Not a proxy instance");
+		}
+	}
 	
 	@SuppressWarnings("unchecked")
     public static <T> FutureEx<T> remoteSubmit(Object proxy, Method method, Object... arguments) {
-	    Object handler = Proxy.getInvocationHandler(proxy);
+	    Object handler = getInvocationHandler(proxy);
 	    if (handler instanceof RemoteStub) {
 	        RemoteStub stub = (RemoteStub) handler;
 	        return (FutureEx<T>) stub.asyncInvoke(proxy, method, arguments);

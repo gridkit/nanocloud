@@ -465,7 +465,7 @@ public class RmiChannel1 implements RmiChannel {
         if (proxy == null) {
             try {
                 proxy = RemoteStub.buildProxy(remoteInstance, this);
-            } catch (ClassNotFoundException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             remoteInstanceProxys.put(remoteInstance, proxy);
@@ -474,20 +474,15 @@ public class RmiChannel1 implements RmiChannel {
         return proxy;
     }
 
-    public <T> void exportObject(Class<T> iface, T implementation) {
-        exportObject(new Class[]{iface}, implementation);
+    public <T> void exportObject(Class<T> facade, T obj) {
+        exportObjectImpl(facade, obj);
     }
 
-    @SuppressWarnings({ "rawtypes" })
-    private synchronized RemoteInstance exportObject(Class[] interfaces, Object obj) {
+    private synchronized RemoteInstance exportObjectImpl(Class<?> facade, Object obj) {
         RemoteInstance remote = object2remote.get(obj);
         if (remote == null) {
             String uuid = UUID.randomUUID().toString();
-            String[] ifNames = new String[interfaces.length];
-            for (int i = 0; i != ifNames.length; ++i) {
-                ifNames[i] = interfaces[i].getName();
-            }
-            remote = new RemoteInstance(uuid, ifNames);
+            remote = new RemoteInstance(uuid, facade.getName());
             object2remote.put(obj, remote);
             remote2object.put(remote, obj);
         }
@@ -540,7 +535,7 @@ public class RmiChannel1 implements RmiChannel {
         Object mr = marshaler.writeReplace(obj);
         if (mr instanceof Exported) {
         	Exported exp = (Exported) mr;
-        	return new RemoteRef(exportObject(exp.getInterfaces(), exp.getObject()));
+        	return new RemoteRef(exportObjectImpl(exp.getOriginalClass(), exp.getObject()));
         }
         
         return mr;

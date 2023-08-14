@@ -855,6 +855,44 @@ public abstract class ViNodeFeatureTest {
         pll.waitNodeExitCode(node.toString(), 1);
     }
 
+    public void verify_transparent_proxy_over_classes() throws Exception {
+        // marked with Remote interfaces
+        class TestForProxyRemote implements Remote {
+            public String greet() {
+                return "Hello";
+            }
+        }
+
+        final TestForProxyRemote testForProxyRemote = new TestForProxyRemote();
+
+        ViNode node = cloud.node(testName.getMethodName());
+        Assert.assertEquals("Hello",
+                node.exec(new Callable<String>() {
+                    @Override
+                    public String call() {
+                        return testForProxyRemote.greet();
+                    }
+                })
+        );
+
+        // marked with cloud.createRmiProxy
+        class TestForProxy {
+            public String greet() {
+                return "Hello";
+            }
+        }
+        final TestForProxy testForProxy = cloud.createRmiProxy(new TestForProxy());
+
+        Assert.assertEquals("Hello",
+                node.exec(new Callable<String>() {
+                    @Override
+                    public String call() {
+                        return testForProxy.greet();
+                    }
+                })
+        );
+    }
+
     private static String readMarkerFromResources() throws IOException {
         URL url = IsolateNodeFeatureTest.class.getResource("/marker.txt");
         Assert.assertNotNull(url);

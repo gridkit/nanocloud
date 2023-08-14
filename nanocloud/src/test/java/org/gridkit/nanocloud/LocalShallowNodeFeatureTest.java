@@ -183,4 +183,10 @@ public class LocalShallowNodeFeatureTest extends ViNodeFeatureTest {
     public void verify_exit_code_is_reported() {
         super.verify_exit_code_is_reported();
     }
+
+    @Test
+    @Override
+    public void verify_transparent_proxy_over_classes() throws Exception {
+        super.verify_transparent_proxy_over_classes();
+    }
 }

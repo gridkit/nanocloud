@@ -163,4 +163,10 @@ public class Engine2_LocalNodeFeatureTest extends ViNodeFeatureTest {
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_multiple_agents();
     }
+
+    @Test
+    @Override
+    public void verify_transparent_proxy_over_classes() throws Exception {
+        super.verify_transparent_proxy_over_classes();
+    }
 }
