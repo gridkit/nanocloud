@@ -47,6 +47,7 @@ public abstract class Channel implements Runnable{
   static final int SSH_OPEN_RESOURCE_SHORTAGE=              4;
 
   static int index=0;
+  @SuppressWarnings("rawtypes")
   private static java.util.Vector pool=new java.util.Vector();
   static Channel getChannel(String type){
     if(type.equals("session")){
@@ -122,6 +123,7 @@ public abstract class Channel implements Runnable{
 
   int notifyme=0;
 
+  @SuppressWarnings("unchecked")
   Channel(){
     synchronized(pool){
       id=index++;
@@ -221,10 +223,12 @@ public abstract class Channel implements Runnable{
 
         }
         byte[] b=new byte[1];
+        @Override
         public void write(int w) throws java.io.IOException{
           b[0]=(byte)w;
           write(b, 0, 1);
         }
+        @Override
         public void write(byte[] buf, int s, int l) throws java.io.IOException{
           if(packet==null){
             init();
@@ -254,6 +258,7 @@ public abstract class Channel implements Runnable{
           }
         }
 
+        @Override
         public void flush() throws java.io.IOException{
           if(closed){
             throw new java.io.IOException("Already closed");
@@ -279,6 +284,7 @@ public abstract class Channel implements Runnable{
           }
 
         }
+        @Override
         public void close() throws java.io.IOException{
           if(packet==null){
             try{
@@ -313,7 +319,8 @@ public abstract class Channel implements Runnable{
   }
   void setRemotePacketSize(int foo){ this.rmpsize=foo; }
 
-  public void run(){
+  @Override
+public void run(){
   }
 
   void write(byte[] foo) throws IOException {
@@ -432,14 +439,14 @@ public abstract class Channel implements Runnable{
     synchronized(pool){
       channels=new Channel[pool.size()];
       for(int i=0; i<pool.size(); i++){
-	try{
-	  Channel c=((Channel)(pool.elementAt(i)));
-	  if(c.session==session){
-	    channels[count++]=c;
-	  }
-	}
-	catch(Exception e){
-	}
+    try{
+      Channel c=((Channel)(pool.elementAt(i)));
+      if(c.session==session){
+        channels[count++]=c;
+      }
+    }
+    catch(Exception e){
+    }
       }
     }
     for(int i=0; i<count; i++){
