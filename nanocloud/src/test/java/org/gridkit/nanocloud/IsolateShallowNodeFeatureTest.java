@@ -126,4 +126,10 @@ public class IsolateShallowNodeFeatureTest extends ViNodeFeatureTest {
 	public void test_annonimous_primitive_in_args() {
 		super.test_annonimous_primitive_in_args();
 	}
+
+	@Test
+	@Override
+	public void verify_transparent_proxy_over_classes() throws Exception {
+		super.verify_transparent_proxy_over_classes();
+	}
 }

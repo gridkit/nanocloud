@@ -24,4 +24,11 @@ public interface Cloud {
 	
 	public void shutdown();
 
+	/**
+	 * Replaced class with instances that eligible to transparent-rmi.
+	 * If result of this call will be passed to remote side, proxy will be created at remote side, and
+	 * all method invocations will be passed to original object.
+	 */
+	public <T> T createRmiProxy(T object);
+
 }

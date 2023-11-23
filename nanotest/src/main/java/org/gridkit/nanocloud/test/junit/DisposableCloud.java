@@ -5,6 +5,7 @@ import java.util.Collection;
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.zerormi.SmartRmiMarshaler;
 import org.junit.rules.ExternalResource;
 
 public class DisposableCloud extends ExternalResource implements CloudRule {
@@ -34,5 +35,10 @@ public class DisposableCloud extends ExternalResource implements CloudRule {
 
 	public void shutdown() {
 		cloud.shutdown();
+	}
+
+    @Override
+	public <T> T createRmiProxy(T object){
+		return SmartRmiMarshaler.wrapForRmiProxy(object);
 	}
 }

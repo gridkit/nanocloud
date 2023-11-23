@@ -22,19 +22,19 @@ package org.gridkit.zerormi;
  */
 public class Exported {
 
-	private Class<?>[] interfaces;
 	private Object object;
-	
-	public Exported(Object object, Class<?>... interfaces) {
-		this.object = object;
-		this.interfaces = interfaces;
-	}
+	private final Class<?> originalClass;
 
-	public Class<?>[] getInterfaces() {
-		return interfaces;
+	public Exported(Object object, Class<?> originalClass) {
+		this.object = object;
+		this.originalClass = originalClass;
 	}
 
 	public Object getObject() {
 		return object;
+	}
+
+	public Class<?> getOriginalClass() {
+		return originalClass;
 	}
 }

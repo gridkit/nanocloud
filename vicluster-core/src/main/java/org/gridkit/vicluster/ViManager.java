@@ -46,6 +46,7 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.zerormi.RemoteExecutorAsynAdapter;
 import org.gridkit.zerormi.RemoteExecutor;
 import org.gridkit.zerormi.RemoteStub;
+import org.gridkit.zerormi.SmartRmiMarshaler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,7 +241,12 @@ public class ViManager implements ViNodeSet {
 		}
 		provider.shutdown();
 	}
-	
+
+	@Override
+	public <T> T createRmiProxy(T object){
+		return SmartRmiMarshaler.wrapForRmiProxy(object);
+	}
+
 	public synchronized void resetDeadNode() {
 		ensureAlive();
 		deadNodes.clear();

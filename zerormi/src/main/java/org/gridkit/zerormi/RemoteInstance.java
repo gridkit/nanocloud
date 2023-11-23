@@ -27,32 +27,32 @@ public final class RemoteInstance implements Serializable {
 	private static final long serialVersionUID = 20090415L;
 
 	String instanceId;
-	String[] interfaces;
+	String className;
 
-	public String[] getInterfaces() {
-		return interfaces;
+	public String getClassName() {
+		return className;
 	}
-	
+
 	public String getInstanceId() {
 		return instanceId;
 	}
 
-	public RemoteInstance(String instanceId, String[] interfaces) {
+	public RemoteInstance(String instanceId, String className) {
 		if (instanceId == null) {
 			throw new NullPointerException("instanceId cannot be null");
 		}
-		if (interfaces == null) {
-			throw new NullPointerException("interfaces cannot be null");
+		if (className == null) {
+			throw new NullPointerException("className cannot be null");
 		}
 		this.instanceId = instanceId;
-		this.interfaces = interfaces;
+		this.className = className;
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof RemoteInstance) {
 			RemoteInstance ri = (RemoteInstance) obj;
-			return instanceId.equals(ri.instanceId) && Arrays.equals(interfaces, ri.interfaces);
+			return instanceId.equals(ri.instanceId) && className.equals(ri.className);
 		}
 		return false;
 	}
@@ -64,6 +64,6 @@ public final class RemoteInstance implements Serializable {
 
 	@Override
 	public String toString() {
-		return "${" + instanceId +"}" + Arrays.toString(interfaces);
+		return "${" + instanceId +"}" + className;
 	}
 }
