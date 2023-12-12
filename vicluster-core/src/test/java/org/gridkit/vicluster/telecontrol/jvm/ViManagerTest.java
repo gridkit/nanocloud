@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
 import org.gridkit.vicluster.CompositeViNodeProvider;
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNodeProvider;
@@ -35,6 +33,8 @@ import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.junit.After;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class ViManagerTest {
 	

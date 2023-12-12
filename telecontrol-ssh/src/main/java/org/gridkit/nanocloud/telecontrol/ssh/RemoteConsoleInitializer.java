@@ -196,7 +196,7 @@ public class RemoteConsoleInitializer implements InductiveRule {
             }
             SshHostControlConsole shhConsole = new SshHostControlConsole(session, cachePath, true, 1);
             // TODO logger configuration
-            TunnellerInitiator initiator = new SimpleTunnelInitiator(bootCmd, cachePath, context.lookup(CloudContext.Helper.key(StreamCopyService.class)), ZLogFactory.getDefaultRootLogger());
+            TunnellerInitiator initiator = new SimpleTunnelInitiator(bootCmd, context.lookup(CloudContext.Helper.key(StreamCopyService.class)), ZLogFactory.getDefaultRootLogger());
             console = initiator.initTunnel(shhConsole);
 
             ServiceKey<HostControlConsole> key2 = CloudContext.Helper.key(HostControlConsole.class);

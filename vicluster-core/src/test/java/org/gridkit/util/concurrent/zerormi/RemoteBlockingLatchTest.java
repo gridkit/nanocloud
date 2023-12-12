@@ -19,8 +19,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import junit.framework.Assert;
-
 import org.gridkit.util.concurrent.BlockingBarrier;
 import org.gridkit.util.concurrent.LatchBarrier;
 import org.gridkit.vicluster.ViManager;
@@ -30,6 +28,8 @@ import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class RemoteBlockingLatchTest {
 

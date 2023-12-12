@@ -15,9 +15,12 @@
  */
 package org.gridkit.zerormi;
 
+import static org.gridkit.zerormi.JdkUtils.addSuppressedIfSupported;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,10 +39,8 @@ import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.LogStream;
 import org.gridkit.zerormi.zlog.ZLogger;
 
-import static org.gridkit.zerormi.JdkUtils.addSuppressedIfSupported;
-
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class RmiChannel1 implements RmiChannel {
@@ -61,9 +62,9 @@ public class RmiChannel1 implements RmiChannel {
 
     private final Map<String, Object> name2bean = new ConcurrentHashMap<String, Object>();
     private final Map<Object, String> bean2name = new ConcurrentHashMap<Object, String>();
-    
+
     private final LogStream logCritical;
-    
+
     private long debugRpcDelay = 0;
 
     private volatile boolean terminated = false;
@@ -87,12 +88,13 @@ public class RmiChannel1 implements RmiChannel {
             return Long.getLong(key, defaultValue);
         }
     }
-    
+
     public void registerNamedBean(String name, Object obj) {
         name2bean.put(name, obj);
         bean2name.put(obj, name);
     }
 
+    @Override
     public void handleMessage(RemoteMessage message) {
         if (message instanceof RemoteCall) {
 
@@ -108,6 +110,7 @@ public class RmiChannel1 implements RmiChannel {
             }
 
             Runnable runnable = new Runnable() {
+                @Override
                 public void run() {
                     String threadName = Thread.currentThread().getName();
                     Thread.currentThread().setName("RemoteCall: " + remoteCall.toString());
@@ -144,7 +147,7 @@ public class RmiChannel1 implements RmiChannel {
             }
             context.dispatch(remoteReturn);
             remoteReturnWaiters.remove(id);
-        } 
+        }
         else if (message instanceof InboundCallError) {
             InboundCallError error = (InboundCallError) message;
             final RemoteReturn remoteReturn = new RemoteReturn(error.getCallId(), true, error.error);
@@ -165,11 +168,18 @@ public class RmiChannel1 implements RmiChannel {
         }
     }
 
+    @Override
     public synchronized void close(Throwable cause) {
         // TODO global synchronization somehow
         if (terminated) {
             if (terminatedCause != null){
-                addSuppressedIfSupported(terminatedCause, cause);
+                if (terminatedCause instanceof SocketException) {
+                    if (addSuppressedIfSupported(cause, terminatedCause)) {
+                        terminatedCause = cause;
+                    } else {
+                        terminatedCause = cause; // socket exception may be lost
+                    }
+                }
             }else {
                 terminatedCause = cause;
             }
@@ -203,8 +213,8 @@ public class RmiChannel1 implements RmiChannel {
 
         Object implementator;
         synchronized (this) {
-        	implementator = remote2object.get(remoteCall.getRemoteInstance());
-		}
+            implementator = remote2object.get(remoteCall.getRemoteInstance());
+        }
 
         if (implementator == null) {
             return new RemoteReturn(callId, true, new RemoteException(String.format("Instance %s has not been exported ", instance)));
@@ -251,21 +261,21 @@ public class RmiChannel1 implements RmiChannel {
     }
 
     public Long generateCallId() {
-    	Long id = callId.getAndIncrement();
-    	if (remoteReturnWaiters.containsKey(id)) {
-    		return generateCallId();
-    	}
-    	else {
-    		return id;
-    	}
+        Long id = callId.getAndIncrement();
+        if (remoteReturnWaiters.containsKey(id)) {
+            return generateCallId();
+        }
+        else {
+            return id;
+        }
     }
-    
+
     protected RemoteCallFuture asyncInvoke(final RemoteInstance remoteInstance, final Method method, Object[] args) {
-    	Long id = generateCallId();
-    	RemoteCall remoteCall = new RemoteCall(id, remoteInstance, new RemoteMethodSignature(method), args);
-    	RemoteCallFuture future = new RemoteCallFuture(remoteCall);
-    	
-    	registerCall(future);
+        Long id = generateCallId();
+        RemoteCall remoteCall = new RemoteCall(id, remoteInstance, new RemoteMethodSignature(method), args);
+        RemoteCallFuture future = new RemoteCallFuture(remoteCall);
+
+        registerCall(future);
 
         try {
             sendMessage(remoteCall);
@@ -274,21 +284,21 @@ public class RmiChannel1 implements RmiChannel {
             remoteReturnWaiters.remove(future.remoteCall.callId);
             future.setErrorIfWaiting(e);
         }
-    	
-    	return future;
+
+        return future;
     }
-    
+
     private void registerCall(RemoteCallFuture future) {
-		RemoteCallContext ctx = new RemoteCallContext(future);
+        RemoteCallContext ctx = new RemoteCallContext(future);
 
         if (terminated) {
             throw new IllegalStateException("Connection closed", terminatedCause);
         }
         remoteReturnWaiters.put(future.remoteCall.callId, ctx);
-	}
+    }
 
     @Override
-	public Object remoteInvocation(final RemoteStub stub, final Object proxy, final Method method, final Object[] args) throws Throwable {
+    public Object remoteInvocation(final RemoteStub stub, final Object proxy, final Method method, final Object[] args) throws Throwable {
 
         Long id = generateCallId();
         RemoteInstance remoteInstance = stub.getRemoteInstance();
@@ -314,10 +324,10 @@ public class RmiChannel1 implements RmiChannel {
         if (debugRpcDelay > 0) {
             Thread.sleep(debugRpcDelay);
         }
-        
+
         while (true) {
             if (terminated) {
-		throw decorateException(method, new RemoteException("Connection closed", terminatedCause));
+        throw decorateException(method, new RemoteException("Connection closed", terminatedCause));
             }
             long period = TimeUnit.SECONDS.toNanos(5);
             LockSupport.parkNanos(period);
@@ -347,22 +357,22 @@ public class RmiChannel1 implements RmiChannel {
 //        StackTraceElement pboundary = new StackTraceElement("[" + name + "]", "<remote-call>", "", -1);
         StackTraceElement mframe = new StackTraceElement("[" + name + "] " + m.getDeclaringClass().getName(), m.getName(), "Remote call", -1);
         Exception donnor = new Exception();
-        
+
         StackTraceElement[] rtrace = receiver.getStackTrace();
         StackTraceElement[] dtrace = donnor.getStackTrace();
-        
+
         StackTraceElement[] result = new StackTraceElement[rtrace.length + dtrace.length + 2];
-        
-        
+
+
         int dr = findHighestStackMatch(dtrace);
         int rr = findLowestStackMatch(rtrace);
 
         int n = 0;
-        
+
         for(int i = 0; i < rr; ++i) {
             result[n++] = rtrace[i];
         }
-        
+
 //        result[n++] = pboundary;
         result[n++] = mframe;
 
@@ -373,16 +383,16 @@ public class RmiChannel1 implements RmiChannel {
         }
 
         result = Arrays.copyOf(result, n);
-        
+
         try {
             receiver.setStackTrace(result);
         } catch (Exception e) {
             // ignore
         }
-        
+
         return receiver;
     }
-    
+
     private int findLowestStackMatch(StackTraceElement[] trace) {
         boolean matched = false;
         for(int i = trace.length; i != 0;) {
@@ -393,7 +403,7 @@ public class RmiChannel1 implements RmiChannel {
             else if (matched) {
                 return i + 1;
             }
-            
+
         }
         return matched ? 0 : -1;
     }
@@ -410,8 +420,8 @@ public class RmiChannel1 implements RmiChannel {
         }
         return matched ? trace.length - 1 : trace.length;
     }
-    
-    
+
+
     private boolean matchStackFrame(StackTraceElement stackTraceElement) {
         if (stackTraceElement.getClassName().startsWith("org.gridkit.zerormi.RmiChannel")) {
             return true;
@@ -454,7 +464,7 @@ public class RmiChannel1 implements RmiChannel {
             return e;
         }
     }
-    
+
     @Override
     public FutureEx<Object> asyncRemoteInvocation(RemoteStub remoteStub, Object proxy, Method method, Object[] args) {
         return asyncInvoke(remoteStub.getRemoteInstance(), method, args);
@@ -474,6 +484,7 @@ public class RmiChannel1 implements RmiChannel {
         return proxy;
     }
 
+    @Override
     public <T> void exportObject(Class<T> iface, T implementation) {
         exportObject(new Class[]{iface}, implementation);
     }
@@ -494,13 +505,14 @@ public class RmiChannel1 implements RmiChannel {
         return remote;
     }
 
+    @Override
     public synchronized Object streamResolveObject(Object obj) throws IOException {
-    	
-    	if (obj == null) {
-    		return null;
-    	}
-    	
-    	if (obj instanceof BeanRef) {
+
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof BeanRef) {
             BeanRef ref = (BeanRef) obj;
             Object bean = name2bean.get(ref.getBeanName());
             if (bean == null) {
@@ -509,24 +521,25 @@ public class RmiChannel1 implements RmiChannel {
             return bean;
         }
         if (obj instanceof RemoteRef) {
-        	RemoteRef ref = (RemoteRef) obj;
-        	if (remote2object.containsKey(ref.getIdentity())) {
-        		return remote2object.get(ref.getIdentity());
-        	}
-        	else {
-        		return getProxyFromRemoteInstance(((RemoteRef) obj).getIdentity());
-        	}
+            RemoteRef ref = (RemoteRef) obj;
+            if (remote2object.containsKey(ref.getIdentity())) {
+                return remote2object.get(ref.getIdentity());
+            }
+            else {
+                return getProxyFromRemoteInstance(((RemoteRef) obj).getIdentity());
+            }
         } else {
             return marshaler.readResolve(obj);
         }
     }
 
+    @Override
     public synchronized Object streamReplaceObject(Object obj) throws IOException {
-    	
-    	if (obj == null) {
-    		return null;
-    	}
-    	
+
+        if (obj == null) {
+            return null;
+        }
+
         if (bean2name.containsKey(obj)) {
             return new BeanRef(bean2name.get(obj));
         }
@@ -539,15 +552,15 @@ public class RmiChannel1 implements RmiChannel {
 
         Object mr = marshaler.writeReplace(obj);
         if (mr instanceof Exported) {
-        	Exported exp = (Exported) mr;
-        	return new RemoteRef(exportObject(exp.getInterfaces(), exp.getObject()));
+            Exported exp = (Exported) mr;
+            return new RemoteRef(exportObject(exp.getInterfaces(), exp.getObject()));
         }
-        
+
         return mr;
     }
 
     @SuppressWarnings("rawtypes")
-	public static String[] toClassNames(Class[] classes) {
+    public static String[] toClassNames(Class[] classes) {
         String[] names = new String[classes.length];
         for (int i = 0; i != classes.length; ++i) {
             names[i] = classes[i].getName();
@@ -559,17 +572,19 @@ public class RmiChannel1 implements RmiChannel {
     public Class[] toClassObjects(String[] names) throws ClassNotFoundException {
         Class[] classes = new Class[names.length];
         for (int i = 0; i != names.length; ++i) {
-        	Class<?> c = ReflectionHelper.primitiveToClass(names[i]);
+            Class<?> c = ReflectionHelper.primitiveToClass(names[i]);
             classes[i] = c != null ? c : classForName(names[i]);
         }
         return classes;
     }
 
+    @Override
     @SuppressWarnings({ "rawtypes" })
     public Class classForName(String className) throws ClassNotFoundException {
         return Class.forName(className);
     }
 
+    @Override
     public ClassLoader getClassLoader() {
         return this.getClass().getClassLoader();
     }
@@ -592,7 +607,7 @@ public class RmiChannel1 implements RmiChannel {
             this.thread = null;
             this.future = future;
         }
-        
+
         public void dispatch(RemoteReturn ret) {
             if (thread != null) {
                 result = ret;
@@ -608,13 +623,13 @@ public class RmiChannel1 implements RmiChannel {
             }
         }
     }
-    
+
     private static class RemoteCallFuture extends FutureBox<Object> {
 
-		RemoteCall remoteCall;
+        RemoteCall remoteCall;
 
-    	public RemoteCallFuture(RemoteCall remoteCall) {
-    		this.remoteCall = remoteCall;
-		}
+        public RemoteCallFuture(RemoteCall remoteCall) {
+            this.remoteCall = remoteCall;
+        }
     }
 }

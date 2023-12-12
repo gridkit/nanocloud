@@ -21,73 +21,79 @@ import java.io.Serializable;
 import java.rmi.Remote;
 import java.util.Arrays;
 
+/**
+ * This is adapter for accessing {@link OutputStream} via remote node boundary.
+ *
+ *
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ */
 @SuppressWarnings("serial")
 public class OutputStreamRemoteAdapter extends OutputStream implements Serializable {
 
-	private final transient OutputStream sink;
-	private final RemoteOutputInterface proxy;
-	
-	public OutputStreamRemoteAdapter(OutputStream sink) {
-		this.sink = sink;
-		this.proxy = new StreamProxy();
-	}
-	
-	@Override
-	public void write(int b) throws IOException {
-		proxy.write(b);
-	}
+    private final transient OutputStream sink;
+    private final RemoteOutputInterface proxy;
 
-	@Override
-	public void write(byte[] b) throws IOException {
-		proxy.write(b);
-	}
+    public OutputStreamRemoteAdapter(OutputStream sink) {
+        this.sink = sink;
+        this.proxy = new StreamProxy();
+    }
 
-	@Override
-	public void write(byte[] b, int off, int len) throws IOException {
-		proxy.write(Arrays.copyOfRange(b, off, off + len));
-	}
+    @Override
+    public void write(int b) throws IOException {
+        proxy.write(b);
+    }
 
-	@Override
-	public void flush() throws IOException {
-		proxy.flush();
-	}
+    @Override
+    public void write(byte[] b) throws IOException {
+        proxy.write(b);
+    }
 
-	@Override
-	public void close() throws IOException {
-		proxy.close();
-	}
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        proxy.write(Arrays.copyOfRange(b, off, off + len));
+    }
 
-	private static interface RemoteOutputInterface extends Remote {
-		
-		public void write(int b) throws IOException;
-		
-		public void write(byte[] b) throws IOException;
+    @Override
+    public void flush() throws IOException {
+        proxy.flush();
+    }
 
-		public void flush() throws IOException;
+    @Override
+    public void close() throws IOException {
+        proxy.close();
+    }
 
-		public void close() throws IOException;
-	}
-	
-	private class StreamProxy implements RemoteOutputInterface {
+    private static interface RemoteOutputInterface extends Remote {
 
-		@Override
-		public void write(int b) throws IOException {
-			sink.write(b);
-		}
+        public void write(int b) throws IOException;
 
-		@Override
-		public void write(byte[] b) throws IOException {
-			sink.write(b);
-		}
+        public void write(byte[] b) throws IOException;
 
-		@Override
-		public void flush() throws IOException {
-			sink.flush();
-		}
+        public void flush() throws IOException;
 
-		@Override
-		public void close() throws IOException {
-			sink.close();
-		}
-	}
+        public void close() throws IOException;
+    }
+
+    private class StreamProxy implements RemoteOutputInterface {
+
+        @Override
+        public void write(int b) throws IOException {
+            sink.write(b);
+        }
+
+        @Override
+        public void write(byte[] b) throws IOException {
+            sink.write(b);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            sink.flush();
+        }
+
+        @Override
+        public void close() throws IOException {
+            sink.close();
+        }
+    }
 }

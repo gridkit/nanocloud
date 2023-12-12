@@ -22,46 +22,51 @@ import java.util.Map;
  */
 public interface ViConfigurable {
 
-	public <X> X x(ViConfExtender<X> extender);
-	
-	public void setProp(String propName, String value);
-	
-	public void setProps(Map<String, String> props);
-	
-	/**
-	 * SPI communication method.<br/>
-	 * Update runtime configuration element.
-	 */
-	public void setConfigElement(String key, Object value);
+    public <X> X x(ViConfExtender<X> extender);
 
-	/**
-	 * SPI communication method.<br/>
-	 * Update runtime configuration elements.
-	 */
-	public void setConfigElements(Map<String, Object> config);
-		
-	public static abstract class Delegate implements ViConfigurable {
-		
-		protected abstract ViConfigurable getConfigurable();
-		
+    public void setProp(String propName, String value);
+
+    public void setProps(Map<String, String> props);
+
+    /**
+     * SPI communication method.<br/>
+     * Update runtime configuration element.
+     */
+    public void setConfigElement(String key, Object value);
+
+    /**
+     * SPI communication method.<br/>
+     * Update runtime configuration elements.
+     */
+    public void setConfigElements(Map<String, Object> config);
+
+    public static abstract class Delegate implements ViConfigurable {
+
+        protected abstract ViConfigurable getConfigurable();
+
+        @Override
 		public <X> X x(ViConfExtender<X> extention) {
-			return getConfigurable().x(extention);
-		}
+            return getConfigurable().x(extention);
+        }
 
+        @Override
 		public void setProp(String propName, String value) {
-			getConfigurable().setProp(propName, value);
-		}
+            getConfigurable().setProp(propName, value);
+        }
 
+        @Override
 		public void setProps(Map<String, String> props) {
-			getConfigurable().setProps(props);
-		}
+            getConfigurable().setProps(props);
+        }
 
+        @Override
 		public void setConfigElement(String key, Object value) {
-			getConfigurable().setConfigElement(key, value);
-		}
+            getConfigurable().setConfigElement(key, value);
+        }
 
+        @Override
 		public void setConfigElements(Map<String, Object> config) {
-			getConfigurable().setConfigElements(config);
-		}
-	}
+            getConfigurable().setConfigElements(config);
+        }
+    }
 }

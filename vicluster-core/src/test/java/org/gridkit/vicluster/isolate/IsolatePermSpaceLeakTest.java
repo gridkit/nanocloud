@@ -24,7 +24,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.gridkit.nanocloud.testutil.JvmVersionCheck;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.VoidCallable;
-import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.Assume;
 import org.junit.Test;
 import org.w3c.dom.Document;

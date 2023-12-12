@@ -23,10 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeConfig;
-import org.gridkit.vicluster.VoidCallable;
-
 @SuppressWarnings("deprecation")
 public class DummyViNode implements ViNode {
 	

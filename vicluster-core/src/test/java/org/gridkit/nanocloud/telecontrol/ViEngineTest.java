@@ -2,8 +2,6 @@ package org.gridkit.nanocloud.telecontrol;
 
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
 import org.gridkit.vicluster.AbstractCloudContext;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViManager;
@@ -12,6 +10,8 @@ import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.jvm.ViEngineNodeProvider;
 import org.junit.After;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class ViEngineTest {
 

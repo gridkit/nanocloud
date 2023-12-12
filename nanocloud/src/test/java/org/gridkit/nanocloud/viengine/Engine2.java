@@ -9,7 +9,9 @@ public class Engine2 {
         return new ViManager(
                 new ViEngine2NodeProvider()
                 .addTypeInitializer("local", LocalNodeTypeInitializer.class)
+                .addTypeInitializer("isolate", IsolateNodeTypeInitializer.class)
+                .addTypeInitializer("remote", RemoteNodeTypeInitializer.class)
         );
     }
-    
+
 }

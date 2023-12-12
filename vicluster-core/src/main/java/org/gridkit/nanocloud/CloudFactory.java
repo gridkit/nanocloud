@@ -39,7 +39,6 @@ public class CloudFactory {
         cloud.node("**").setConfigElement(ViConf.TYPE_HANDLER + type, typeHandler);
     }
 
-    @SuppressWarnings("deprecation")
     public static void addType(Cloud cloud, String type, String className) {
         InductiveRule rule;
         try {

@@ -5,6 +5,11 @@ import java.util.Map;
 class PassthroughPragmaHandler implements PragmaHandler {
 
     @Override
+    public void configure(PragmaWriter conext) {
+        // do nothing
+    }
+
+    @Override
     public void init(PragmaWriter conext) {
         // do nothing
     }
@@ -15,9 +20,16 @@ class PassthroughPragmaHandler implements PragmaHandler {
     }
 
     @Override
+    public void setup(PragmaWriter context, Map<String, Object> values) {
+        apply(context, values);
+
+    }
+
+    @Override
     public void apply(PragmaWriter context, Map<String, Object> values) {
         for(String key: values.keySet()) {
             context.set(key, values.get(key));
         }
     }
+
 }

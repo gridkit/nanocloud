@@ -15,8 +15,6 @@
  */
 package org.gridkit.nanocloud;
 
-import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.isolate.Isolate;

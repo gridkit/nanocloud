@@ -20,6 +20,7 @@ import javax.management.ListenerNotFoundException;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
 import javax.management.NotCompliantMBeanException;
 import javax.management.NotificationFilter;
@@ -29,8 +30,6 @@ import javax.management.ObjectName;
 import javax.management.OperationsException;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
-
-import javax.management.MBeanServer;
 import javax.management.loading.ClassLoaderRepository;
 
 public class ReadThroughMBeanServer implements MBeanServer {

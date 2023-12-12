@@ -6,7 +6,7 @@ public abstract class AbstractStopAction implements NodeAction {
 
     boolean runShutdown;
     boolean runPostShutdown;
-    
+
     public AbstractStopAction(boolean runShutdown, boolean runPostShutdown) {
         this.runShutdown = runShutdown;
         this.runPostShutdown = runPostShutdown;
@@ -14,6 +14,7 @@ public abstract class AbstractStopAction implements NodeAction {
 
     @Override
     public void run(PragmaWriter context) throws ExecutionException {
+        PragmaHelper.runHooks(context, Pragma.NODE_PRE_SHUTDOWN_HOOK);
         if (runShutdown) {
             PragmaHelper.runHooks(context, Pragma.NODE_SHUTDOWN_HOOK);
             try {

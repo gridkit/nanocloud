@@ -25,8 +25,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gridkit.vicluster.MassExec;
-import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViConfExtender;
+import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeExtender;

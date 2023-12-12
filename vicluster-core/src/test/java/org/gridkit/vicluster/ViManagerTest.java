@@ -18,10 +18,10 @@ package org.gridkit.vicluster;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class ViManagerTest {
 

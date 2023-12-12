@@ -39,6 +39,10 @@ public class RuntimePragmaSupport implements PragmaHandler {
         if (key.equals(ViConf.RUNTIME_EXECUTION_SUSPENDED)) {
             suspendOrResume(engine, writableConfig, Boolean.valueOf((String)value));
         }
+        else if (key.startsWith(ViConf.JVM_PROCESS_LIFECYCLE_LISTENER)) {
+            // ignore
+            // TODO listener will not apply, should reconsider
+        }
         else {
             throw new IllegalArgumentException("Pragma '" + key + "' is not known or not writable");
         }

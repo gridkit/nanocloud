@@ -38,128 +38,128 @@ import org.junit.rules.Timeout;
 
 public class InstrumentationSymphonizingTest {
 
-	@ClassRule
-	public static Timeout TIMEOUT = new Timeout(600000);
-	
-	private Cloud cloud;
-	
-	@Before
-	public void initCloud() {
-		cloud = CloudFactory.createCloud();
-		ViProps.at(cloud.node("**")).setIsolateType();
-	}
-	
-	@After
-	public void shutdownCloud() {
-		cloud.shutdown();
-	}
+    @ClassRule
+    public static Timeout TIMEOUT = new Timeout(600000);
 
-	private static StringBuffer text = new StringBuffer();
-	
-	private static void pushToList(String value) {
-		text.append(value);
-	}
-	
-	@Test
-	public void verify_call_ordering_is_broken_without_barrier() throws InterruptedException, ExecutionException {
-		
-		ViNode node = cloud.node("test-node");
+    private Cloud cloud;
 
-		Future<?> f = sendTasks(node);		
+    @Before
+    public void initCloud() {
+        cloud = CloudFactory.createCloud();
+        ViProps.at(cloud.node("**")).setIsolateType();
+    }
 
-		f.get();
-		
-		String text = node.exec(new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				return InstrumentationSymphonizingTest.text.toString();
-			}
-		});
-		
-		Assert.assertFalse("ABCDEFGHI".equals(text));
-	}
+    @After
+    public void shutdownCloud() {
+        cloud.shutdown();
+    }
 
-	@Test
-	public void verify_call_ordering_with_barriers() throws InterruptedException, ExecutionException, BrokenBarrierException {
-		
-		ViNode node = cloud.node("test-node");
-		
-		CyclicBlockingBarrier barA = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barB = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barC = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barD = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barE = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barF = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barG = new CyclicBlockingBarrier(2, null);
-		CyclicBlockingBarrier barH = new CyclicBlockingBarrier(2, null);
+    private static StringBuffer text = new StringBuffer();
 
-		injectBarrier(node, "A", barA);
-		injectBarrier(node, "B", barB);
-		injectBarrier(node, "C", barC);
-		injectBarrier(node, "D", barD);
-		injectBarrier(node, "E", barE);
-		injectBarrier(node, "F", barF);
-		injectBarrier(node, "G", barG);
-		injectBarrier(node, "H", barH);
-		
-		Future<?> f = sendTasks(node);		
+    private static void pushToList(String value) {
+        text.append(value);
+    }
 
-		barA.pass();
-		barB.pass();
-		barC.pass();
-		barD.pass();
-		barE.pass();
-		barF.pass();
-		barG.pass();
-		barH.pass();
-		
-		f.get();
-		
-		String text = node.exec(new Callable<String>() {
-			@Override
-			public String call() throws Exception {
-				return InstrumentationSymphonizingTest.text.toString();
-			}
-		});
-		
-		Assert.assertFalse("ABCDEFGHI".equals(text));
-	}
+    @Test
+    public void verify_call_ordering_is_broken_without_barrier() throws InterruptedException, ExecutionException {
 
-	private void injectBarrier(ViNode node, String value, CyclicBlockingBarrier barA) {
-		Intercept.callSite()
-		.onTypes(InstrumentationSymphonizingTest.class)
-		.onMethod("pushToList", String.class)
-		.matchParam(0, value)
-		.doBarrier(barA)
-		.apply(node);
-	}	
-	
-	@SuppressWarnings("unchecked")
-	private Future<List<Void>> sendTasks(ViExecutor node) {
-		Future<Void> f1 = node.submit(new Runnable() {
-			@Override
-			public void run() {
-				pushToList("A");
-				pushToList("D");
-				pushToList("G");
-			}
-		});
-		Future<Void> f2 = node.submit(new Runnable() {
-			@Override
-			public void run() {
-				pushToList("B");
-				pushToList("E");
-				pushToList("H");
-			}
-		});
-		Future<Void> f3 = node.submit(new Runnable() {
-			@Override
-			public void run() {
-				pushToList("C");
-				pushToList("F");
-				pushToList("I");
-			}
-		});
-		return VectorFuture.lump(f1, f2, f3);
-	}
+        ViNode node = cloud.node("test-node");
+
+        Future<?> f = sendTasks(node);
+
+        f.get();
+
+        String text = node.exec(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return InstrumentationSymphonizingTest.text.toString();
+            }
+        });
+
+        Assert.assertFalse("ABCDEFGHI".equals(text));
+    }
+
+    @Test
+    public void verify_call_ordering_with_barriers() throws InterruptedException, ExecutionException, BrokenBarrierException {
+
+        ViNode node = cloud.node("test-node");
+
+        CyclicBlockingBarrier barA = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barB = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barC = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barD = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barE = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barF = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barG = new CyclicBlockingBarrier(2, null);
+        CyclicBlockingBarrier barH = new CyclicBlockingBarrier(2, null);
+
+        injectBarrier(node, "A", barA);
+        injectBarrier(node, "B", barB);
+        injectBarrier(node, "C", barC);
+        injectBarrier(node, "D", barD);
+        injectBarrier(node, "E", barE);
+        injectBarrier(node, "F", barF);
+        injectBarrier(node, "G", barG);
+        injectBarrier(node, "H", barH);
+
+        Future<?> f = sendTasks(node);
+
+        barA.pass();
+        barB.pass();
+        barC.pass();
+        barD.pass();
+        barE.pass();
+        barF.pass();
+        barG.pass();
+        barH.pass();
+
+        f.get();
+
+        String text = node.exec(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return InstrumentationSymphonizingTest.text.toString();
+            }
+        });
+
+        Assert.assertFalse("ABCDEFGHI".equals(text));
+    }
+
+    private void injectBarrier(ViNode node, String value, CyclicBlockingBarrier barA) {
+        Intercept.callSite()
+            .onTypes(InstrumentationSymphonizingTest.class)
+            .onMethod("pushToList", String.class)
+            .matchParam(0, value)
+            .doBarrier(barA)
+            .apply(node);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Future<List<Void>> sendTasks(ViExecutor node) {
+        Future<Void> f1 = node.submit(new Runnable() {
+            @Override
+            public void run() {
+                pushToList("A");
+                pushToList("D");
+                pushToList("G");
+            }
+        });
+        Future<Void> f2 = node.submit(new Runnable() {
+            @Override
+            public void run() {
+                pushToList("B");
+                pushToList("E");
+                pushToList("H");
+            }
+        });
+        Future<Void> f3 = node.submit(new Runnable() {
+            @Override
+            public void run() {
+                pushToList("C");
+                pushToList("F");
+                pushToList("I");
+            }
+        });
+        return VectorFuture.lump(f1, f2, f3);
+    }
 }

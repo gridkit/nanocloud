@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.vicluster.CloudContext.Helper;
 
 public class NodeConfigHelper {
-    
+
     private static PassivePragmaHandler PASSIVE_PRAGMA = new PassivePragmaHandler();
     private static PassthroughPragmaHandler PASSTHROUGH_PRAGMA = new PassthroughPragmaHandler();
 
@@ -28,24 +28,24 @@ public class NodeConfigHelper {
 
     public static void action(PragmaWriter writer, String phase, String actionKey, NodeAction action) {
         writer.set(Pragma.BOOT_ACTION + phase + "." + actionKey, action);
-    }    
+    }
 
     public static void actionLink(PragmaWriter writer, String phase, String actionKey, String linkTarget) {
         writer.link(Pragma.BOOT_ACTION + phase + "." + actionKey, linkTarget);
-    }    
-    
+    }
+
     public static void passivePragma(PragmaWriter writer, String pragma) {
         pragmaHandler(writer, pragma, PASSIVE_PRAGMA);
-    }    
+    }
 
     public static void passthroughPragma(PragmaWriter writer, String pragma) {
         pragmaHandler(writer, pragma, PASSTHROUGH_PRAGMA);
-    }    
-    
-    public static void pragmaHandler(PragmaWriter writer, String pragma, PragmaHandler handler) {
-        writer.set(Pragma.NODE_PRAGMA_HANDLER + pragma, handler);        
     }
-    
+
+    public static void pragmaHandler(PragmaWriter writer, String pragma, PragmaHandler handler) {
+        writer.set(Pragma.NODE_PRAGMA_HANDLER + pragma, handler);
+    }
+
     public static void setDefault(PragmaWriter writer, String key, Object value) {
         writer.set(Pragma.DEFAULT + key, value);
     }
@@ -53,14 +53,33 @@ public class NodeConfigHelper {
     public static void setLazyDefault(PragmaWriter writer, String key, LazyPragma lazy) {
         writer.setLazy(Pragma.DEFAULT + key, lazy);
     }
-    
+
     public static <T> void cloudSingleton(PragmaWriter writer, String key, Class<T> type, String shutdownMethod) {
         SharedEntity<T> entry = new SharedEntity<T>(Helper.key(type), Helper.reflectionProvider(type, shutdownMethod));
         writer.setLazy(key, entry);
     }
 
+    public static void addFinalizer(PragmaWriter writer, String key, final Runnable runnable) {
+        addFinalizer(writer, key, new NodeAction() {
+
+            @Override
+            public void run(PragmaWriter context) throws ExecutionException {
+                runnable.run();
+            }
+        });
+    }
+
+    public static void addFinalizer(PragmaWriter writer, String key, NodeAction action) {
+        String fkey = Pragma.NODE_FINALIZER + key;
+        int n = 1;
+        while(writer.isPresent(fkey)) {
+            fkey = Pragma.NODE_FINALIZER + key + (n++);
+        }
+        writer.set(fkey, action);
+    }
+
     static class PresenceCheck implements NodeAction {
-        
+
         private String key;
         private String description;
 
@@ -74,12 +93,34 @@ public class NodeConfigHelper {
             if (context.get(key) == null) {
                 BootAnnotation.fatal((String)context.get(Pragma.BOOT_PHASE), "Missing required key '" + key + "'" + (description == null ? "" : " - " + description))
                     .append(context);
-            }            
+            }
         }
 
         @Override
         public String toString() {
             return "PresenceCheck[" + key + "]";
         }
+    }
+
+    public static NodeAction nodeActionFrom(final Runnable task) {
+        return new NodeAction() {
+
+            @Override
+            public void run(PragmaWriter context) throws ExecutionException {
+                task.run();
+            }
+        };
+    }
+
+    public static void addPreShutdownHook(PragmaWriter context, String name, NodeAction action) {
+        context.set(Pragma.NODE_PRE_SHUTDOWN_HOOK + name, action);
+    }
+
+    public static void addShutdownHook(PragmaWriter context, String name, NodeAction action) {
+        context.set(Pragma.NODE_SHUTDOWN_HOOK + name, action);
+    }
+
+    public static void addPostShutdownHook(PragmaWriter context, String name, NodeAction action) {
+        context.set(Pragma.NODE_POST_SHUTDOWN_HOOK + name, action);
     }
 }

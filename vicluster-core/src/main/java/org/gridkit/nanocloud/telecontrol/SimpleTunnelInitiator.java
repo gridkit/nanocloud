@@ -37,7 +37,7 @@ public class SimpleTunnelInitiator implements TunnellerInitiator {
     private ZLogger logger;
     private StreamCopyService streamCopyService;
 
-    public SimpleTunnelInitiator(String javaCmd, String fileCachePath, StreamCopyService streamCopyService, ZLogger logger) {
+    public SimpleTunnelInitiator(String javaCmd, StreamCopyService streamCopyService, ZLogger logger) {
         this.javaCmd = javaCmd;
         this.streamCopyService = streamCopyService;
         this.logger = logger;

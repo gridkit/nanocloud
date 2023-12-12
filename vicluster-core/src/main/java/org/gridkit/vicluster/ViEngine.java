@@ -363,7 +363,7 @@ public interface ViEngine {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             } catch (ExecutionException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException(e.getCause());
             }
         }
 

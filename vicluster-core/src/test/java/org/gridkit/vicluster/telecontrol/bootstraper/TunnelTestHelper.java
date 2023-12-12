@@ -15,8 +15,6 @@
  */
 package org.gridkit.vicluster.telecontrol.bootstraper;
 
-import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
-
 public class TunnelTestHelper {
 
 	public static void enableChannelTrace(Tunneller t) {

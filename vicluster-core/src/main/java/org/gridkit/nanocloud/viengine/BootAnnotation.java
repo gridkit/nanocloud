@@ -7,15 +7,16 @@ public class BootAnnotation {
         WARNING,
         FATAL
     }
-    
-    public static String ERROR_PATTERN = Pragma.BOOT_ANNOTATION + "**.F*"; 
-    public static String ANNOTATION_PATTERN = Pragma.BOOT_ANNOTATION + "**"; 
-    
+
+    public static String ERROR_PATTERN = Pragma.BOOT_ANNOTATION + "**.F*";
+    public static String ANNOTATION_PATTERN = Pragma.BOOT_ANNOTATION + "**";
+
     private String bootPhase;
     private Severity severity;
     private String message;
     private Object[] arguments;
-    
+    private Throwable exception;
+
     public static BootAnnotation warning(String phase, String message, Object... arguments) {
         return new BootAnnotation(phase, Severity.WARNING, message, arguments);
     }
@@ -28,8 +29,20 @@ public class BootAnnotation {
         return new BootAnnotation(phase, Severity.FATAL, message, arguments);
     }
 
+    public static BootAnnotation fatal(String phase, Throwable e, String message, Object... arguments) {
+        BootAnnotation mark = new BootAnnotation(phase, Severity.FATAL, message, arguments);
+        mark.exception = e;
+        return mark;
+    }
+
     public static void fatal(PragmaWriter context, String message, Object... arguments) {
         new BootAnnotation((String)context.get(Pragma.BOOT_PHASE), Severity.FATAL, message, arguments).append(context);
+    }
+
+    public static void fatal(PragmaWriter context, Throwable e, String message, Object... arguments) {
+        BootAnnotation mark = new BootAnnotation((String)context.get(Pragma.BOOT_PHASE), Severity.FATAL, message, arguments);
+        mark.exception = e;
+        mark.append(context);
     }
 
     protected BootAnnotation(String bootPhase, Severity severity, String message, Object[] arguments) {
@@ -53,9 +66,9 @@ public class BootAnnotation {
                 return;
             }
             ++n;
-        }        
+        }
     }
-    
+
     public String getBootPhase() {
         return bootPhase;
     }
@@ -74,6 +87,10 @@ public class BootAnnotation {
 
     public Object[] getArguments() {
         return arguments;
+    }
+
+    public Throwable getExecption() {
+        return exception;
     }
 
     @Override

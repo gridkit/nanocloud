@@ -15,115 +15,25 @@
  */
 package org.gridkit.nanocloud;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-
 import org.gridkit.vicluster.ViProps;
+import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Test;
 
 public class IsolateNodeFeatureTest extends ViNodeFeatureTest {
 
-	@Before
-	public void initCloud() {
-		cloud = CloudFactory.createCloud();
-		ViProps.at(cloud.node("**")).setIsolateType();
-	}
-	
-	@Test
-	@Override
-	public void verify_isolated_static_with_void_callable() {
-		super.verify_isolated_static_with_callable();
-	}
-
-	@Test
-	@Override
-	public void verify_isolated_static_with_callable() {
-		super.verify_isolated_static_with_callable();
-	}
-
-	@Test
-	@Override
-	public void verify_isolated_static_with_runnable() {
-		super.verify_isolated_static_with_runnable();
-	}
-
-	@Test
-	@Override
-	public void verify_class_exclusion() {
-		super.verify_class_exclusion();
-	}
-
-	@Test
-	@Override
-	public void verify_property_isolation() throws Exception {
-		super.verify_property_isolation();
-	}
-	
-	@Test
-	@Override
-    public void verify_exec_stack_trace_locality() {
-        super.verify_exec_stack_trace_locality();
-    }
-
-	@Test
     @Override
-    public void verify_transparent_proxy_stack_trace() {
-        super.verify_transparent_proxy_stack_trace();
+    protected void assumeInProcessIsolation() {
     }
-	
-	@Test
+
     @Override
-    public void verify_transitive_transparent_proxy_stack_trace() {
-        super.verify_transitive_transparent_proxy_stack_trace();
+    protected void assumeOutOfProcess() {
+        Assume.assumeTrue(false);
     }
 
-	@Test
     @Override
-    public void test_dont_inherit_cp() {
-        super.test_dont_inherit_cp();
+    @Before
+    public void initCloud() {
+        cloud = CloudFactory.createCloud();
+        ViProps.at(cloud.node("**")).setIsolateType();
     }
-
-	@Test
-	@Override
-	public void test_handle_NoDefClassFound(){
-		super.test_handle_NoDefClassFound();
-	}
-
-	@Test
-	@Override
-	public void test_handle_NoDefClassFound_on_return(){
-	    super.test_handle_NoDefClassFound_on_return();
-	}
-	
-	@Test
-    @Override
-    public void test_inherit_cp_true() throws IOException, URISyntaxException {
-        super.test_inherit_cp_true();
-    }
-
-	@Test
-    @Override
-    public void test_inherit_cp_default_true() {
-        super.test_inherit_cp_default_true();
-    }
-
-    @Test
-	@Override
-	public void test_classpath_extention() throws IOException, URISyntaxException {
-		super.test_classpath_extention();
-	}
-
-    @Test
-	@Override
-	public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
-		super.test_classpath_limiting();
-	}
-
-	@Test
-	@Override
-	public void test_annonimous_primitive_in_args() {
-		super.test_annonimous_primitive_in_args();
-	}
 }

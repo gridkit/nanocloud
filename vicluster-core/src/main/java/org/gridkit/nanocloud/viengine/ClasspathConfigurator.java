@@ -1,10 +1,5 @@
 package org.gridkit.nanocloud.viengine;
 
-import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.telecontrol.Classpath;
-import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
-import org.gridkit.vicluster.telecontrol.ClasspathUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -17,6 +12,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.Classpath;
+import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
+import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 
 public class ClasspathConfigurator implements NodeAction {
 

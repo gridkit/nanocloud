@@ -12,13 +12,6 @@ import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.Random;
 
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.bytecode.AnnotationsAttribute;
-import javassist.bytecode.ClassFile;
-import javassist.bytecode.ConstPool;
-import javassist.bytecode.annotation.Annotation;
-
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nanocloud.VX;
 import org.gridkit.nanocloud.testutil.JvmVersionCheck;
@@ -31,6 +24,13 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Component;
+
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
 
 public class ClasspathUtilsTest {
 

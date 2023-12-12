@@ -1,12 +1,12 @@
 package org.gridkit.nanocloud.viengine;
 
-import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.telecontrol.AgentEntry;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.AgentEntry;
 
 public class AgentConfigurator implements NodeAction {
     public static final AgentConfigurator INSTANCE = new AgentConfigurator();

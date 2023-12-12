@@ -3,12 +3,12 @@ package org.gridkit.nanocloud;
 import java.io.StringWriter;
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.junit.After;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class CloudFactoryTest {
 

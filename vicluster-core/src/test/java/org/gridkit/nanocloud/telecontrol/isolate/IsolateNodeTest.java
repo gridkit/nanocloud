@@ -2,7 +2,6 @@ package org.gridkit.nanocloud.telecontrol.isolate;
 
 import java.util.concurrent.Callable;
 
-
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConf.ConsoleConf;
 import org.gridkit.vicluster.ViManager;

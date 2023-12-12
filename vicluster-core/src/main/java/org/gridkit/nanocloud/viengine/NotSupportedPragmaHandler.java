@@ -7,9 +7,15 @@ import org.gridkit.nanocloud.NodeConfigurationException;
 class NotSupportedPragmaHandler implements PragmaHandler {
 
     private String message;
-    
+
+
     public NotSupportedPragmaHandler(String message) {
         this.message = message;
+    }
+
+    @Override
+    public void configure(PragmaWriter conext) {
+        // do nothing
     }
 
     @Override
@@ -20,6 +26,11 @@ class NotSupportedPragmaHandler implements PragmaHandler {
     @Override
     public Object query(PragmaWriter context, String key) {
         return context.get(key);
+    }
+
+    @Override
+    public void setup(PragmaWriter context, Map<String, Object> values) {
+        apply(context, values);
     }
 
     @Override

@@ -18,6 +18,7 @@ import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
+import org.gridkit.nanocloud.viengine.Pragma;
 import org.gridkit.nanocloud.viengine.ProcessLifecycleListener;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.ViConfigurable.Delegate;
@@ -66,7 +67,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
     public static final String JVM_WORK_DIR = "jvm:work-dir";
     public static final String JVM_ENV_VAR = JvmProps.JVM_ENV;
     public static final String JVM_AGENT = "jvm:agent";
-    public static final String JVM_PROCESS_LIFECYCLE_LISTENER = "jvm:process-lifecycle-listener:";
+    public static final String JVM_PROCESS_LIFECYCLE_LISTENER = "runtime:process-lifecycle-listener:";
 
     public static final String CLASSPATH_TWEAK = "classpath:tweak:";
     public static final String CLASSPATH_INHERIT = "classpath:inherit";
@@ -714,7 +715,9 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
         public HookConf setStartupHook(String id, Runnable hook) {
             String hn = ViConf.HOOK + id;
-            setConfigElement(hn, new Hooks.StratupHook(hook));
+            Hooks.StratupHook action = new Hooks.StratupHook(hook);
+            setConfigElement(hn, action);
+            setConfigElement(Pragma.NODE_STARTUP_HOOK + id, action);
             return this;
         }
 
@@ -725,7 +728,9 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
         public HookConf setShutdownHook(String id, Runnable hook) {
             String hn = ViConf.HOOK + id;
-            setConfigElement(hn, new Hooks.ShutdownHook(hook));
+            Hooks.ShutdownHook action = new Hooks.ShutdownHook(hook);
+            setConfigElement(hn, action);
+            setConfigElement(Pragma.NODE_SHUTDOWN_HOOK + id, action);
             return this;
         }
 
@@ -736,7 +741,9 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
 
         public HookConf setPostShutdownHook(String id, Runnable hook) {
             String hn = ViConf.HOOK + id;
-            setConfigElement(hn, new Hooks.PostShutdownHook(hook));
+            Hooks.PostShutdownHook action = new Hooks.PostShutdownHook(hook);
+            setConfigElement(hn, action);
+            setConfigElement(Pragma.NODE_POST_SHUTDOWN_HOOK + id, action);
             return this;
         }
     }

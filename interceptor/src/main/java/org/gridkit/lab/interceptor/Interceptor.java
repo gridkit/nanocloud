@@ -15,15 +15,20 @@
  */
 package org.gridkit.lab.interceptor;
 
+import java.io.Serializable;
+
+import org.gridkit.vicluster.ViNode;
 
 /**
  * Handler of execution interception event.
- * Class implementing this interface may witness or override behavior of intercepted call. 
- *  
+ * Class implementing this interface may witness or override behaviour of intercepted call.
+ * <p>
+ * {@link Serializable} implementation is required, because instance will be invoked in {@link ViNode} context.
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface Interceptor {
-	
-	public void handle(Interception call);
+public interface Interceptor extends Serializable {
+
+    public void handle(Interception call);
 
 }

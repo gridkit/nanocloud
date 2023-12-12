@@ -5,6 +5,11 @@ import java.util.Map;
 class PassivePragmaHandler implements PragmaHandler {
 
     @Override
+    public void configure(PragmaWriter conext) {
+        // do nothing
+    }
+
+    @Override
     public void init(PragmaWriter conext) {
         // do nothing
     }
@@ -12,6 +17,11 @@ class PassivePragmaHandler implements PragmaHandler {
     @Override
     public Object query(PragmaWriter context, String key) {
         return context.get(key);
+    }
+
+    @Override
+    public void setup(PragmaWriter context, Map<String, Object> values) {
+        apply(context, values);
     }
 
     @Override

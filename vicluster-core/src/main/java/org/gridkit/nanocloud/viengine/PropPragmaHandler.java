@@ -10,8 +10,13 @@ import org.gridkit.vicluster.AdvExecutor2ViExecutor;
 public class PropPragmaHandler implements PragmaHandler {
 
     @Override
+    public void configure(PragmaWriter conext) {
+        // do nothing
+    }
+
+    @Override
     public void init(PragmaWriter conext) {
-        // do nothing        
+        // do nothing
     }
 
     @Override
@@ -23,6 +28,11 @@ public class PropPragmaHandler implements PragmaHandler {
                 return System.getProperty(key);
             }
         });
+    }
+
+    @Override
+    public void setup(PragmaWriter context, Map<String, Object> values) {
+        apply(context, values);
     }
 
     @Override

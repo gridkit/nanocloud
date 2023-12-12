@@ -11,13 +11,13 @@ import org.gridkit.zerormi.zlog.ZLogger;
 class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
 
     public static LogStream getStream(PragmaReader reader, String streamName) {
-        
+
         Object factory = reader.get(Pragma.LOGGER_FACTORY + streamName);
         String loggerName = reader.get(Pragma.LOGGER_NAME + streamName);
         String level = reader.get(Pragma.LOGGER_LEVEL + streamName);
-        
+
         ZLogger zlog = null;
-        
+
         if (factory instanceof ZLogger) {
             zlog = (ZLogger) factory;
         }
@@ -27,7 +27,7 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
         else {
             throw new IllegalArgumentException("Invalid logger factory type: " + factory.getClass().getSimpleName());
         }
-        
+
         if (loggerName != null) {
             if (loggerName.startsWith("~")) {
                 loggerName = ViEngine.Core.transform(loggerName, streamName);
@@ -36,7 +36,7 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
         else {
             loggerName = streamName;
         }
-        
+
         LogLevel logLevel;
         if (level != null && level.trim().length() > 0) {
             logLevel = null;
@@ -53,10 +53,10 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
         else {
             logLevel = LogLevel.DEBUG;
         }
-        
-        return zlog.get(loggerName, logLevel);        
+
+        return zlog.get(loggerName, logLevel);
     }
-    
+
     @Override
     public Object resolve(String key, PragmaReader context) {
         if (key.startsWith(Pragma.LOGGER_STREAM)) {
@@ -70,13 +70,23 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
     }
 
     @Override
+    public void configure(PragmaWriter conext) {
+        // do nothing
+    }
+
+    @Override
     public void init(PragmaWriter conext) {
-        // do nothing        
+        // do nothing
     }
 
     @Override
     public Object query(PragmaWriter context, String key) {
         return context.get(key);
+    }
+
+    @Override
+    public void setup(PragmaWriter context, Map<String, Object> values) {
+        apply(context, values);
     }
 
     @Override
@@ -93,10 +103,8 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
         }
     }
 
-
-
     static class LogStreamWrapper implements LogStream {
-        
+
         String loggerName;
         LogStream stream;
 
@@ -108,31 +116,36 @@ class NodeLogStreamSupport implements LazyPragma, PragmaHandler {
         public String getLoggerName() {
             return loggerName;
         }
-        
+
         public void setStream(LogStream stream) {
             this.stream = stream;
         }
-        
+
         public void update(PragmaReader context) {
             this.stream = getStream(context, loggerName);
         }
-        
+
+        @Override
         public boolean isEnabled() {
             return stream.isEnabled();
         }
 
+        @Override
         public void log(String message) {
             stream.log(message);
         }
 
+        @Override
         public void log(Throwable e) {
             stream.log(e);
         }
 
+        @Override
         public void log(String message, Throwable e) {
             stream.log(message, e);
         }
 
+        @Override
         public void log(String format, Object... argument) {
             stream.log(format, argument);
         }

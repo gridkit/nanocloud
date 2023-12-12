@@ -40,7 +40,7 @@ public class Tunneller extends TunnellerIO {
 
     public static void main(String[] args) throws IOException  {
         // This should warm up JDK IO classes
-        // without this I was observing mysterious JVM hands with WinXP + 1.6u27
+        // without this I was observing mysterious JVM hangs with WinXP + 1.6u27
         File.createTempFile("this_file_is_used_to_warm_up_IO_classes", "", null).delete();
 
         // use std out for binary communications

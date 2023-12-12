@@ -22,10 +22,10 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
 
-import junit.framework.Assert;
-
 import org.gridkit.lab.interceptor.BinaryCutPoints.SimpleCutPoint;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class InstrumentationTest {
 

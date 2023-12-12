@@ -7,53 +7,73 @@ import org.gridkit.vicluster.isolate.IsolateProps;
 
 public class IsolateConfig extends Delegate {
 
-	private ViConfigurable conf;
+    /**
+     * Disable marshaling with isolate communication. Useful is no classloader isolation is used.
+     */
+    public static String NO_MARSHAL = "isolate:no-marshal";
 
-	public static IsolateConfig at(ViConfigurable conf) {
-		return new IsolateConfig(conf);
-	}
-	
-	public IsolateConfig(ViConfigurable conf) {
-		this.conf = conf;
-	}
+    /**
+     * Share all classes.
+     */
+    public static String SHARE_ALL_CLASSES = "isolate:share-all";
 
-	@Override
-	protected ViConfigurable getConfigurable() {
-		return conf;
-	}
+    private ViConfigurable conf;
 
-	public IsolateConfig setIsolateNodeType() {
-		conf.setProp(ViConf.NODE_TYPE, ViConf.NODE_TYPE__ISOLATE);
-		return this;
-	}
-	
-	public IsolateConfig shareClass(Class<?> c) {
-		shareClass(c.getName());
-		return this;
-	}
+    public static IsolateConfig at(ViConfigurable conf) {
+        return new IsolateConfig(conf);
+    }
 
-	public IsolateConfig shareClass(String name) {
-		conf.setProp(IsolateProps.SHARE_CLASS + name, name);
-		return this;
-	}
+    public IsolateConfig(ViConfigurable conf) {
+        this.conf = conf;
+    }
 
-	public IsolateConfig sharePackage(String name) {
-		conf.setProp(IsolateProps.SHARE_PACKAGE + name, name);
-		return this;
-	}
+    @Override
+    protected ViConfigurable getConfigurable() {
+        return conf;
+    }
 
-	public IsolateConfig isolateClass(Class<?> c) {
-		isolateClass(c.getName());
-		return this;
-	}
-	
-	public IsolateConfig isolateClass(String name) {
-		conf.setProp(IsolateProps.ISOLATE_CLASS + name, name);
-		return this;
-	}
-	
-	public IsolateConfig isolatePackage(String name) {
-		conf.setProp(IsolateProps.ISOLATE_PACKAGE + name, name);
-		return this;
-	}
+    public IsolateConfig setIsolateNodeType() {
+        conf.setProp(ViConf.NODE_TYPE, ViConf.NODE_TYPE__ISOLATE);
+        return this;
+    }
+
+    public IsolateConfig shareClass(Class<?> c) {
+        shareClass(c.getName());
+        return this;
+    }
+
+    public IsolateConfig shareClass(String name) {
+        conf.setProp(IsolateProps.SHARE_CLASS + name, name);
+        return this;
+    }
+
+    public IsolateConfig sharePackage(String name) {
+        conf.setProp(IsolateProps.SHARE_PACKAGE + name, name);
+        return this;
+    }
+
+    public IsolateConfig isolateClass(Class<?> c) {
+        isolateClass(c.getName());
+        return this;
+    }
+
+    public IsolateConfig isolateClass(String name) {
+        conf.setProp(IsolateProps.ISOLATE_CLASS + name, name);
+        return this;
+    }
+
+    public IsolateConfig isolatePackage(String name) {
+        conf.setProp(IsolateProps.ISOLATE_PACKAGE + name, name);
+        return this;
+    }
+
+    public IsolateConfig noMarshal(boolean enabled) {
+        conf.setProp(IsolateConfig.NO_MARSHAL, String.valueOf(enabled));
+        return this;
+    }
+
+    public IsolateConfig shareAllClasses(boolean enabled) {
+        conf.setProp(IsolateConfig.SHARE_ALL_CLASSES, String.valueOf(enabled));
+        return this;
+    }
 }

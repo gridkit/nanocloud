@@ -17,11 +17,18 @@ package org.gridkit.nanocloud;
 
 /**
  * Few magic properties for internal use only ;)
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class MagicProps {
 
+    /**
+     * Adds fixed latency to RMI invocation, useful for testing.
+     */
     public static final String DEBUG_RPC_DELAY = "gridkit.zerormi.debug.rpc-delay";
-    
+
+    public static final String ISOLATE_SUPPRESS_MULTIPLEXOR = "gridkit.isolate.suppress.multiplexor";
+
+    public static final String TELECONTROL_VERBOSE = "org.gridkit.telecontrol.verbose";
+
 }

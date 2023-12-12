@@ -15,6 +15,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
 
     private Map<String, String> links = new HashMap<String, String>();
     private Map<String, Object> values = new HashMap<String, Object>();
+    private Map<String, NodeTrigger> triggers = new HashMap<String, NodeTrigger>();
 
     private List<String> defaultWildCards = new ArrayList<String>();
 
@@ -28,6 +29,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             that.keys = new LinkedHashSet<String>(keys);
             that.links = new HashMap<String, String>(links);
             that.values = new HashMap<String, Object>(values);
+            that.triggers = new HashMap<String, NodeTrigger>(triggers);
             that.defaultWildCards = new ArrayList<String>(defaultWildCards);
             return that;
         } catch (CloneNotSupportedException e) {
@@ -74,6 +76,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
         addKey(key);
         links.remove(key);
         values.put(key, value);
+        onUpdate(key);
     }
 
     @Override
@@ -99,6 +102,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
         addKey(key);
         values.remove(key);
         links.put(key, link);
+        onUpdate(key);
     }
 
     @Override
@@ -151,6 +155,7 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             }
             value = lazy.resolve(key, this);
             values.put(key, value);
+            onUpdate(key);
             return (T)value;
         }
         String defaultKey = Pragma.DEFAULT + key;
@@ -168,6 +173,21 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
             }
         }
         return null;
+    }
+
+    private void onUpdate(String key) {
+        if (values.get(key) instanceof NodeTrigger) {
+            triggers.put(key, (NodeTrigger) values.get(key));
+        }
+        List<String> exhausted = new ArrayList<String>();
+        for (Map.Entry<String, NodeTrigger> entry: triggers.entrySet()) {
+            NodeTrigger trig = entry.getValue();
+            if (trig.keyMatcher().evaluate(key) && trig.evaluate(this)) {
+                exhausted.add(entry.getKey());
+            }
+        }
+        values.keySet().removeAll(exhausted);
+        triggers.keySet().removeAll(exhausted);
     }
 
     @SuppressWarnings("unchecked")

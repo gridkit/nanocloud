@@ -15,8 +15,6 @@
  */
 package org.gridkit.vicluster.telecontrol.jvm;
 
-import junit.framework.Assert;
-
 import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
@@ -24,6 +22,8 @@ import org.gridkit.vicluster.telecontrol.LocalJvmProcessFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class BasicJvmNodeTest {
 

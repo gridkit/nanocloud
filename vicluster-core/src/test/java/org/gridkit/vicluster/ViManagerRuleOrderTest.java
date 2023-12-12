@@ -19,12 +19,12 @@ import static org.gridkit.nanocloud.VX.HOOK;
 
 import java.io.Serializable;
 
-import junit.framework.Assert;
-
 import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class ViManagerRuleOrderTest {
 

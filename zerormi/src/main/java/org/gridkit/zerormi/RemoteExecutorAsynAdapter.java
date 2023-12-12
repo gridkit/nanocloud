@@ -24,7 +24,7 @@ import org.gridkit.util.concurrent.FutureEx;
 /**
  * This is an adapter for {@link RemoteExecutor} exploiting
  * native async method invocation of ZeroRMI.
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
@@ -32,7 +32,7 @@ public class RemoteExecutorAsynAdapter implements AdvancedExecutor {
 
     private static final Method EXEC_RUNNABLE = getExec(Runnable.class);
     private static final Method EXEC_CALLABLE = getExec(Callable.class);
-    
+
     private static Method getExec(Class<?> c) {
         try {
             return RemoteExecutor.class.getMethod("exec", c);
@@ -40,9 +40,9 @@ public class RemoteExecutorAsynAdapter implements AdvancedExecutor {
             throw new RuntimeException(e);
         }
     }
-    
+
     private RemoteExecutor executor;
-    
+
     public RemoteExecutorAsynAdapter(RemoteExecutor executor) {
         if (!RemoteStub.isRemoteStub(executor)) {
             throw new IllegalArgumentException("Not a remote proxy");
@@ -52,22 +52,24 @@ public class RemoteExecutorAsynAdapter implements AdvancedExecutor {
 
     @Override
     public void execute(Runnable task) {
-        throw new UnsupportedOperationException("This method doesn't make sense for remote execution");        
+        throw new UnsupportedOperationException("This method doesn't make sense for remote execution");
     }
-    
+
     public void exec(Runnable task) throws Exception {
         executor.exec(task);
     }
-    
+
     public <T> T exec(Callable<T> task) throws Exception {
-        return executor.exec(task);        
+        return executor.exec(task);
     }
-    
-    public FutureEx<Void> submit(Runnable task) {
+
+    @Override
+	public FutureEx<Void> submit(Runnable task) {
         return RemoteStub.remoteSubmit(executor, EXEC_RUNNABLE, task);
     }
 
-    public <V> FutureEx<V> submit(Callable<V> task) {
+    @Override
+	public <V> FutureEx<V> submit(Callable<V> task) {
         return RemoteStub.remoteSubmit(executor, EXEC_CALLABLE, task);
-    }    
+    }
 }

@@ -17,7 +17,10 @@ package org.gridkit.nanocloud;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gridkit.nanocloud.VX.CLASSPATH;
+import static org.gridkit.nanocloud.VX.CONSOLE;
+import static org.gridkit.nanocloud.VX.HOOK;
 import static org.gridkit.nanocloud.VX.PROCESS;
+import static org.gridkit.nanocloud.VX.RUNTIME;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,29 +40,46 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.assertj.core.api.Assertions;
 import org.gridkit.nanocloud.agent.SampleAgent;
 import org.gridkit.nanocloud.agent.SampleAgent2;
 import org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf;
 import org.gridkit.nanocloud.viengine.ProcessLifecycleListener;
+import org.gridkit.util.concurrent.Box;
+import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 
 public abstract class ViNodeFeatureTest {
 
     protected Cloud cloud;
+
+    protected void assumeOutOfProcess() {
+    }
+
+    protected void assumeClassIsolation() {
+    }
+
+    protected void assumeInProcessIsolation() {
+        Assume.assumeTrue(false);
+    }
 
     @Rule
     public TestName testName = new TestName();
@@ -76,7 +96,8 @@ public abstract class ViNodeFeatureTest {
         return cloud.node(testName.getMethodName());
     }
 
-    public void verify_isolated_static_with_void_callable() {
+    @Test
+    public void verify_isolation_static_with_void_callable() {
 
         ViNode viHost1 = cloud.node("node-1");
         ViNode viHost2 = cloud.node("node-2");
@@ -107,7 +128,9 @@ public abstract class ViNodeFeatureTest {
         Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
     }
 
-    public void verify_isolated_static_with_callable() {
+    @Test
+    public void verify_isolation_static_with_callable() {
+        assumeClassIsolation();
 
         ViNode viHost1 = cloud.node("node-1");
         ViNode viHost2 = cloud.node("node-2");
@@ -138,7 +161,9 @@ public abstract class ViNodeFeatureTest {
         Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
     }
 
-    public void verify_isolated_static_with_runnable() {
+    @Test
+    public void verify_isolation_static_with_runnable() {
+        assumeClassIsolation();
 
         ViNode viHost1 = cloud.node("node-1");
         ViNode viHost2 = cloud.node("node-2");
@@ -167,7 +192,10 @@ public abstract class ViNodeFeatureTest {
         Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 1, isolate 2]", results.toString());
     }
 
-    public void verify_class_exclusion() {
+    @Test
+    public void verify_classpath_class_sharing() {
+        assumeClassIsolation();
+        assumeInProcessIsolation();
 
         ViNode viHost1 = cloud.node("node-1");
         ViNode viHost2 = cloud.node("node-2");
@@ -195,10 +223,11 @@ public abstract class ViNodeFeatureTest {
             }
         });
 
-        Assert.assertEquals("Static variable should be different is different isolartes", "[isolate 2, isolate 2]", results.toString());
+        Assert.assertEquals("Host class is shared, so static field values should match", "[isolate 2, isolate 2]", results.toString());
     }
 
-    public void verify_property_isolation() throws Exception {
+    @Test
+    public void verify_isolation_system_properties() throws Exception {
 
         ViNode node1 = cloud.node("node-1");
         ViNode node2 = cloud.node("node-2");
@@ -242,7 +271,8 @@ public abstract class ViNodeFeatureTest {
         Assert.assertNull(System.getProperty("local-prop"));
     }
 
-    public void verify_exec_stack_trace_locality() {
+    @Test
+    public void verify_execution_stack_trace_locality() {
 
         ViNode node = testNode();
 
@@ -262,7 +292,8 @@ public abstract class ViNodeFeatureTest {
         }
     }
 
-    public void verify_transparent_proxy_stack_trace() {
+    @Test
+    public void verify_execution_transparent_proxy_stack_trace() {
 
         ViNode node = testNode();
 
@@ -290,7 +321,8 @@ public abstract class ViNodeFeatureTest {
         }
     }
 
-    public void verify_transitive_transparent_proxy_stack_trace() {
+    @Test
+    public void verify_execution_transitive_transparent_proxy_stack_trace() {
 
         ViNode node = testNode();
 
@@ -316,12 +348,14 @@ public abstract class ViNodeFeatureTest {
         catch(IllegalArgumentException e) {
             e.printStackTrace();
             assertLocalStackTrace(e);
-            assertStackTraceContains(e, "[master] java.lang.Runnable.run(Remote call)");
-            assertStackTraceContains(e, "[" + node + "] org.gridkit.zerormi.RemoteExecutor.exec(Remote call)");
+            assertStackTraceContainsFrame(e, "[master] java.lang.Runnable.run(Remote call)");
+            assertStackTraceContainsFrame(e, "[" + node + "] org.gridkit.zerormi.RemoteExecutor.exec(Remote call)");
         }
     }
 
-    public void test_classpath_extention() throws IOException, URISyntaxException {
+    @Test
+    public void verify_classpath_extention() throws IOException, URISyntaxException {
+        assumeClassIsolation();
 
         ViNode node1 = cloud.node(testName.getMethodName()+"_1");
         ViNode node2 = cloud.node(testName.getMethodName()+"_2");
@@ -374,7 +408,9 @@ public abstract class ViNodeFeatureTest {
         Assert.assertEquals("Default marker", readMarkerFromResources());
     }
 
-    public void test_classpath_limiting() throws MalformedURLException, URISyntaxException {
+    @Test
+    public void verify_classpath_limiting() throws MalformedURLException, URISyntaxException {
+        assumeClassIsolation();
 
         ViNode node = testNode();
 
@@ -401,7 +437,9 @@ public abstract class ViNodeFeatureTest {
     }
     }
 
-    public void test_dont_inherit_cp() {
+    @Test
+    public void verify_classpath_dont_inherit_cp() {
+        assumeClassIsolation();
 
         ViNode node = testNode();
 
@@ -422,7 +460,9 @@ public abstract class ViNodeFeatureTest {
         }
     }
 
-    public void test_handle_NoDefClassFound(){
+    @Test
+    public void verify_classpath_handle_NoDefClassFound(){
+        assumeClassIsolation();
         ViNode node = testNode();
 
         node.x(CLASSPATH).inheritClasspath(false);
@@ -453,7 +493,10 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void test_handle_NoDefClassFound_on_return(){
+    @Test
+    public void verify_classpath_handle_NoDefClassFound_on_return(){
+        assumeClassIsolation();
+
         ViNode node = testNode();
 
         node.x(CLASSPATH).inheritClasspath(false);
@@ -498,7 +541,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void test_inherit_cp_true() throws IOException, URISyntaxException {
+    @Test
+    public void verify_classpath_inherit_cp_true() throws IOException, URISyntaxException {
+        assumeClassIsolation();
 
         ViNode node = testNode();
 
@@ -513,7 +558,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void test_inherit_cp_shallow() throws IOException, URISyntaxException {
+    @Test
+    public void verify_classpath_inherit_cp_shallow() throws IOException, URISyntaxException {
+        assumeClassIsolation();
 
         ViNode node = testNode();
 
@@ -529,7 +576,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void test_inherit_cp_default_true() {
+    @Test
+    public void verify_classpath_inherit_cp_default_true() {
+        assumeClassIsolation();
 
         ViNode node = testNode();
 
@@ -544,7 +593,8 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void test_annonimous_primitive_in_args() {
+    @Test
+    public void verify_execution_annonimous_primitive_in_args() {
 
         ViNode node = testNode();
 
@@ -564,7 +614,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void verify_new_env_variable() {
+    @Test
+    public void verify_runtime_process_new_env_variable() {
+        assumeOutOfProcess();
 
         ViNode node = testNode();
         node.x(PROCESS).setEnv("TEST_VAR", "TEST");
@@ -576,7 +628,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void verify_env_variable_removal() {
+    @Test
+    public void verify_runtime_process_env_variable_removal() {
+        assumeOutOfProcess();
 
         ViNode node = testNode();
         node.x(PROCESS).setEnv("HOME", null);
@@ -590,7 +644,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+    @Test
     public void verify_jvm_single_arg_passing() {
+        assumeOutOfProcess();
 
         ViNode node = testNode();
         node.x(PROCESS).addJvmArg("-DtestProp=TEST");
@@ -602,7 +658,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+    @Test
     public void verify_jvm_multiple_args_passing() {
+        assumeOutOfProcess();
 
         ViNode node = testNode();
         node.x(PROCESS).addJvmArg("-DtestProp=TEST");
@@ -617,7 +675,10 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+    @Test
     public void verify_jvm_agent() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = testNode();
         node.x(PROCESS).addAgent(packAgent(SampleAgent.class));
         node.exec(new Runnable() {
@@ -628,7 +689,10 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+    @Test
     public void verify_jvm_agent_with_options() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = testNode();
         final String options = "my-super-options=abc";
         node.x(PROCESS).addAgent(packAgent(SampleAgent.class), options);
@@ -640,7 +704,10 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+    @Test
     public void verify_jvm_agent_multiple_agents() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = testNode();
         final String options1 = "my-super-options=abc";
         final String options2 = "my-super-options=bcd";
@@ -656,7 +723,9 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
+    @Test
     public void verify_jvm_invalid_arg_error() {
+        assumeOutOfProcess();
 
         ViNode node = testNode();
         JvmProps.addJvmArg(node, "-XX:+InvalidOption");
@@ -676,7 +745,9 @@ public abstract class ViNodeFeatureTest {
         }
     }
 
-    public void verify_slave_working_dir() throws IOException {
+    @Test
+    public void verify_runtime_process_working_dir() throws IOException {
+        assumeOutOfProcess();
 
         ViNode nodeB = cloud.node(testName.getMethodName() + ".base");
         ViNode nodeC = cloud.node(testName.getMethodName() + ".child");
@@ -703,7 +774,10 @@ public abstract class ViNodeFeatureTest {
         });
     }
 
-    public void verify_exit_code_is_available() throws Exception {
+    @Test
+    public void verify_runtime_process_exit_code_is_available() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = cloud.node(testName.getMethodName());
 
         // Schedule node crush after some time.
@@ -726,11 +800,14 @@ public abstract class ViNodeFeatureTest {
 
         Thread.sleep(500);
 
-        Integer exitCode = node.x(VX.RUNTIME).exitCodeFuture().get();
+        Integer exitCode = node.x(RUNTIME).exitCodeFuture().get(15, TimeUnit.SECONDS);
         Assert.assertEquals((Object)42, exitCode);
     }
 
-    public void verify_exit_code_is_reported() {
+    @Test
+    public void verify_runtime_process_exit_code_is_reported() {
+        assumeOutOfProcess();
+
         ViNode node = cloud.node(testName.getMethodName());
 
         // Schedule node crush after some time.
@@ -766,15 +843,18 @@ public abstract class ViNodeFeatureTest {
             t.printStackTrace();
             StringWriter writer = new StringWriter();
             t.printStackTrace(new PrintWriter(writer));
-            assertThat(writer.toString()).contains("Terminated, exitCode=42");
+            assertThat(writer.toString()).contains("exitCode=42");
         }
     }
 
-    public void verify_lifecycle_listener_receive_exit_code() throws Exception {
+    @Test
+    public void verify_runtime_process_lifecycle_listener_receive_exit_code() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = cloud.node(testName.getMethodName());
 
         ProcListener pll = new ProcListener();
-        node.x(VX.JVM).addProcessListener(pll);
+        node.x(VX.PROCESS).addProcessListener(pll);
 
         // Schedule node crush after some time.
         node.exec(new Runnable() {
@@ -800,6 +880,10 @@ public abstract class ViNodeFeatureTest {
                 node.exec(new Runnable() {
                     @Override
                     public void run() {
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                        }
                         System.out.println("ping");
                     }
                 });
@@ -816,15 +900,18 @@ public abstract class ViNodeFeatureTest {
 
     }
 
-    public void verify_lifecycle_listener_with_invalid_executable() throws Exception {
+    @Test
+    public void verify_runtime_process_lifecycle_listener_with_invalid_executable() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = cloud.node(testName.getMethodName());
 
         ProcListener pll = new ProcListener();
-        node.x(VX.JVM).addProcessListener(pll);
+        node.x(VX.PROCESS).addProcessListener(pll);
         // valid JVM to start tunneler
         node.setProp(SshSpiConf.SPI_BOOTSTRAP_JVM_EXEC, "java");
         // broken JVM for node
-        node.x(VX.JVM).setJavaExec("nosuchfile");
+        node.x(VX.PROCESS).setJavaExec("nosuchfile");
 
         try {
             node.touch();
@@ -837,12 +924,15 @@ public abstract class ViNodeFeatureTest {
         pll.assertExecFail(node.toString());
     }
 
-    public void verify_lifecycle_listener_with_invalid_arg() throws Exception {
+    @Test
+    public void verify_runtime_process_lifecycle_listener_with_invalid_arg() throws Exception {
+        assumeOutOfProcess();
+
         ViNode node = cloud.node(testName.getMethodName());
 
         ProcListener pll = new ProcListener();
-        node.x(VX.JVM).addProcessListener(pll);
-        node.x(VX.JVM).addJvmArg("-XX:+InvalidOption");
+        node.x(VX.PROCESS).addProcessListener(pll);
+        node.x(VX.PROCESS).addJvmArg("-XX:+InvalidOption");
 
         try {
             node.touch();
@@ -853,6 +943,148 @@ public abstract class ViNodeFeatureTest {
 
         pll.assertNodeStarted(node.toString());
         pll.waitNodeExitCode(node.toString(), 1);
+    }
+
+    @Test
+    public void verify_console_capture_std_out() throws Exception {
+
+        ViNode node = cloud.node(testName.getMethodName());
+
+        StringWriter writer = new StringWriter();
+        node.x(CONSOLE).bindOut(writer);
+
+        node.exec(new Runnable() {
+
+            @Override
+            public void run() {
+                System.out.println("Test message");
+            }
+        });
+
+        node.x(CONSOLE).flush();
+
+        Assertions.assertThat(writer.toString()).contains("Test message");
+        Assertions.assertThat(writer.toString()).doesNotContain(testName.getMethodName());
+    }
+
+    @Test
+    public void verify_console_capture_std_err() throws Exception {
+
+        ViNode node = cloud.node(testName.getMethodName());
+
+        StringWriter writer = new StringWriter();
+        node.x(CONSOLE).bindErr(writer);
+
+        node.exec(new Runnable() {
+
+            @Override
+            public void run() {
+                System.err.println("Test message");
+            }
+        });
+
+        node.x(CONSOLE).flush();
+
+        Assertions.assertThat(writer.toString()).contains("Test message");
+        Assertions.assertThat(writer.toString()).doesNotContain(testName.getMethodName());
+    }
+
+    //@Test TODO std in manipulation
+    public void verify_console_inject_std_in() throws Exception {
+
+//        ViNode node = cloud.node(testName.getMethodName());
+//
+//        StringWriter writer = new StringWriter();
+    }
+
+    @Test
+    public void verify_hook_on_startup() throws Exception {
+
+        ViNode node = cloud.node(testName.getMethodName());
+
+        RemoteFutureBox<Void> box = new RemoteFutureBox<Void>();
+        final RemoteBox<Void> rbox = box;
+
+        node.x(HOOK).addStartupHook(new Runnable() {
+
+            @Override
+            public void run() {
+                rbox.setData(null);
+            }
+        });
+
+        node.touch();
+
+        Assertions.assertThat(box.isDone()).isTrue();
+    }
+
+    @Test
+    public void verify_hook_failure_on_startup() throws Exception {
+
+        ViNode node = cloud.node(testName.getMethodName());
+
+        final FutureBox<Void> box = new FutureBox<Void>();
+
+        node.x(HOOK).addStartupHook(new Runnable() {
+            // will not be able to serialize this
+            @Override
+            public void run() {
+                box.setData(null);
+            }
+        });
+
+        try {
+            node.touch();
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertStackTraceContainsText(e, "java.io.NotSerializableException: org.gridkit.util.concurrent.FutureBox");
+        }
+    }
+
+    @Test
+    public void verify_hook_on_shutdown() throws Exception {
+
+        ViNode node = cloud.node(testName.getMethodName());
+
+        RemoteFutureBox<Void> box = new RemoteFutureBox<Void>();
+        final RemoteBox<Void> rbox = box;
+
+        node.x(HOOK).addShutdownHook(new Runnable() {
+
+            @Override
+            public void run() {
+                rbox.setData(null);
+            }
+        });
+
+        node.touch();
+
+        node.shutdown();
+
+        Assertions.assertThat(box.isDone()).isTrue();
+    }
+
+    @Test
+    public void verify_hook_on_post_shutdown() throws Exception {
+
+        ViNode node = cloud.node(testName.getMethodName());
+
+        final FutureBox<Void> box = new FutureBox<Void>();
+
+        // TODO allow post shutdown hooks on active nodes
+        node.x(HOOK).addPostShutdownHook(new Runnable() {
+
+            @Override
+            public void run() {
+                box.setData(null);
+            }
+        });
+
+        node.touch();
+
+        node.shutdown();
+
+        Assertions.assertThat(box.isDone()).isTrue();
     }
 
     private static String readMarkerFromResources() throws IOException {
@@ -873,13 +1105,21 @@ public abstract class ViNodeFeatureTest {
         );
     }
 
-    private void assertStackTraceContains(Exception e, String line) {
+    private void assertStackTraceContainsFrame(Exception e, String line) {
         for(StackTraceElement ee: e.getStackTrace()) {
             if (ee.toString().contains(line)) {
                 return;
             }
         }
         Assert.fail("Line: " + line + "\n is not found in stack traces\n" + printStackTop(e.getStackTrace(), e.getStackTrace().length));
+    }
+
+    private void assertStackTraceContainsText(Exception e, String line) {
+        StringWriter w = new StringWriter();
+        e.printStackTrace(new PrintWriter(w));
+        if (!w.toString().contains(line)) {
+            Assert.fail("Line: " + line + "\n is not found in stack traces\n" + w.toString());
+        }
     }
 
     private static String printStackTop(StackTraceElement[] stack, int depth) {
@@ -1032,6 +1272,49 @@ public abstract class ViNodeFeatureTest {
                 }
             }
             Assert.fail("No termination event for [" + nodename + "]");
+        }
+    }
+
+    private interface RemoteBox<V> extends Box<V>, Remote {
+
+    }
+
+    public static class RemoteFutureBox<V> implements RemoteBox<V> {
+
+        private FutureBox<V> box = new FutureBox<V>();
+
+        public V get() throws InterruptedException, ExecutionException {
+            return box.get();
+        }
+
+        public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return box.get(timeout, unit);
+        }
+
+        @Override
+        public void setData(V data) {
+            box.setData(data);
+        }
+
+        @Override
+        public void setError(Throwable e) {
+            box.setError(e);
+        }
+
+        public void setErrorIfWaiting(Throwable e) {
+            box.setErrorIfWaiting(e);
+        }
+
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return box.cancel(mayInterruptIfRunning);
+        }
+
+        public boolean isCancelled() {
+            return box.isCancelled();
+        }
+
+        public boolean isDone() {
+            return box.isDone();
         }
     }
 }

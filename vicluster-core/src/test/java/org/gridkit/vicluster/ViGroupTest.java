@@ -19,11 +19,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Assert;
-
-import org.gridkit.vicluster.MassExec;
-import org.gridkit.vicluster.ViGroup;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 public class ViGroupTest {
 

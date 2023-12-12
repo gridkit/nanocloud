@@ -18,12 +18,12 @@ package org.gridkit.lab.interceptor;
 import java.util.Arrays;
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.gridkit.bjtest.BetterParameterized;
 import org.gridkit.bjtest.BetterParameterized.Parameters;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import junit.framework.Assert;
 
 @RunWith(BetterParameterized.class)
 public class TypeResolverTest {

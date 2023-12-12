@@ -10,9 +10,9 @@ public interface TextTerminalControl {
     public void consoleFlush();
 
     public OutputStream getStdIn();
-    
+
     public void bindStdOut(OutputStream os);
-    
+
     public void bindStdErr(OutputStream os);
-    
+
 }

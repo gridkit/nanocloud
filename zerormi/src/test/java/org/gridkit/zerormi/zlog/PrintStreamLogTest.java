@@ -15,7 +15,6 @@
  */
 package org.gridkit.zerormi.zlog;
 
-import org.gridkit.zerormi.zlog.PrintStreamLogStream;
 import org.junit.Test;
 
 public class PrintStreamLogTest {

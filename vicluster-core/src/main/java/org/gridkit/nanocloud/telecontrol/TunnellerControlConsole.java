@@ -11,7 +11,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 
-import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;

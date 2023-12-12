@@ -80,6 +80,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 import java.util.logging.LogManager;
 
+import org.gridkit.nanocloud.MagicProps;
 import org.gridkit.nanocloud.instrumentation.ByteCodeTransformer;
 import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.VoidCallable.VoidCallableWrapper;
@@ -103,7 +104,7 @@ public class Isolate {
             // initializing LogManager outside of isolate
             LogManager.getLogManager();
 
-            boolean multiplex = !"true".equalsIgnoreCase(System.getProperty("gridkit.isolate.suppress.multiplexor", "false"));
+            boolean multiplex = !"true".equalsIgnoreCase(System.getProperty(MagicProps.ISOLATE_SUPPRESS_MULTIPLEXOR, "false"));
 
             rootOut = System.out;
             rootErr = System.err;
@@ -396,6 +397,10 @@ public class Isolate {
 
     public synchronized void addPackage(String packageName) {
         cl.addPackageRule(packageName, true);
+    }
+
+    public synchronized void addPackage(String packageName, boolean isolate) {
+        cl.addPackageRule(packageName, isolate);
     }
 
     /**
@@ -2134,7 +2139,12 @@ public class Isolate {
 
     private static abstract class PrintStreamMultiplexor extends PrintStream {
 
-        protected ThreadLocal<Boolean> INSIDE = new ThreadLocal<Boolean>();
+        protected ThreadLocal<Boolean> INSIDE = new ThreadLocal<Boolean>() {
+            @Override
+			protected Boolean initialValue() {
+                return Boolean.FALSE;
+            };
+        };
 
         protected abstract PrintStream resolve();
 
@@ -2145,384 +2155,416 @@ public class Isolate {
         @Override
         public void write(byte[] b) throws IOException {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.write(b);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void flush() {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.flush();
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void close() {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.close();
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public boolean checkError() {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.checkError();
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void write(int b) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.write(b);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void write(byte[] buf, int off, int len) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.write(buf, off, len);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(boolean b) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(b);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(char c) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(c);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(int i) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(i);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(long l) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(l);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(float f) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(f);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(double d) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(d);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(char[] s) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(s);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(String s) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(s);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void print(Object obj) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.print(obj);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println() {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println();
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(boolean x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(char x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(int x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(long x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(float x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(double x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(char[] x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(String x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public void println(Object x) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 resolve.println(x);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream printf(String format, Object... args) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.printf(format, args);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream printf(Locale l, String format, Object... args) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.printf(l, format, args);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream format(String format, Object... args) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.format(format, args);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream format(Locale l, String format, Object... args) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.format(l, format, args);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream append(CharSequence csq) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.append(csq);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream append(CharSequence csq, int start, int end) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.append(csq, start, end);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
 
         @Override
         public PrintStream append(char c) {
             PrintStream resolve = resolve();
+            boolean inside = INSIDE.get();
             INSIDE.set(true);
             try {
                 return resolve.append(c);
             }
             finally {
-                INSIDE.set(false);
+                INSIDE.set(inside);
             }
         }
     }

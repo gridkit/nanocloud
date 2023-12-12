@@ -12,15 +12,15 @@ class NodeBootstraper {
 
     private PragmaWriter nodeConfig;
 //    private List<String> executionLog = new ArrayList<String>();
-    
+
     public NodeBootstraper(PragmaMap nodeConfig) {
         this.nodeConfig = nodeConfig;
     }
-    
+
     protected void freeze(String key) {
         // TODO
     }
-    
+
     public void boot() {
         String nodeName = nodeConfig.get(Pragma.NODE_NAME);
         if (nodeName == null) {
@@ -39,7 +39,7 @@ class NodeBootstraper {
         if (initializer == null) {
             BootAnnotation.warning("-", "Missing type initializer").append(nodeConfig);
         }
-        
+
         freeze(Pragma.BOOT_SEQUENCE);
         for(String phase: getBootsequnce()) {
             processSubphase(phase);
@@ -55,16 +55,16 @@ class NodeBootstraper {
         for(String subsub: getSubphases(subphase, Pragma.BOOT_PHASE_PRE)) {
             processSubphase(subsub);
         }
-        
+
         processActions(subphase);
-        
+
         for(String subsub: getSubphases(subphase, Pragma.BOOT_PHASE_POST)) {
             processSubphase(subsub);
         }
-        
+
         checkErrors();
         processValidators(subphase);
-        checkErrors();        
+        checkErrors();
     }
 
     private void processValidators(String subphase) {
@@ -88,7 +88,7 @@ class NodeBootstraper {
                 action.run(nodeConfig);
             }
             catch(Exception e) {
-                BootAnnotation.fatal(subphase, "Exception processing '" + akey + "' - " + e.toString())
+                BootAnnotation.fatal(subphase, e, "Exception processing '" + akey + "' - " + e.toString())
                     .append(nodeConfig);
                 checkErrors();
             }
@@ -108,12 +108,13 @@ class NodeBootstraper {
                 checkErrors();
             }
         }
-        
+
         checkErrors();
-    }    
-    
+    }
+
     private void checkErrors() {
         List<String> keys = nodeConfig.match(BootAnnotation.ERROR_PATTERN);
+        Throwable error = null;
         if (!keys.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             String nodeName = nodeConfig.get(Pragma.NODE_NAME);
@@ -121,9 +122,19 @@ class NodeBootstraper {
             for(String mkey: nodeConfig.match(BootAnnotation.ANNOTATION_PATTERN)) {
                 Object msg = nodeConfig.get(mkey);
                 sb.append("\n  ").append(msg);
+                if (msg instanceof BootAnnotation) {
+                    Throwable e = ((BootAnnotation) msg).getExecption();
+                    if (e != null) {
+                        error = e;
+                    }
+                }
             }
-            throw new NodeConfigurationException(sb.toString());
-        }        
+            if (error != null) {
+                throw new NodeConfigurationException(sb.toString(), error);
+            } else {
+                throw new NodeConfigurationException(sb.toString());
+            }
+        }
     }
 
     private List<String> getSubphases(String phase, String subphaseKey) {
@@ -140,13 +151,13 @@ class NodeBootstraper {
                 String subname = key.substring(pref.length());
                 String subphase = phase + "-" + subname;
                 if (isValidPhaseName(subname)) {
-                    phases.add(subphase);                    
+                    phases.add(subphase);
                 }
                 else {
                     BootAnnotation.fatal(phase, "Invalid subphase key \"%s\"", key).append(nodeConfig);
                 }
             }
-            
+
         }
         checkErrors();
         return phases;
@@ -167,13 +178,13 @@ class NodeBootstraper {
                 throw new NodeConfigurationException("No boot sequence [" + bootseq + "] is invalid, duplicated phase");
             }
             if (!isValidPhaseName(p)) {
-                throw new NodeConfigurationException("No boot sequence [" + bootseq + "] is invalid, bad phase name '" + p + "'");                
+                throw new NodeConfigurationException("No boot sequence [" + bootseq + "] is invalid, bad phase name '" + p + "'");
             }
             set.add(p);
         }
         return new ArrayList<String>(Arrays.asList(bs));
     }
-    
+
     private boolean isValidPhaseName(String name) {
         if ("final-check".equals("name")) {
             return false;
@@ -185,15 +196,15 @@ class NodeBootstraper {
             }
         }
         return true;
-    }    
-    
+    }
+
 //    private static class ActionLogEntry {
-//        
+//
 //        String phase;
 //        String actionKey;
 //        Object actionObject;
 //        Map<String, String> reads = new LinkedHashMap<String, String>();
 //        Map<String, String> writes = new LinkedHashMap<String, String>();
-//        
+//
 //    }
 }

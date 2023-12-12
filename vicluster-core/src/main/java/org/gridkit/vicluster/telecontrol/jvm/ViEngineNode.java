@@ -34,145 +34,160 @@ import org.gridkit.vicluster.VoidCallable;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 @SuppressWarnings("deprecation")
 class ViEngineNode implements ViNode {
 
-	private ViEngine engine;
-	private ViExecutor execProxy;
-	
-	public ViEngineNode(ViEngine engine) {
-		this.engine = engine;
-		
-		if (engine.isTerminated()) {
-		    throw new RuntimeException("Cannot create node, managed process has been terminated");
-		}
-		ManagedProcess mp = engine.getConfig().getManagedProcess();
-		if (mp == null) {
-			throw new RuntimeException("Cannot create node, ManagedProcess is not available");
-		}
-		execProxy = new ExecProxy(mp.getExecutionService());		
-	}
+    private ViEngine engine;
+    private ViExecutor execProxy;
 
-	@Override
-	public <X> X x(ViNodeExtender<X> extention) {
-	    return extention.wrap(this);
-	}
+    public ViEngineNode(ViEngine engine) {
+        this.engine = engine;
 
-	@Override
-	public <X> X x(ViConfExtender<X> extention) {
-		return extention.wrap(this);
-	}
-	
-	@Override
-	public void touch() {
-		// do nothing
-	}
-	
+        if (engine.isTerminated()) {
+            Exception e = engine.getConfig().get(ViConf.ERROR_NODE_BOOTSTRAP);
+            if (e == null) {
+                throw new RuntimeException("Cannot create node, managed process has been terminated");
+            } else {
+                throw new RuntimeException("Node initialization exception", e);
+            }
+        }
+        ManagedProcess mp = engine.getConfig().getManagedProcess();
+        if (mp == null) {
+            throw new RuntimeException("Cannot create node, ManagedProcess is not available");
+        }
+        execProxy = new ExecProxy(mp.getExecutionService());
+    }
+
+    @Override
+    public <X> X x(ViNodeExtender<X> extention) {
+        return extention.wrap(this);
+    }
+
+    @Override
+    public <X> X x(ViConfExtender<X> extention) {
+        return extention.wrap(this);
+    }
+
+    @Override
+    public void touch() {
+        // do nothing
+    }
+
+    @Override
 	public void exec(Runnable task) {
-		execProxy.exec(task);
-	}
+        execProxy.exec(task);
+    }
 
+    @Override
 	public void exec(VoidCallable task) {
-		execProxy.exec(task);
-	}
+        execProxy.exec(task);
+    }
 
+    @Override
 	public <T> T exec(Callable<T> task) {
-		return execProxy.exec(task);
-	}
+        return execProxy.exec(task);
+    }
 
+    @Override
 	public Future<Void> submit(Runnable task) {
-		return execProxy.submit(task);
-	}
+        return execProxy.submit(task);
+    }
 
+    @Override
 	public Future<Void> submit(VoidCallable task) {
-		return execProxy.submit(task);
-	}
+        return execProxy.submit(task);
+    }
 
+    @Override
 	public <T> Future<T> submit(Callable<T> task) {
-		return execProxy.submit(task);
-	}
+        return execProxy.submit(task);
+    }
 
+    @Override
 	public <T> List<T> massExec(Callable<? extends T> task) {
-		return execProxy.massExec(task);
-	}
+        return execProxy.massExec(task);
+    }
 
+    @Override
 	public List<Future<Void>> massSubmit(Runnable task) {
-		return execProxy.massSubmit(task);
-	}
+        return execProxy.massSubmit(task);
+    }
 
+    @Override
 	public List<Future<Void>> massSubmit(VoidCallable task) {
-		return execProxy.massSubmit(task);
-	}
+        return execProxy.massSubmit(task);
+    }
 
+    @Override
 	public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-		return execProxy.massSubmit(task);
-	}
+        return execProxy.massSubmit(task);
+    }
 
-	@Override
-	public void setProp(final String propName, final String value) {
-		setProps(Collections.singletonMap(propName, value));
-	}
+    @Override
+    public void setProp(final String propName, final String value) {
+        setProps(Collections.singletonMap(propName, value));
+    }
 
-	@Override
-	public void setProps(Map<String, String> props) {
-		for(String p: props.keySet()) {
-			if (!ViConf.isVanilaProp(p)) {
-				throw new IllegalArgumentException("[" + p + "] is not 'vanila' prop");
-			}
-		}
-		final Map<String, String> copy = new LinkedHashMap<String, String>(props);
-		exec(new Runnable() {
-			@Override
-			public void run() {
-				for(String name: copy.keySet()) {
-					System.setProperty(name, copy.get(name));
-				}
-			}
-		});
-	}
+    @Override
+    public void setProps(Map<String, String> props) {
+        for(String p: props.keySet()) {
+            if (!ViConf.isVanilaProp(p)) {
+                throw new IllegalArgumentException("[" + p + "] is not 'vanila' prop");
+            }
+        }
+        final Map<String, String> copy = new LinkedHashMap<String, String>(props);
+        exec(new Runnable() {
+            @Override
+            public void run() {
+                for(String name: copy.keySet()) {
+                    System.setProperty(name, copy.get(name));
+                }
+            }
+        });
+    }
 
-	@Override
-	public void setConfigElement(String key, Object value) {
-		engine.setPragmas(Collections.singletonMap(key, value));
-	}
+    @Override
+    public void setConfigElement(String key, Object value) {
+        engine.setPragmas(Collections.singletonMap(key, value));
+    }
 
-	@Override
-	public void setConfigElements(Map<String, Object> config) {
-		engine.setPragmas(config);
-	}
+    @Override
+    public void setConfigElements(Map<String, Object> config) {
+        engine.setPragmas(config);
+    }
 
-	@Override
-	public String getProp(final String propName) {
-		return (String)engine.getPragma(propName);
-	}
+    @Override
+    public String getProp(final String propName) {
+        return (String)engine.getPragma(propName);
+    }
 
-	@Override
-	public Object getPragma(final String pragmaName) {
-		return engine.getPragma(pragmaName);
-	}
+    @Override
+    public Object getPragma(final String pragmaName) {
+        return engine.getPragma(pragmaName);
+    }
 
-	@Override
-	public void kill() {
-		engine.kill();
-	}
+    @Override
+    public void kill() {
+        engine.kill();
+    }
 
-	@Override
-	public void shutdown() {
-		engine.shutdown();
-	}
+    @Override
+    public void shutdown() {
+        engine.shutdown();
+    }
 
-	private class ExecProxy extends AdvExecutor2ViExecutor {
+    private class ExecProxy extends AdvExecutor2ViExecutor {
 
-		public ExecProxy(AdvancedExecutor advExec) {
-			super(advExec);
-		}
+        public ExecProxy(AdvancedExecutor advExec) {
+            super(advExec);
+        }
 
-		@Override
-		protected AdvancedExecutor getExecutor() {
-			return super.getExecutor();
-		}
-	}
+        @Override
+        protected AdvancedExecutor getExecutor() {
+            return super.getExecutor();
+        }
+    }
 }
