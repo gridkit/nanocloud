@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.gridkit.vicluster.telecontrol.agent.NanoAgent;
+import org.gridkit.nanocloud.agent.AbstractNanoAgent;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.IHTTPSession;
@@ -16,7 +16,7 @@ import fi.iki.elonen.NanoWSD.WebSocket;
 import fi.iki.elonen.NanoWSD.WebSocketFrame;
 import fi.iki.elonen.NanoWSD.WebSocketFrame.CloseCode;
 
-public class WebSocketNanoAgent extends NanoAgent {
+public class WebSocketNanoAgent extends AbstractNanoAgent {
 
     public static void main(String[] args) throws InterruptedException, IOException {
         Integer port = Integer.getInteger("nanoagent.port");
@@ -26,6 +26,8 @@ public class WebSocketNanoAgent extends NanoAgent {
 
         WebSocketNanoAgent agent = new WebSocketNanoAgent(null, port);
         agent.start();
+        System.out.println("Running enpoint " + agent.getServerEndPoint());
+        agent.join();
     }
 
     private final AtomicInteger counter = new AtomicInteger();
@@ -50,8 +52,22 @@ public class WebSocketNanoAgent extends NanoAgent {
         };
     }
 
+    public String getServerEndPoint() {
+        return "ws://" + (nanoServer.getHostname() == null ? "0.0.0.0" : nanoServer.getHostname()) + ":" + nanoServer.getListeningPort();
+    }
+
     public void start() throws IOException {
         nanoServer.start();
+    }
+
+    public void join() {
+        while(nanoServer.isAlive()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
     }
 
     public void stop() {
@@ -94,7 +110,7 @@ public class WebSocketNanoAgent extends NanoAgent {
         protected void onClose(CloseCode code, String reason, boolean initiatedByRemote) {
             if (!closed) {
                 closed = true;
-                log("[" + id + "] Terminaled session from " + remoteInfo);
+                log("[" + id + "] Terminated session from " + remoteInfo);
             }
             if (session != null) {
                 try {

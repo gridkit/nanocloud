@@ -1,4 +1,4 @@
-package org.gridkit.vicluster.telecontrol.agent;
+package org.gridkit.nanocloud.agent;
 
 import java.io.Closeable;
 import java.io.InputStream;
@@ -14,7 +14,7 @@ import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
  *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public abstract class NanoAgent {
+public abstract class AbstractNanoAgent {
 
     private final AtomicInteger counter = new AtomicInteger();
     private List<Session> sessions = new ArrayList<Session>();

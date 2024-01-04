@@ -59,11 +59,13 @@
         <dependency>
             <groupId>org.gridkit.lab</groupId>
             <artifactId>telecontrol-ssh</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.gridkit.lab</groupId>
             <artifactId>telecontrol-websock</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>

@@ -3,7 +3,7 @@ package org.gridkit.nanocloud;
 import static org.gridkit.nanocloud.VX.REMOTE;
 
 import org.gridkit.nanocloud.Nanocloud;
-import org.gridkit.vicluster.telecontrol.agent.PlainSocketNanoAgent;
+import org.gridkit.nanocloud.agent.PlainSocketNanoAgent;
 import org.junit.After;
 import org.junit.Before;
 

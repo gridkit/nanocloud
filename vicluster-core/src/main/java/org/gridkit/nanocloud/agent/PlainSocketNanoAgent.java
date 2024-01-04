@@ -1,4 +1,4 @@
-package org.gridkit.vicluster.telecontrol.agent;
+package org.gridkit.nanocloud.agent;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -75,6 +75,7 @@ public class PlainSocketNanoAgent {
     }
 
     public void join() throws InterruptedException {
+        acceptor.join();
     }
 
     private void accept() {

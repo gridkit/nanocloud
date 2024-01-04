@@ -66,6 +66,7 @@
         <module>telecontrol-ssh</module>
         <module>telecontrol-websock</module>
         <module>nanocloud</module>
+        <module>nanoagent</module>
         <module>nanotest</module>
     </modules>
 
