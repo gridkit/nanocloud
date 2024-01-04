@@ -13,7 +13,7 @@ import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 
-public class ManagedNoMarshalIsolate implements ManagedProcess {
+class ManagedNoMarshalIsolate implements ManagedProcess {
 
     private final Isolate isolate;
     private final ExecutorService exec;

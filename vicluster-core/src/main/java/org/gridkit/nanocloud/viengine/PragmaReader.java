@@ -2,15 +2,18 @@ package org.gridkit.nanocloud.viengine;
 
 import java.util.List;
 
-interface PragmaReader {
+interface PragmaReader extends ConfMap {
 
-    public boolean isPresent(String key);
+    @Override
+	public boolean isPresent(String key);
 
-    public <T> T get(String key);
+    @Override
+	public <T> T get(String key);
 
     public String describe(String key);
 
-    public List<String> match(String glob);
+    @Override
+	public List<String> match(String glob);
 
     public <T> List<T> collect(String glob, Class<T> type);
 

@@ -401,7 +401,7 @@ public class Tunneller extends TunnellerIO {
     }
 
     @Override
-    protected synchronized void shutdown() {
+    public synchronized void shutdown() {
         super.shutdown();
         for (ProcessHandler ph: new ArrayList<ProcessHandler>(processes.values())) {
             ph.proc.destroy();

@@ -2,8 +2,6 @@ package org.gridkit.nanocloud.viengine;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.gridkit.zerormi.zlog.LogStream;
 
@@ -12,39 +10,6 @@ class PragmaHelper {
     public static final String LOG_STREAM__NO_PRAGMA_HANDLER = "node.config.pragma_handle_not_found";
     public static final String LOG_STREAM__HOOK_EXECUTION_EXCEPTON = "node.runtime.hook_execution_exception";
 
-
-    public static String transform(String pattern, String name) {
-        if (pattern == null || !pattern.startsWith("~")) {
-            return pattern;
-        }
-        int n = pattern.indexOf('!');
-        if (n < 0) {
-            throw new IllegalArgumentException("Invalid host extractor [" + pattern + "]");
-        }
-        String format = pattern.substring(1, n);
-        Matcher m = Pattern.compile(pattern.substring(n + 1)).matcher(name);
-        if (!m.matches()) {
-            throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
-        }
-        else {
-            Object[] groups = new Object[m.groupCount()];
-            for(int i = 0; i != groups.length; ++i) {
-                groups[i] = m.group(i + 1);
-                try {
-                    groups[i] = Long.parseLong((String)groups[i]);
-                }
-                catch(NumberFormatException e) {
-                    // ignore
-                }
-            }
-            try {
-                return String.format(format, groups);
-            }
-            catch(IllegalArgumentException e) {
-                throw new IllegalArgumentException("Host extractor [" + pattern + "] is not applicable to name '" + name + "'");
-            }
-        }
-    }
 
     public static Object getPragma(PragmaWriter context, String key) {
         String pragmaType = pragmaTypeOf(key);

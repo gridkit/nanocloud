@@ -18,6 +18,7 @@ import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
 import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -30,6 +31,12 @@ import org.gridkit.zerormi.hub.RemotingEndPoint;
 import org.gridkit.zerormi.hub.SlaveSpore;
 
 class IsolateLauncher implements ProcessLauncher {
+
+    private IsolateSelfInitializer isolateteInitializer = null;
+
+    public void setIsolateteInitializer(IsolateSelfInitializer isolateteInitializer) {
+        this.isolateteInitializer = isolateteInitializer;
+    }
 
     @Override
     public ManagedProcess launchProcess(LaunchConfig config) {
@@ -65,9 +72,12 @@ class IsolateLauncher implements ProcessLauncher {
 
         Isolate i = new Isolate(config.getNodeName(), cl, urls);
 
+        if (isolateteInitializer != null) {
+            isolateteInitializer.apply(i);
+        }
 //		Map<String, String> isolateProps = new LinkedHashMap<String, String>();
 //
-//		for(String key: config.keySet()) {
+//		for(String key: config.)) {
 //		    if (    key.startsWith(IsolateProps.ISOLATE_PACKAGE)
 //		            || key.startsWith(IsolateProps.SHARE_PACKAGE)
 //		            || key.startsWith(IsolateProps.ISOLATE_CLASS)

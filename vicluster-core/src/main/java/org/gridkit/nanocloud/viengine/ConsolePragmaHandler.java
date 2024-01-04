@@ -89,8 +89,7 @@ class ConsolePragmaHandler implements PragmaHandler {
     }
 
     private void setSilentShutdown(PragmaWriter context, boolean enabled) {
-        context.set(SILENCER_HOOK, enabled ? new Silencer() : null);
-//        context.set(FINAL_FLUSH_HOOK, enabled ? null : new FinalFlush());
+        context.set(Pragma.NODE_PRE_SHUTDOWN_HOOK + SILENCER_HOOK, enabled ? new Silencer() : null);
     }
 
     private static TextTerminalControl termOf(PragmaWriter context) {
@@ -146,7 +145,7 @@ class ConsolePragmaHandler implements PragmaHandler {
     }
 
     private String getEchoPrefix(PragmaWriter context) {
-        String p = context.get(ViConf.CONSOLE_ECHO_PREFIX);
+        String p = NodeConfigHelper.transform((String)context.get(ViConf.CONSOLE_ECHO_PREFIX), (String)context.get(ViConf.NODE_NAME));
         return p;
     }
 

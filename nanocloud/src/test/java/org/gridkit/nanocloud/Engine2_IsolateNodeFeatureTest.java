@@ -1,8 +1,8 @@
-package org.gridkit.nanocloud.viengine;
+package org.gridkit.nanocloud;
 
 import static org.gridkit.nanocloud.VX.ISOLATE;
 
-import org.gridkit.nanocloud.ViNodeFeatureTest;
+import org.gridkit.nanocloud.Nanocloud;
 import org.junit.Assume;
 
 public class Engine2_IsolateNodeFeatureTest extends ViNodeFeatureTest {
@@ -14,7 +14,7 @@ public class Engine2_IsolateNodeFeatureTest extends ViNodeFeatureTest {
 
     @Override
     public void initCloud() {
-        cloud = Engine2.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(ISOLATE);
     }
 }

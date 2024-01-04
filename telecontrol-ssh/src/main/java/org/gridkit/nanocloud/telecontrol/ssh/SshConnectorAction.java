@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.SimpleTunnelInitiator;
@@ -14,6 +15,7 @@ import org.gridkit.nanocloud.viengine.BootAnnotation;
 import org.gridkit.nanocloud.viengine.Pragma;
 import org.gridkit.nanocloud.viengine.RemoteHostConnector;
 import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.telecontrol.FileBlob;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.ssh.SimpleSshSessionProvider;
 import org.gridkit.vicluster.telecontrol.ssh.SshHostControlConsole;
@@ -90,12 +92,13 @@ class SshConnectorAction extends AbstractNodeAction {
             String bootCachePath = sshConfig.getBootCachePath();
             String bootCmd = sshConfig.getBootCmd();
 
-            SshHostControlConsole shhConsole = new SshHostControlConsole(session, bootCachePath, true, 1);
+            SshHostControlConsole sshConsole = new SshHostControlConsole(session, bootCachePath, true, 1);
             // TODO logger configuration
             TunnellerInitiator initiator = new SimpleTunnelInitiator(bootCmd, copyService, ZLogFactory.getDefaultRootLogger());
-            HostControlConsole console = initiator.initTunnel(shhConsole);
+            HostControlConsole console = initiator.initTunnel(sshConsole);
+            CoupledHostConsole cc = new CoupledHostConsole(sshConsole, console);
 
-            return console;
+            return cc;
         }
 
         @Override
@@ -121,6 +124,54 @@ class SshConnectorAction extends AbstractNodeAction {
             } else if (!sshConfig.equals(other.sshConfig))
                 return false;
             return true;
+        }
+    }
+
+    private static class CoupledHostConsole implements HostControlConsole {
+
+        private final HostControlConsole bootConsole;
+        private final HostControlConsole console;
+
+        public CoupledHostConsole(HostControlConsole bootConsole, HostControlConsole console) {
+            this.bootConsole = bootConsole;
+            this.console = console;
+        }
+
+        @Override
+        public String getHostname() {
+            return console.getHostname();
+        }
+
+        @Override
+        public boolean isLocalFileSystem() {
+            return console.isLocalFileSystem();
+        }
+
+        @Override
+        public String cacheFile(FileBlob blob) {
+            return console.cacheFile(blob);
+        }
+
+        @Override
+        public List<String> cacheFiles(List<? extends FileBlob> blobs) {
+            return console.cacheFiles(blobs);
+        }
+
+        @Override
+        public Destroyable openSocket(SocketHandler handler) {
+            return console.openSocket(handler);
+        }
+
+        @Override
+        public Destroyable startProcess(String workDir, String[] command, Map<String, String> env,
+                ProcessHandler handler) {
+            return console.startProcess(workDir, command, env, handler);
+        }
+
+        @Override
+        public void terminate() {
+            console.terminate();
+            bootConsole.terminate();
         }
     }
 }

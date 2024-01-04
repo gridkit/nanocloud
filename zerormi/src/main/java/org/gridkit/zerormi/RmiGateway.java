@@ -96,6 +96,17 @@ public class RmiGateway {
         this(name, new SmartRmiMarshaler(), logger, Collections.<String, Object>emptyMap());
     }
 
+    public RmiGateway(String name, RmiMarshaler marshaler, ZLogger logger, Map<String, Object> props) {
+        // TODO should include counter agent
+        this.executor = createRmiExecutor();
+        this.channel = new RmiChannel1(name, new MessageOut(), executor, marshaler, logger, props);
+        this.service = new RemoteExecutionService();
+        this.name = name;
+        this.logVerbose = logger.get(getClass().getSimpleName(), LogLevel.VERBOSE);
+        this.logInfo = logger.get(getClass().getSimpleName(), LogLevel.INFO);
+        this.logCritical = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
+    }
+
     private ExecutorService createRmiExecutor() {
         return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
                 100, TimeUnit.MILLISECONDS,
@@ -110,17 +121,6 @@ public class RmiGateway {
                         return t;
                     }
                 });
-    }
-
-    public RmiGateway(String name, RmiMarshaler marshaler, ZLogger logger, Map<String, Object> props) {
-        // TODO should include counter agent
-        this.executor = createRmiExecutor();
-        this.channel = new RmiChannel1(name, new MessageOut(), executor, marshaler, logger, props);
-        this.service = new RemoteExecutionService();
-        this.name = name;
-        this.logVerbose = logger.get(getClass().getSimpleName(), LogLevel.VERBOSE);
-        this.logInfo = logger.get(getClass().getSimpleName(), LogLevel.INFO);
-        this.logCritical = logger.get(getClass().getSimpleName(), LogLevel.CRITICAL);
     }
 
     public AdvancedExecutor getRemoteExecutorService() {

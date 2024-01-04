@@ -63,6 +63,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -83,6 +84,11 @@ public abstract class ViNodeFeatureTest {
 
     @Rule
     public TestName testName = new TestName();
+
+    @BeforeClass
+    public static void prepare() {
+        System.getProperties().remove("local-prop");
+    }
 
     @Before
     public abstract void initCloud();
@@ -958,6 +964,13 @@ public abstract class ViNodeFeatureTest {
             @Override
             public void run() {
                 System.out.println("Test message");
+                System.err.flush();
+
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
             }
         });
 
@@ -980,6 +993,12 @@ public abstract class ViNodeFeatureTest {
             @Override
             public void run() {
                 System.err.println("Test message");
+                System.err.flush();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
             }
         });
 

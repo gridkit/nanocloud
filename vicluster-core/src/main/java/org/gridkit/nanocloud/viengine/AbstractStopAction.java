@@ -2,7 +2,7 @@ package org.gridkit.nanocloud.viengine;
 
 import java.util.concurrent.ExecutionException;
 
-public abstract class AbstractStopAction implements NodeAction {
+abstract class AbstractStopAction implements NodeAction {
 
     boolean runShutdown;
     boolean runPostShutdown;

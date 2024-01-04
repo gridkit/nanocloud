@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-public class PragmaProcessor implements NodeAction {
+class PragmaProcessor implements NodeAction {
 
     public static PragmaProcessor CONFIGURE = new PragmaProcessor(true);
     public static PragmaProcessor INIT = new PragmaProcessor(false);

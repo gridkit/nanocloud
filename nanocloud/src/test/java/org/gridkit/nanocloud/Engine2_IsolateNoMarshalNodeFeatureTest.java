@@ -1,4 +1,4 @@
-package org.gridkit.nanocloud.viengine;
+package org.gridkit.nanocloud;
 
 import static org.gridkit.nanocloud.VX.ISOLATE;
 
@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
-import org.gridkit.nanocloud.ViNodeFeatureTest;
+import org.gridkit.nanocloud.Nanocloud;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ public class Engine2_IsolateNoMarshalNodeFeatureTest extends ViNodeFeatureTest {
 
     @Override
     public void initCloud() {
-        cloud = Engine2.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(ISOLATE)
             .shareAllClasses(true)
             .noMarshal(true);
@@ -52,17 +52,20 @@ public class Engine2_IsolateNoMarshalNodeFeatureTest extends ViNodeFeatureTest {
     @Override
     public void verify_classpath_class_sharing() {
         // class sharing is not supported by local nodes, obviously
+        Assume.assumeTrue(false);
     }
 
     @Test
     @Override
     public void verify_isolation_system_properties() throws Exception {
+        Assume.assumeTrue(false); // not supported
         super.verify_isolation_system_properties();
     }
 
     @Test
     @Override
     public void verify_execution_stack_trace_locality() {
+        Assume.assumeTrue(false); // no stack trace rewriting
         super.verify_execution_stack_trace_locality();
     }
 
@@ -75,6 +78,7 @@ public class Engine2_IsolateNoMarshalNodeFeatureTest extends ViNodeFeatureTest {
     @Test
     @Override
     public void verify_execution_transitive_transparent_proxy_stack_trace() {
+        Assume.assumeTrue(false); // no stack trace rewriting
         super.verify_execution_transitive_transparent_proxy_stack_trace();
     }
 
@@ -178,5 +182,17 @@ public class Engine2_IsolateNoMarshalNodeFeatureTest extends ViNodeFeatureTest {
     @Override
     public void verify_jvm_agent_multiple_agents() throws Exception {
         super.verify_jvm_agent_multiple_agents();
+    }
+
+    @Override
+    public void verify_console_capture_std_out() throws Exception {
+        Assume.assumeTrue(false); // not supported
+        super.verify_console_capture_std_out();
+    }
+
+    @Override
+    public void verify_console_capture_std_err() throws Exception {
+        Assume.assumeTrue(false); // not supported
+        super.verify_console_capture_std_err();
     }
 }

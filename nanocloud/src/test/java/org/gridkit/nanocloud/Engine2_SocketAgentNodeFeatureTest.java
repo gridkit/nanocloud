@@ -1,9 +1,9 @@
-package org.gridkit.nanocloud.viengine;
+package org.gridkit.nanocloud;
 
 import static org.gridkit.nanocloud.VX.REMOTE;
 
-import org.gridkit.nanocloud.ViNodeFeatureTest;
-import org.gridkit.vicluster.telecontrol.bootstraper.PlainSocketNanoAgent;
+import org.gridkit.nanocloud.Nanocloud;
+import org.gridkit.vicluster.telecontrol.agent.PlainSocketNanoAgent;
 import org.junit.After;
 import org.junit.Before;
 
@@ -25,7 +25,7 @@ public class Engine2_SocketAgentNodeFeatureTest extends ViNodeFeatureTest {
 
     @Override
     public void initCloud() {
-        cloud = Engine2.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(REMOTE).setTargetUrl("tcp://127.0.0.1:12034");
     }
 }

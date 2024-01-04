@@ -1,5 +1,6 @@
 package org.gridkit.nanocloud.telecontrol.ssh;
 
+import static java.util.Collections.singleton;
 import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.KEY_ADDRESS;
 import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.KEY_JAR_CACHE;
 import static org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf.KEY_JAVA_EXEC;
@@ -51,8 +52,8 @@ public class SshConfigurer {
             conf.put(SPI_SSH_TARGET_HOST, uri.getHost());
         }
 
-        if (uri.getAuthority() != null) {
-            conf.put(SPI_SSH_TARGET_ACCOUNT, uri.getAuthority());
+        if (uri.getUserInfo() != null) {
+            conf.put(SPI_SSH_TARGET_ACCOUNT, uri.getUserInfo());
         }
         //
 
@@ -153,6 +154,8 @@ public class SshConfigurer {
         ec.put(SPI_BOOTSTRAP_JVM_EXEC, wp.get(key + "!" + KEY_JAVA_EXEC));
         ec.put(SPI_JAR_CACHE, wp.get(key + "!" + KEY_JAR_CACHE));
         ec.put(SPI_SSH_JSCH_OPTION + "PreferredAuthentications", wp.get(key + "!" + KEY_JSCH_PREFERED_AUTH));
+
+        ec.values().removeAll(singleton(null));
     }
 
     public void configure(SimpleSshSessionProvider factory) {

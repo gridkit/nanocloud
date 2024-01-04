@@ -7,7 +7,7 @@ import java.util.concurrent.Callable;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.AdvExecutor2ViExecutor;
 
-public class PropPragmaHandler implements PragmaHandler {
+class PropPragmaHandler implements PragmaHandler {
 
     @Override
     public void configure(PragmaWriter conext) {

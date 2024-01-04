@@ -1,13 +1,14 @@
-package org.gridkit.vicluster.telecontrol.bootstraper;
+package org.gridkit.vicluster.telecontrol.agent;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 import org.gridkit.nanocloud.Nanocloud;
+import org.gridkit.vicluster.telecontrol.bootstraper.Tunneller;
 
 /**
- * This is {@link Nanocloud} explict agent implementation for plain socket communication.
+ * This is {@link Nanocloud} explicit agent implementation for plain socket communication.
  * <p>
  * Using SSH agent is deployed automatically. Though non SSH transport require explicit agent deployment.
  * <p>

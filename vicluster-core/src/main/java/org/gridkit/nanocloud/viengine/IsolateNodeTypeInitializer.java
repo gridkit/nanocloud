@@ -13,7 +13,7 @@ import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 
-public class IsolateNodeTypeInitializer implements NodeAction {
+class IsolateNodeTypeInitializer implements NodeAction {
 
     protected static final LazyPragma REMOTING_SESSION_FACTORY = new LazyPragma() {
 

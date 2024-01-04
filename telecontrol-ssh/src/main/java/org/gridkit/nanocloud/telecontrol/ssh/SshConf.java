@@ -9,7 +9,7 @@ import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViConfigurable;
 
-public class SshConf extends RemoteEx {
+public class SshConf extends RemoteEx<SshConf> {
 
     public static final ViConfExtender<SshConf> SSH = new ViConfExtender<SshConf>() {
 
@@ -31,11 +31,6 @@ public class SshConf extends RemoteEx {
         setSshConfigFile("?~/ssh-credentials.prop");
         setRemoteUrl("~ssh://%s!(.*)");
 
-        return this;
-    }
-
-    public SshConf setRemoteUrl(String url) {
-        setConfigElement(RemoteEx.REMOTE_TARGET_URL, url);
         return this;
     }
 
@@ -71,30 +66,6 @@ public class SshConf extends RemoteEx {
 
     public SshConf setPreferedAuth(String auth) {
         setConfigElement(RemoteNode.SSH_AUTH_METHODS, auth);
-        return this;
-    }
-
-    @Override
-    public SshConf setRemoteNodeType() {
-        super.setRemoteNodeType();
-        return this;
-    }
-
-    @Override
-    public SshConf setRemoteJavaExec(String javaCmd) {
-        super.setRemoteJavaExec(javaCmd);
-        return this;
-    }
-
-    @Override
-    public SshConf setRemoteJarCachePath(String jarCachePath) {
-        super.setRemoteJarCachePath(jarCachePath);
-        return this;
-    }
-
-    @Override
-    public SshConf setTargetUrl(String url) {
-        super.setTargetUrl(url);
         return this;
     }
 }

@@ -5,11 +5,11 @@ import java.net.URISyntaxException;
 
 import org.gridkit.nanocloud.RemoteEx;
 
-class PlainSocketConnectorAction extends AbstractNodeAction {
+class EndPointConnectorAction extends AbstractNodeAction {
 
-    public static final PlainSocketConnectorAction INSTANCE = new PlainSocketConnectorAction();
+    public static final EndPointConnectorAction INSTANCE = new EndPointConnectorAction();
 
-    private InArg<String> targetUrl = required("remote:target-url");
+    private InArg<String> targetUrl = required(RemoteEx.REMOTE_TARGET_URL);
     private InArg<String> remoteCachePath = required(RemoteEx.JAR_CACHE_PATH);
 
     @Override
@@ -17,8 +17,10 @@ class PlainSocketConnectorAction extends AbstractNodeAction {
         String targetUrl = transform(this.targetUrl.get());
         try {
             URI uri = new URI(targetUrl);
-            if ("tcp".equals(uri.getScheme())) {
-                PlainTcpSocketConnector connector = new PlainTcpSocketConnector(targetUrl);
+            String scheme = uri.getScheme().toLowerCase();
+            EndPointConnectorFactory factory = getContext().get(Pragma.REMOTE_PROTOCOL_CONNECTOR + scheme);
+            if (factory != null) {
+                RemoteEndPoint connector = factory.newConnector(targetUrl, getContext());
                 TunnellerHostControlConnector tunneler = new TunnellerHostControlConnector(targetUrl, connector, remoteCachePath.get());
                 getContext().set(Pragma.RUNTIME_HOST_CONNECTOR, tunneler);
             }

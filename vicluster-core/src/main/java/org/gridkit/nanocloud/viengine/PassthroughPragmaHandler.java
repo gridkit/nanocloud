@@ -22,7 +22,6 @@ class PassthroughPragmaHandler implements PragmaHandler {
     @Override
     public void setup(PragmaWriter context, Map<String, Object> values) {
         apply(context, values);
-
     }
 
     @Override

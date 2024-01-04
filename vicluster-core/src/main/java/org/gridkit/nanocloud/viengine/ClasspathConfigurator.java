@@ -18,22 +18,22 @@ import org.gridkit.vicluster.telecontrol.Classpath;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 
-public class ClasspathConfigurator implements NodeAction {
+class ClasspathConfigurator implements NodeAction {
 
     public static final ClasspathConfigurator INSTANCE = new ClasspathConfigurator();
-    
+
     @Override
     public void run(PragmaWriter context) throws ExecutionException {
-    	boolean useShallow = !Boolean.FALSE.toString().equalsIgnoreCase(context.<String>get(ViConf.CLASSPATH_USE_SHALLOW));
-    	boolean inheright = !Boolean.FALSE.toString().equalsIgnoreCase(context.<String>get(ViConf.CLASSPATH_INHERIT));
-    	boolean hasTweak = !context.match(ViConf.CLASSPATH_TWEAK + "**").isEmpty();
-    	if (inheright && !hasTweak && useShallow) {
-    		context.set(Pragma.RUNTIME_SHALLOW_CLASSPATH, ClasspathUtils.getStartupClasspath());
-    		context.set(Pragma.RUNTIME_CLASSPATH, Collections.emptyList());
-    	}
-    	else {
-    		context.set(Pragma.RUNTIME_CLASSPATH, buildClasspath(context));
-    	}
+        boolean useShallow = !Boolean.FALSE.toString().equalsIgnoreCase(context.<String>get(ViConf.CLASSPATH_USE_SHALLOW));
+        boolean inheright = !Boolean.FALSE.toString().equalsIgnoreCase(context.<String>get(ViConf.CLASSPATH_INHERIT));
+        boolean hasTweak = !context.match(ViConf.CLASSPATH_TWEAK + "**").isEmpty();
+        if (inheright && !hasTweak && useShallow) {
+            context.set(Pragma.RUNTIME_SHALLOW_CLASSPATH, ClasspathUtils.getStartupClasspath());
+            context.set(Pragma.RUNTIME_CLASSPATH, Collections.emptyList());
+        }
+        else {
+            context.set(Pragma.RUNTIME_CLASSPATH, buildClasspath(context));
+        }
     }
 
     public static List<ClasspathEntry> buildClasspath(PragmaReader config) {
@@ -119,7 +119,7 @@ public class ClasspathConfigurator implements NodeAction {
             }
         }
     }
-            
+
     private static URL toURL(String path) {
         try {
             return new URL(path);
@@ -127,7 +127,7 @@ public class ClasspathConfigurator implements NodeAction {
             throw new RuntimeException(e);
         }
     }
-    
+
     private static String normalize(String path) {
         try {
             // normalize path entry if possible
@@ -136,7 +136,7 @@ public class ClasspathConfigurator implements NodeAction {
             return path;
         }
     }
-    
+
     private static String normalize(URL url) {
         try {
             if (!"file".equals(url.getProtocol())) {

@@ -63,6 +63,11 @@
 
         <dependency>
             <groupId>org.gridkit.lab</groupId>
+            <artifactId>telecontrol-websock</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gridkit.lab</groupId>
             <artifactId>interceptor</artifactId>
             <optional>true</optional>
         </dependency>

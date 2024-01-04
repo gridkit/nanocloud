@@ -7,6 +7,7 @@ import org.gridkit.nanocloud.NodeConfigurationException;
 import org.gridkit.nanocloud.NodeExecutionException;
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.AbstractCloudContext;
+import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
 import org.gridkit.vicluster.ViNodeProvider;
@@ -141,5 +142,13 @@ public class ViEngine2NodeProvider implements ViNodeProvider {
         public void setPragmas(Map<String, Object> pragmas) {
             PragmaHelper.setPragmas(context, false, pragmas);
         }
+    }
+
+    public void initDefaultProviders() {
+        // TODO in process support
+        addTypeInitializer(ViConf.NODE_TYPE__IN_PROCESS, IsolateNodeTypeInitializer.class);
+        addTypeInitializer(ViConf.NODE_TYPE__ISOLATE, IsolateNodeTypeInitializer.class);
+        addTypeInitializer(ViConf.NODE_TYPE__LOCAL, LocalNodeTypeInitializer.class);
+        addTypeInitializer(ViConf.NODE_TYPE__REMOTE, RemoteNodeTypeInitializer.class);
     }
 }

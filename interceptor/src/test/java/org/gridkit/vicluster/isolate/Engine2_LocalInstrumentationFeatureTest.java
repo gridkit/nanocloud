@@ -15,7 +15,9 @@
  */
 package org.gridkit.vicluster.isolate;
 
-import org.gridkit.nanocloud.VX;
+import static org.gridkit.nanocloud.VX.LOCAL;
+
+import org.gridkit.nanocloud.Nanocloud;
 import org.gridkit.vicluster.ViNode;
 import org.junit.After;
 import org.junit.Before;
@@ -25,8 +27,8 @@ public class Engine2_LocalInstrumentationFeatureTest extends InstrumentationFeat
     @Override
     @Before
     public void initCloud() {
-        cloud = Engine2.createCloud();
-        cloud.x(VX.LOCAL);
+        cloud = Nanocloud.createCloud();
+        cloud.x(LOCAL);
     }
 
     @Override

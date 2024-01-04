@@ -23,123 +23,124 @@ import org.gridkit.vicluster.ViEngine;
 
 /**
  * Config properties for remote nodes.
- *  
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public class RemoteNode extends ViConfigurable.Delegate {
 
-	public static ViConfExtender<RemoteNode> REMOTE = new ViConfExtender<RemoteNode>() {
+    public static ViConfExtender<RemoteNode> REMOTE = new ViConfExtender<RemoteNode>() {
 
-		@Override
-		public RemoteNode wrap(ViConfigurable node) {
-			return RemoteNode.at(node);
-		}		
-	};
-	
-	/**
-	 * Hint, where to execute process 
-	 */
-	public static String HOST = "remote:host";
+        @Override
+        public RemoteNode wrap(ViConfigurable node) {
+            return RemoteNode.at(node);
+        }
+    };
 
-	/**
-	 * Hint, which account to use 
-	 */
-	public static String ACCOUNT = "remote:account";
+    /**
+     * Hint, where to execute process
+     */
+    public static String HOST = "remote:host";
 
-	public static String PASSWORD = "remote:password";
+    /**
+     * Hint, which account to use
+     */
+    public static String ACCOUNT = "remote:account";
 
-	public static String SSH_AUTH_METHODS = "remote:ssh-auth-methods";
+    public static String PASSWORD = "remote:password";
 
-	public static String SSH_KEY_FILE = "remote:ssh-key-file";
+    public static String SSH_AUTH_METHODS = "remote:ssh-auth-methods";
 
-	/**
-	 * Hint. remote location for jar cache
-	 */
-	public static String JAR_CACHE_PATH = "remote:jar-cache-path"; 
+    public static String SSH_KEY_FILE = "remote:ssh-key-file";
 
-	private ViConfigurable config;
-	
-	public static RemoteNode at(ViConfigurable target) {
-		return new RemoteNode(target);
-	}
-	
-	protected RemoteNode(ViConfigurable target) {
-		this.config = target;
-	}
+    /**
+     * Hint. remote location for jar cache
+     */
+    public static String JAR_CACHE_PATH = "remote:jar-cache-path";
 
-	@Override
-	protected ViConfigurable getConfigurable() {
-		return config;
-	}
-	
-	public RemoteNode setRemoteNodeType() {
-		config.setProp(ViConf.NODE_TYPE, ViConf.NODE_TYPE__REMOTE);
-		// minimal setup for remoting
-		setRemoteJarCachePath("/tmp/.nanocloud");
+    private ViConfigurable config;
+
+    public static RemoteNode at(ViConfigurable target) {
+        return new RemoteNode(target);
+    }
+
+    protected RemoteNode(ViConfigurable target) {
+        this.config = target;
+    }
+
+    @Override
+    protected ViConfigurable getConfigurable() {
+        return config;
+    }
+
+    public RemoteNode setRemoteNodeType() {
+        config.setProp(ViConf.NODE_TYPE, ViConf.NODE_TYPE__REMOTE);
+        // minimal setup for remoting
+        setRemoteJarCachePath("/tmp/.nanocloud");
         config.setProp(SshSpiConf.REMOTE_FALLBACK_JVM_EXEC, "java");
-        config.setConfigElement("pragma-handler:ssh",  new ViEngine.InitTimePragmaHandler());		
-		return this;
-	}
+        config.setConfigElement("pragma-handler:ssh",  new ViEngine.InitTimePragmaHandler());
+        return this;
+    }
 
-	public RemoteNode useSimpleRemoting() {
-		setRemoteNodeType();
-		setHostsConfigFile("?~/ssh-credentials.prop");
-		setRemoteHost("~%s!(.*)");
+    public RemoteNode useSimpleRemoting() {
+        setRemoteNodeType();
+        setHostsConfigFile("?~/ssh-credentials.prop");
+        setConfigElement(RemoteEx.REMOTE_TARGET_URL, "~ssh://%s!(.*)");
+        setRemoteHost("~%s!(.*)");
 
-		return this;
-	}
-	
-	public RemoteNode setRemoteHost(String host) {
-		config.setProp(HOST, host);
-		return this;
-	}
+        return this;
+    }
 
-	public RemoteNode setRemoteAccount(String account) {
-		config.setProp(ACCOUNT, account);
-		return this;
-	}
+    public RemoteNode setRemoteHost(String host) {
+        config.setProp(HOST, host);
+        return this;
+    }
 
-	public RemoteNode setHostsConfigFile(String path) {
-		config.setProp(ViConf.REMOTE_HOST_CONFIG, path);
-		return this;
-	}
+    public RemoteNode setRemoteAccount(String account) {
+        config.setProp(ACCOUNT, account);
+        return this;
+    }
 
-	public RemoteNode setSshPrivateKey(String path) {
-		config.setProp(SSH_KEY_FILE, path);
-		config.setProp(SshSpiConf.SSH_PRIVATE_KEY_FILE, path);
-		return this;
-	}
-	
-	/**
-	 * @deprecated You should use <b>hosts config file</b> to store passwords
-	 */
-	public RemoteNode setPassword(String password) {
-		config.setProp(SshSpiConf.SSH_PASSWORD, password);
-		return this;
-	}
-	
-	public RemoteNode setRemoteJavaExec(String javaExec) {
-		config.setProp(ViConf.JVM_EXEC_CMD, javaExec);
-		return this;
-	}
-	
-	/**
-	 * <p>
-	 * This is command used to start tunneller. For some reason you may
-	 * want to use different commands for tunneller and actual slave process.
-	 * <p>
-	 * E.g. if you want to use sudo for
-	 * <p>
-	 * If command is composite, you should use pipe character. E.g. <code>sudo|java</code>.
-	 * 
-	 * @param jarCachePath
-	 * @return
-	 */
-	public RemoteNode setRemoteBootstrapJavaExec(String jarCachePath) {
-		config.setProp(SshSpiConf.REMOTE_BOOTSTRAP_JVM_EXEC, jarCachePath);
-		return this;
-	}	
-	
+    public RemoteNode setHostsConfigFile(String path) {
+        config.setProp(ViConf.REMOTE_HOST_CONFIG, path);
+        return this;
+    }
+
+    public RemoteNode setSshPrivateKey(String path) {
+        config.setProp(SSH_KEY_FILE, path);
+        config.setProp(SshSpiConf.SSH_PRIVATE_KEY_FILE, path);
+        return this;
+    }
+
+    /**
+     * @deprecated You should use <b>hosts config file</b> to store passwords
+     */
+    public RemoteNode setPassword(String password) {
+        config.setProp(SshSpiConf.SSH_PASSWORD, password);
+        return this;
+    }
+
+    public RemoteNode setRemoteJavaExec(String javaExec) {
+        config.setProp(ViConf.JVM_EXEC_CMD, javaExec);
+        return this;
+    }
+
+    /**
+     * <p>
+     * This is command used to start tunneller. For some reason you may
+     * want to use different commands for tunneller and actual slave process.
+     * <p>
+     * E.g. if you want to use sudo for
+     * <p>
+     * If command is composite, you should use pipe character. E.g. <code>sudo|java</code>.
+     *
+     * @param jarCachePath
+     * @return
+     */
+    public RemoteNode setRemoteBootstrapJavaExec(String jarCachePath) {
+        config.setProp(SshSpiConf.REMOTE_BOOTSTRAP_JVM_EXEC, jarCachePath);
+        return this;
+    }
+
     public RemoteNode setRemoteJarCachePath(String jarCachePath) {
         config.setProp(SshSpiConf.REMOTE_JAR_CACHE, jarCachePath);
         return this;

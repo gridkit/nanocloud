@@ -5,11 +5,20 @@ import static org.gridkit.nanocloud.viengine.NodeConfigHelper.addPrePhase;
 import static org.gridkit.nanocloud.viengine.NodeConfigHelper.cloudSingleton;
 import static org.gridkit.nanocloud.viengine.NodeConfigHelper.setDefault;
 
+import java.util.concurrent.ExecutionException;
+
 import org.gridkit.nanocloud.RemoteEx;
 import org.gridkit.vicluster.ViConf;
 
-public class RemoteNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
+class RemoteNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
 
+    private static final NodeAction DISABLE_SHALLOW_CLASSPATH = new NodeAction() {
+
+        @Override
+        public void run(PragmaWriter context) throws ExecutionException {
+            context.set(ViConf.CLASSPATH_USE_SHALLOW, "false");
+        }
+    };
 
     @Override
     protected void configureDefaults(PragmaWriter config) {
@@ -29,8 +38,13 @@ public class RemoteNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
         cloudSingleton(config, Pragma.RUNTIME_REMOTE_CONNECTION_MANAGE, RemoteControlConnectionManager.class, "terminate");
 
         NodeConfigHelper.passivePragma(config, "remote-protocol");
+        NodeConfigHelper.passivePragma(config, "remote-protocol-connector");
 
-        config.set(Pragma.REMOTE_PROTOCOL + "tcp", PlainSocketConnectorAction.INSTANCE);
+        config.set(Pragma.REMOTE_PROTOCOL + "_", EndPointConnectorAction.INSTANCE);
+
+        config.set(Pragma.REMOTE_PROTOCOL_CONNECTOR + "tcp", PlainTpcSocketConnectorFactory.INSTANCE);
+
+        action(config, "configure", "DisableShallowClasspath", DISABLE_SHALLOW_CLASSPATH);
 
         addPrePhase(config, "launch", "connect");
         // TODO collect URI connectors from config
@@ -39,6 +53,8 @@ public class RemoteNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
         super.configureHostControlConsoleSubphase(config);
 
         addPrePhase(config, "launch", "console");
+        action(config, "launch-console", "open-console", TunnlerInitAction.INSTANCE);
+
         action(config, "launch-console", "open-console", TunnlerInitAction.INSTANCE);
     }
 

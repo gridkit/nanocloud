@@ -8,7 +8,8 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.telecontrol.AgentEntry;
 
-public class AgentConfigurator implements NodeAction {
+class AgentConfigurator implements NodeAction {
+
     public static final AgentConfigurator INSTANCE = new AgentConfigurator();
 
     @Override

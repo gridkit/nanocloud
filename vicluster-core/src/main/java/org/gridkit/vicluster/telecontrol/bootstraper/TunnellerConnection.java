@@ -188,6 +188,16 @@ public class TunnellerConnection extends TunnellerIO {
         join(inbound);
         join(outbound);
         join(control);
+
+        synchronized(this) {
+            for (FileContext fc: files.values()) {
+                try {
+                    fc.handler.failed(fc.rpath, "Connection closed");
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+        }
     }
 
     private void close(Closeable c) {
@@ -539,17 +549,6 @@ public class TunnellerConnection extends TunnellerIO {
         public void bound(String host, int port);
 
         public void accepted(String remoteHost, int remotePort, InputStream soIn, OutputStream soOut);
-    }
-
-    public interface DuplexStream extends Closeable {
-
-        public InputStream getInput() throws IOException;
-
-        public OutputStream getOutput() throws IOException;
-
-        @Override
-        public void close() throws IOException;
-
     }
 
     private class NotifyingOutputStream extends OutputStream {

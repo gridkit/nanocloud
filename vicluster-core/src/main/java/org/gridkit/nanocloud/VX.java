@@ -101,9 +101,9 @@ public class VX {
         }
     };
 
-    public static final ViConfExtender<RemoteEx> REMOTE = new ViConfExtender<RemoteEx>() {
+    public static final ViConfExtender<RemoteEx<?>> REMOTE = new ViConfExtender<RemoteEx<?>>() {
         @Override
-        public RemoteEx wrap(ViConfigurable node) {
+        public RemoteEx<?> wrap(ViConfigurable node) {
             return RemoteEx.at(node).setRemoteNodeType();
         }
     };

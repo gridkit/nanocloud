@@ -17,6 +17,7 @@ package org.gridkit.vicluster.isolate;
 
 import static org.gridkit.nanocloud.VX.ISOLATE;
 
+import org.gridkit.nanocloud.Nanocloud;
 import org.gridkit.vicluster.ViNode;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +27,7 @@ public class Engine2_IsolateInstrumentationFeatureTest extends InstrumentationFe
     @Override
     @Before
     public void initCloud() {
-        cloud = Engine2.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(ISOLATE);
     }
 

@@ -54,6 +54,7 @@ public interface Pragma {
     public String RUNTIME_TEXT_TERMINAL = "node-runtime:text-terminal";
 
     public String REMOTE_PROTOCOL = "remote-protocol:";
+    public String REMOTE_PROTOCOL_CONNECTOR = "remote-protocol-connector:";
 
     // Remote node internal
     public String RUNTIME_HOST_CONNECTOR = "node-runtime:remote-host-connector";

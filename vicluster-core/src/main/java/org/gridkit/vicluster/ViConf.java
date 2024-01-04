@@ -145,7 +145,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
     }
 
     public static boolean isHook(String key) {
-        return key.startsWith(HOOK);
+        return key.startsWith(HOOK) || key.startsWith("node:startup-hook");
     }
 
     public static boolean isRuntime(String key) {

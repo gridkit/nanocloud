@@ -18,7 +18,6 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ProcessShellCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.gridkit.nanocloud.viengine.Engine2;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -65,12 +64,10 @@ public class ApacheSSHD_Engine2_RemoteNodeFeatureTest extends ViNodeFeatureTest 
     @Before
     @Override
     public void initCloud() {
-        cloud = Engine2.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(SSH)
-            .configureSimpleRemoting()
             .setSshConfigFile("?na")
-            .setRemoteHost("localhost:"+sshServer.getPort())
-            .setRemoteAccount("agent.smith")
+            .setRemoteUrl("ssh://agent.smith@localhost:" + sshServer.getPort())
             .setPassword("matrix")
             .setRemoteJavaExec('"'+javaExec+'"')
             .setRemoteJarCachePath("./target/cache");
