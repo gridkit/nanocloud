@@ -15,6 +15,8 @@
  */
 package org.gridkit.vicluster;
 
+import org.gridkit.nanocloud.ViConfigurable;
+
 /**
  *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)

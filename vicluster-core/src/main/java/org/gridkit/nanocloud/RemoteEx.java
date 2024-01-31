@@ -1,12 +1,27 @@
 package org.gridkit.nanocloud;
 
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConfigurable;
 
 public class RemoteEx<X extends RemoteEx<?>> extends ViConfigurable.Delegate {
 
-    public static String REMOTE_TARGET_URL = "remote:target-url";
+    /**
+     * Hint, where to execute process
+     */
+    public static String HOST = "remote:host";
+
+    /**
+     * Hint, which account to use
+     */
+    public static String ACCOUNT = "remote:account";
+
+    public static String PASSWORD = "remote:password";
+
+    /**
+     * Hint. remote location for jar cache
+     */
     public static String JAR_CACHE_PATH = "remote:jar-cache-path";
+
+    public static String REMOTE_TARGET_URL = "remote:target-url";
 
     private ViConfigurable config;
 

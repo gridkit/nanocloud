@@ -5,6 +5,11 @@ import java.util.Map;
 public interface PragmaHandler {
 
     /**
+     * Forbid modification after boot phase. Noop otherwise.
+     */
+    public static PragmaHandler PASSIVE = new PassivePragmaHandler();
+
+    /**
      * Called at the beginning of node bootstrap.
      */
     public void configure(PragmaWriter context);

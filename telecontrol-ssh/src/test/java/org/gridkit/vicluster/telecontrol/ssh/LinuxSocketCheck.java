@@ -9,17 +9,18 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Callable;
 
-import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.gridkit.vicluster.ViNode;
+import org.gridkit.vicluster.ViNodeSet;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class LinuxSocketCheck {
 
-    private Cloud cloud;
+    private ViNodeSet cloud;
 
     @Before
     public void initCloud() {
@@ -52,6 +53,7 @@ public class LinuxSocketCheck {
 
         cloud.node("cbox1").exec(new Callable<Void>(){
 
+            @SuppressWarnings("resource")
             @Override
             public Void call() throws Exception {
                 ServerSocket ss = new ServerSocket();
@@ -78,6 +80,7 @@ public class LinuxSocketCheck {
 
         cloud.node("cbox1").exec(new Callable<Void>() {
 
+            @SuppressWarnings("resource")
             @Override
             public Void call() throws Exception {
                 ServerSocket ss = new ServerSocket();

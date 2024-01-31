@@ -7,22 +7,21 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.lab.interceptor.CutPoint;
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.nanocloud.telecontrol.isolate.IsolateRemoteSessionWrapper;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViEngine.Interceptor;
 import org.gridkit.vicluster.ViEngine.Phase;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
-import org.gridkit.vicluster.ViExecutor;
 import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 public class InstrumentationInitializer implements Interceptor {
 
     public static final String INITIALIZER_NAME = "interceptor-support";
     public static InstrumentationInitializer INSTANCE = new InstrumentationInitializer();
 
-    public static void configureIsolate(AdvancedExecutor exec) {
+    public static void configureIsolate(DirectRemoteExecutor exec) {
         final List<String> shared = new ArrayList<String>();
         shared.add(IsolateInstrumentationSupport.class.getName());
         shared.add(CutPoint.class.getName());
@@ -87,7 +86,7 @@ public class InstrumentationInitializer implements Interceptor {
     }
 
     @Override
-    public void processAdHoc(String name, ViExecutor node) {
+    public void processAdHoc(String name, DirectRemoteExecutor node) {
         // TODO verify instrumentation support
     }
 }

@@ -12,10 +12,10 @@ import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.Random;
 
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Nanocloud;
 import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViNode;
 import org.gridkit.nanocloud.testutil.JvmVersionCheck;
-import org.gridkit.vicluster.ViNode;
 import org.junit.Assume;
 import org.junit.Test;
 import org.springframework.boot.SpringApplication;
@@ -35,6 +35,7 @@ import javassist.bytecode.annotation.Annotation;
 public class ClasspathUtilsTest {
 
     @Test
+    @SuppressWarnings("resource")
     public void verify_jar_has_dir_entry() throws Exception {
         final File baseDir = new File("target/testJarFiles/" + System.currentTimeMillis());
         new File(baseDir, "1").mkdirs();
@@ -96,15 +97,10 @@ public class ClasspathUtilsTest {
     public void verify_spring_data_jpa_can_be_fallbacked_to_default_package(){
         // if package does not exists, then spring-data-jpa fallback to default package.
         // See org.springframework.orm.jpa.persistenceunit.DefaultPersistenceUnitManager.defaultPersistenceUnitRootLocation
-        ViNode node = CloudFactory.createCloud().node("node");
+        ViNode node = Nanocloud.createCloud().node("node");
         node.x(VX.TYPE).setLocal();
         node.x(VX.CLASSPATH).useShallowClasspath(false);
-        node.exec(new Runnable() {
-            @Override
-            public void run() {
-                JpaSpringApplication.main(new String[0]);
-            }
-        });
+        node.exec(() -> JpaSpringApplication.main(new String[0]));
     }
 
     @EntityScan("com.unexisting.package")

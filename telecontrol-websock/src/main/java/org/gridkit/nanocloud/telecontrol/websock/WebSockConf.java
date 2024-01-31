@@ -3,9 +3,9 @@ package org.gridkit.nanocloud.telecontrol.websock;
 import static org.gridkit.nanocloud.VX.REMOTE;
 
 import org.gridkit.nanocloud.RemoteEx;
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViConfigurable;
 import org.gridkit.nanocloud.viengine.Pragma;
-import org.gridkit.vicluster.ViConfExtender;
-import org.gridkit.vicluster.ViConfigurable;
 
 public class WebSockConf extends RemoteEx<WebSockConf> {
 

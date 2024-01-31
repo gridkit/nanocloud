@@ -9,6 +9,6 @@ class LocalNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
     @Override
     protected void configureHostControlConsoleSubphase(PragmaWriter config) {
         super.configureHostControlConsoleSubphase(config);
-        cloudSingleton(config, Pragma.RUNTIME_HOST_CONTROL_CONSOLE, LocalControlConsole.class, "terminate");
+        cloudSingleton(config, Pragma.RUNTIME_HOST_CONTROL_CONSOLE, LocalControlConsole.class, LocalControlConsole::terminate);
     }
 }

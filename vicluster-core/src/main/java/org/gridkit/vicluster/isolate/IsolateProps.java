@@ -18,7 +18,7 @@ package org.gridkit.vicluster.isolate;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.nanocloud.ViConfigurable;
 import org.gridkit.vicluster.ViNodeProps;
 
 /**

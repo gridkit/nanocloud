@@ -3,14 +3,14 @@ package org.gridkit.nanocloud.test.junit;
 import java.util.Collection;
 
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.CloudFactory;
-import org.gridkit.vicluster.ViConfExtender;
-import org.gridkit.vicluster.ViNode;
+import org.gridkit.nanocloud.Nanocloud;
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViNode;
 import org.junit.rules.ExternalResource;
 
 public class DisposableCloud extends ExternalResource implements CloudRule {
 
-    private Cloud cloud = CloudFactory.createCloud();
+    private Cloud cloud = Nanocloud.createCloud();
 
     @Override
     protected void after() {
@@ -27,22 +27,22 @@ public class DisposableCloud extends ExternalResource implements CloudRule {
     }
 
     @Override
-	public ViNode node(String nameOrSelector) {
+    public ViNode node(String nameOrSelector) {
         return cloud.node(nameOrSelector);
     }
 
     @Override
-	public ViNode nodes(String... nameOrSelector) {
+    public ViNode nodes(String... nameOrSelector) {
         return cloud.nodes(nameOrSelector);
     }
 
     @Override
-	public Collection<ViNode> listNodes(String nameOrSelector) {
+    public Collection<ViNode> listNodes(String nameOrSelector) {
         return cloud.listNodes(nameOrSelector);
     }
 
     @Override
-	public void shutdown() {
+    public void shutdown() {
         cloud.shutdown();
     }
 }

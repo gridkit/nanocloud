@@ -16,11 +16,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.gridkit.nanocloud.VX;
+import org.gridkit.vicluster.ViNodeSet;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class SocketCloseCheck {
 
     @Test
@@ -30,31 +31,32 @@ public class SocketCloseCheck {
 
     @Test
     public void cbox1_ping() throws UnknownHostException, IOException {
-        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        ViNodeSet cloud = SimpleCloudFactory.createSimpleSshCloud();
         cloud.node("cbox1").exec(new Runnable() {
             @Override
             public void run() {
             }
         });
     }
-    
+
+    @SuppressWarnings("resource")
     @Test
     public void verify_cbox_cluster() throws UnknownHostException, IOException, InterruptedException, ExecutionException, TimeoutException {
-        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        ViNodeSet cloud = SimpleCloudFactory.createSimpleSshCloud();
 //        Cloud cloud = CloudFactory.createCloud();
 //        cloud.node("cbox1").x(VX.TYPE).setLocal();
-//        final String targetHost = "127.0.0.1"; 
-        final String targetHost = "cbox1"; 
-        
+//        final String targetHost = "127.0.0.1";
+        final String targetHost = "cbox1";
+
         cloud.node("cbox1");
-        
+
         final CountDownLatch latch = new CountDownLatch(1);
         final RemoteLatch rlatch = new RemoteLatch() {
             @Override
             public void open() {
-                latch.countDown();                
+                latch.countDown();
             }
-            
+
             @Override
             public void await() {
                 try {
@@ -98,10 +100,10 @@ public class SocketCloseCheck {
                     byteCount += n;
                 }
                 System.out.println("Total read: " + byteCount);
-                return null;                
+                return null;
             }
         });
-        
+
         latch.await();
         Thread.sleep(100);
         System.out.println("Connecting to socket");
@@ -119,7 +121,7 @@ public class SocketCloseCheck {
         long t = System.nanoTime();
         sock.getOutputStream().close();
         System.out.println("Close time " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t));
-        
+
         server.get(60, TimeUnit.SECONDS);
         System.out.println("flushing ...");
         cloud.node("cbox1").x(VX.CONSOLE).flush();
@@ -128,16 +130,16 @@ public class SocketCloseCheck {
 
     @Test
     public void verify_read_timeout() throws UnknownHostException, IOException, InterruptedException, ExecutionException, TimeoutException {
-        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
-        final String targetHost = "cbox1"; 
-        
+        ViNodeSet cloud = SimpleCloudFactory.createSimpleSshCloud();
+        final String targetHost = "cbox1";
+
         cloud.node(targetHost);
-        
+
         final CountDownLatch latch = new CountDownLatch(1);
         final RemoteLatch rlatch = new RemoteLatch() {
             @Override
             public void open() {
-                latch.countDown();                
+                latch.countDown();
             }
 
             @Override
@@ -151,6 +153,7 @@ public class SocketCloseCheck {
 
         final int port = 33034;
         cloud.node(targetHost).submit(new Callable<Void>() {
+            @SuppressWarnings("resource")
             @Override
             public Void call() throws IOException, InterruptedException {
                 ServerSocket sock = new ServerSocket();
@@ -164,11 +167,12 @@ public class SocketCloseCheck {
                 soc.getOutputStream().write(100);
                 soc.shutdownOutput();
                 soc.shutdownInput();
-                return null;                
+                return null;
             }
         });
-        
+
         Thread.sleep(5000);
+        @SuppressWarnings("resource")
         Socket sock = new Socket();
         InetSocketAddress endpoint = new InetSocketAddress("192.168.100.201", port);
         System.out.println("Connecting to socket: " + endpoint);
@@ -183,16 +187,16 @@ public class SocketCloseCheck {
         sock.setSoTimeout(100000);
         latch.countDown();
         System.out.println("Read from socket: " + sock.getInputStream().read());
-        
+
         System.out.println("flushing ...");
         cloud.node("cbox1").x(VX.CONSOLE).flush();
         System.out.println("... done");
     }
-    
+
     public interface RemoteLatch extends Remote {
-        
+
         public void open();
-        
+
         public void await();
     }
 }

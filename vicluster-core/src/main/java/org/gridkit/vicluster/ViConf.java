@@ -13,6 +13,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.gridkit.nanocloud.ViConfigurable;
+import org.gridkit.nanocloud.ViConfigurable.Delegate;
+import org.gridkit.nanocloud.ViNodeControl;
 import org.gridkit.nanocloud.telecontrol.HostControlConsole;
 import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
@@ -21,7 +24,6 @@ import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
 import org.gridkit.nanocloud.viengine.Pragma;
 import org.gridkit.nanocloud.viengine.ProcessLifecycleListener;
 import org.gridkit.util.concurrent.FutureEx;
-import org.gridkit.vicluster.ViConfigurable.Delegate;
 import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
@@ -29,6 +31,7 @@ import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
 import org.gridkit.zeroio.WriterOutputStream;
 
+@SuppressWarnings("deprecation")
 public class ViConf extends GenericConfig implements ViSpiConfig {
 
 
@@ -605,6 +608,7 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
     }
 
     public static class JvmConf extends Delegate {
+
         private static AtomicLong ANON_COUNTER = new AtomicLong();
 
         private ViConfigurable conf;
@@ -748,19 +752,20 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
         }
     }
 
-    public static class RuntimeEx extends ViNode.Delegate {
+    public static class RuntimeEx implements ViNodeControl, ViConfigurable {
 
-        public static RuntimeEx at(ViNode node) {
+        private ViNodeControl node;
+
+        public static RuntimeEx at(ViNodeControl node) {
             return new RuntimeEx(node);
         }
 
-        public RuntimeEx(ViNode node) {
-            super(node);
+        public RuntimeEx(ViNodeControl node) {
+            this.node = node;
         }
 
-        @Override
-        protected ViNode getDelegate() {
-            return super.getDelegate();
+        protected ViNodeControl getDelegate() {
+            return node;
         }
 
         @SuppressWarnings("unchecked")
@@ -771,6 +776,51 @@ public class ViConf extends GenericConfig implements ViSpiConfig {
         public Integer exitCode() {
             String ec = getDelegate().getProp(RUNTIME_EXIT_CODE);
             return ec == null ? null : Integer.valueOf(ec);
+        }
+
+        @Override
+        public String getProp(String propName) {
+            return node.getProp(propName);
+        }
+
+        @Override
+        public Object getPragma(String pragmaName) {
+            return node.getPragma(pragmaName);
+        }
+
+        @Override
+        public void touch() {
+            node.touch();
+        }
+
+        @Override
+        public void kill() {
+            node.kill();
+        }
+
+        @Override
+        public void shutdown() {
+            node.shutdown();
+        }
+
+        @Override
+        public void setProp(String propName, String value) {
+            ((ViConfigurable)node).setProp(propName, value);
+        }
+
+        @Override
+        public void setProps(Map<String, String> props) {
+            ((ViConfigurable)node).setProps(props);
+        }
+
+        @Override
+        public void setConfigElement(String key, Object value) {
+            ((ViConfigurable)node).setConfigElement(key, value);
+        }
+
+        @Override
+        public void setConfigElements(Map<String, Object> config) {
+            ((ViConfigurable)node).setConfigElements(config);
         }
 
         public int join() {

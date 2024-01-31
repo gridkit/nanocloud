@@ -311,6 +311,7 @@ public class LocalControlConsoleTest  {
         System.err.write(perr.toByteArray());
     }
 
+    @SuppressWarnings("resource")
     @Test
     public void verify_tunneled_connection() throws IOException, InterruptedException, ExecutionException {
 
@@ -362,6 +363,7 @@ public class LocalControlConsoleTest  {
     }
 
     // TODO should support disposable sockets
+    @SuppressWarnings("resource")
     @Test
     //@Ignore("See TODO")
     public void verify_multi_bind_tunneled_connection() throws IOException, InterruptedException, ExecutionException {

@@ -18,6 +18,7 @@ package org.gridkit.util.concurrent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -29,200 +30,219 @@ import java.util.concurrent.TimeoutException;
 public class FutureBox<V> implements FutureEx<V>, Box<V> {
 
 
-	private static boolean STOPPABLE = false;
-	private static final long STOPPABLE_WAIT_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
-	
-	/**
-	 * This is a hack to make JUnit timeouts, relaying on {@link Thread#stop()} work some how.
-	 */
-	static void enableStoppability(boolean stoppability) {
-		STOPPABLE = stoppability;
-	}
-	
-	public static <T> FutureEx<T> dataFuture(T data) {
-		FutureBox<T> fb = new FutureBox<T>();
-		fb.setData(data);
-		return fb;
-	}
+    private static boolean STOPPABLE = false;
+    private static final long STOPPABLE_WAIT_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
 
-	public static <T> FutureEx<T> errorFuture(Exception e) {
-		FutureBox<T> fb = new FutureBox<T>();
-		fb.setError(e);
-		return fb;
-	}
-	
-	private final FutureTask<V> ft = new FutureTask<V>(new Callable<V>() {
-		@Override
-		public V call() throws Exception {
-			synchronized(FutureBox.this) {
-				if (!finalized) {
-					throw new Error("Unexpected call time");
-				}
-				else {
-					if (error != null) {
-						AnyThrow.throwUncheked(error);
-						throw new Error("Unreachable");
-					}
-					else {
-						return value;
-					}
-				}
-			}
-		}
-	});
-	
-	private boolean finalized;
-	private V value;
-	private Throwable error;
-	private List<Box<? super V>> triggers;
+    /**
+     * This is a hack to make JUnit timeouts, relaying on {@link Thread#stop()} work some how.
+     */
+    static void enableStoppability(boolean stoppability) {
+        STOPPABLE = stoppability;
+    }
 
-	@Override
-	public synchronized void setData(V data) {
-		if (finalized) {
-			throw new IllegalStateException("Box is closed");
-		}
-		else {
-			finalized = true;
-			value = data;
-			ft.run();
-			notifyTriggers();
-		}		
-	}
+    public static <T> FutureEx<T> dataFuture(T data) {
+        FutureBox<T> fb = new FutureBox<T>();
+        fb.setData(data);
+        return fb;
+    }
 
-	@Override
-	public synchronized void setError(Throwable e) {
-		if (finalized) {
-			throw new IllegalStateException("Box is closed");
-		}
-		else {
-			finalized = true;
-			error = e;
-			ft.run();
-			notifyTriggers();
-		}		
-	}
+    public static <T> FutureEx<T> errorFuture(Exception e) {
+        FutureBox<T> fb = new FutureBox<T>();
+        fb.setError(e);
+        return fb;
+    }
 
-	public synchronized void setErrorIfWaiting(Throwable e) {
-		if (finalized) {
-			return;
-		}
-		else {
-			finalized = true;
-			error = e;
-			ft.run();
-			notifyTriggers();
-		}		
-	}
+    private final FutureTask<V> ft = new FutureTask<V>(new Callable<V>() {
+        @Override
+        public V call() throws Exception {
+            synchronized(FutureBox.this) {
+                if (!finalized) {
+                    throw new Error("Unexpected call time");
+                }
+                else {
+                    if (error != null) {
+                        AnyThrow.throwUncheked(error);
+                        throw new Error("Unreachable");
+                    }
+                    else {
+                        return value;
+                    }
+                }
+            }
+        }
+    });
 
-	private void notifyTriggers() {
-		if (triggers != null) {
-			for(Box<? super V> r: triggers) {
-				try {
-					pushToBox(r);
-				}
-				catch(Exception e) {
-					Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
-				}
-			}
-			triggers = null;
-		}
-	}
+    private boolean finalized;
+    private V value;
+    private Throwable error;
+    private List<Box<? super V>> triggers;
 
-	private void pushToBox(Box<? super V> r) {
-		if (error != null) {
-			r.setError(error);
-		}
-		else {
-			r.setData(value);
-		}
-	}
+    public void capture(Runnable task) {
+        try {
+            task.run();
+            setData(null);
+        } catch (Exception e) {
+            setErrorIfWaiting(e);
+        }
+    }
 
-	
-	@Override
-	public synchronized void addListener(Box<? super V> box) {
-		if (finalized) {
-			pushToBox(box);
-		}
-		else {
-			if (triggers == null) {
-				triggers = new ArrayList<Box<? super V>>();
-			}
-			triggers.add(box);
-		}		
-	}
+    public void capture(Callable<V> task) {
+        try {
+            setData(task.call());
+        } catch (Exception e) {
+            setErrorIfWaiting(e);
+        }
+    }
 
-	@Override
-	public boolean cancel(boolean mayInterruptIfRunning) {
-		return ft.cancel(mayInterruptIfRunning);
-	}
-	
-	@Override
-	public boolean isCancelled() {
-		return ft.isCancelled();
-	}
-	
-	@Override
-	public boolean isDone() {
-		return ft.isDone();
-	}
-	
-	@Override
-	public V get() throws InterruptedException, ExecutionException {
-		if (STOPPABLE) {
-			try {
-				return getStoppable(-1, TimeUnit.NANOSECONDS);
-			} catch (TimeoutException e) {
-				throw new Error("Should never happen");
-			}
-		}
-		else {
-			return ft.get();
-		}
-	}
+    @Override
+    public synchronized void setData(V data) {
+        if (finalized) {
+            throw new IllegalStateException("Box is closed");
+        }
+        else {
+            finalized = true;
+            value = data;
+            ft.run();
+            notifyTriggers();
+        }
+    }
 
-	@Override
-	public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-		if (STOPPABLE) {
-			return getStoppable(timeout, unit);
-		}
-		else {
-			return ft.get(timeout, unit);
-		}
-	}
+    @Override
+    public synchronized void setError(Throwable e) {
+        if (finalized) {
+            throw new IllegalStateException("Box is closed");
+        }
+        else {
+            finalized = true;
+            error = e;
+            ft.run();
+            notifyTriggers();
+        }
+    }
 
-	private V getStoppable(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-		long deadline = timeout == -1 ? Long.MAX_VALUE : System.nanoTime() + unit.toNanos(timeout);
-		while(true) {
-			long to = deadline - System.nanoTime();
-			if (to < 0) {
-				to = 0;
-			}
-			else if (to > STOPPABLE_WAIT_INTERVAL) {
-				to = STOPPABLE_WAIT_INTERVAL;				
-			}
-			try {
-				return ft.get(to, TimeUnit.NANOSECONDS);
-			}
-			catch(TimeoutException e) {
-				if (deadline < System.nanoTime()) {
-					throw e;
-				}
-				else {
-					continue;
-				}
-			}
-		}
-	}
-	
-	private static class AnyThrow {
+    public synchronized void setErrorIfWaiting(Throwable e) {
+        if (finalized) {
+            return;
+        }
+        else {
+            finalized = true;
+            error = e;
+            ft.run();
+            notifyTriggers();
+        }
+    }
 
-	    public static void throwUncheked(Throwable e) {
-	        AnyThrow.<RuntimeException>throwAny(e);
-	    }
-	   
-	    @SuppressWarnings("unchecked")
-	    private static <E extends Throwable> void throwAny(Throwable e) throws E {
-	        throw (E)e;
-	    }
-	}	
+    private void notifyTriggers() {
+        if (triggers != null) {
+            for(Box<? super V> r: triggers) {
+                try {
+                    pushToBox(r);
+                }
+                catch(Exception e) {
+                    Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
+                }
+            }
+            triggers = null;
+        }
+    }
+
+    private void pushToBox(Box<? super V> r) {
+        if (error != null) {
+            r.setError(error);
+        }
+        else {
+            r.setData(value);
+        }
+    }
+
+
+    @Override
+    public synchronized void addListener(Box<? super V> box) {
+        if (finalized) {
+            pushToBox(box);
+        }
+        else {
+            if (triggers == null) {
+                triggers = new ArrayList<Box<? super V>>();
+            }
+            triggers.add(box);
+        }
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+        boolean result = ft.cancel(mayInterruptIfRunning);
+        setErrorIfWaiting(new CancellationException());
+        return result;
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return ft.isCancelled();
+    }
+
+    @Override
+    public boolean isDone() {
+        return ft.isDone();
+    }
+
+    @Override
+    public V get() throws InterruptedException, ExecutionException {
+        if (STOPPABLE) {
+            try {
+                return getStoppable(-1, TimeUnit.NANOSECONDS);
+            } catch (TimeoutException e) {
+                throw new Error("Should never happen");
+            }
+        }
+        else {
+            return ft.get();
+        }
+    }
+
+    @Override
+    public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        if (STOPPABLE) {
+            return getStoppable(timeout, unit);
+        }
+        else {
+            return ft.get(timeout, unit);
+        }
+    }
+
+    private V getStoppable(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        long deadline = timeout == -1 ? Long.MAX_VALUE : System.nanoTime() + unit.toNanos(timeout);
+        while(true) {
+            long to = deadline - System.nanoTime();
+            if (to < 0) {
+                to = 0;
+            }
+            else if (to > STOPPABLE_WAIT_INTERVAL) {
+                to = STOPPABLE_WAIT_INTERVAL;
+            }
+            try {
+                return ft.get(to, TimeUnit.NANOSECONDS);
+            }
+            catch(TimeoutException e) {
+                if (deadline < System.nanoTime()) {
+                    throw e;
+                }
+                else {
+                    continue;
+                }
+            }
+        }
+    }
+
+    private static class AnyThrow {
+
+        public static void throwUncheked(Throwable e) {
+            AnyThrow.<RuntimeException>throwAny(e);
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <E extends Throwable> void throwAny(Throwable e) throws E {
+            throw (E)e;
+        }
+    }
 }

@@ -17,26 +17,34 @@ package org.gridkit.vicluster;
 
 import java.util.Collection;
 
-import org.gridkit.nanocloud.Cloud;
+import org.gridkit.nanocloud.ViConfExtender;
 
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
-public interface ViNodeSet extends Cloud {
+public interface ViNodeSet {
 
-	/**
-	 * Return node by name (or group of nodes for pattern).
-	 */
-	public ViNode node(String namePattern);
+    /**
+     * Return node by name (or group of nodes for pattern).
+     */
+    public ViNode node(String namePattern);
 
-	public ViNode nodes(String... namePatterns);
+    public ViNode nodes(String... namePatterns);
 
-	/**
-	 * List non-terminated nodes matching namePattern
-	 */	
-	public Collection<ViNode> listNodes(String namePattern);
-	
-	public void shutdown();
+    /**
+     * Syntax sugar for
+     * <code>
+     * 		code.nodes("**").x(...);
+     * </code>
+     */
+    public <X> X x(ViConfExtender<X> extender);
+
+    /**
+     * List non-terminated nodes matching namePattern
+     */
+    public Collection<ViNode> listNodes(String namePattern);
+
+    public void shutdown();
 
 }

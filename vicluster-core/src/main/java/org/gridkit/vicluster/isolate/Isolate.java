@@ -557,6 +557,12 @@ public class Isolate {
     }
 
     @SuppressWarnings("unchecked")
+    public <V> V execNoMarshal(Callable<V> task) {
+        CallableWorkUnit<V> wu = new CallableWorkUnit<V>(task);
+        return (V) process(wu);
+    }
+
+    @SuppressWarnings("unchecked")
     public <V> V exec(Callable<V> task) {
         CallableWorkUnit<V> wu = new CallableWorkUnit<V>((Callable<V>) convertIn(task));
         return (V) convertOut(process(wu));
@@ -2141,7 +2147,7 @@ public class Isolate {
 
         protected ThreadLocal<Boolean> INSIDE = new ThreadLocal<Boolean>() {
             @Override
-			protected Boolean initialValue() {
+            protected Boolean initialValue() {
                 return Boolean.FALSE;
             };
         };

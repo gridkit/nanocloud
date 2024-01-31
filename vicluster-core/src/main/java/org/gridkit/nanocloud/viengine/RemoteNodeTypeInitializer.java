@@ -4,6 +4,7 @@ import static org.gridkit.nanocloud.viengine.NodeConfigHelper.action;
 import static org.gridkit.nanocloud.viengine.NodeConfigHelper.addPrePhase;
 import static org.gridkit.nanocloud.viengine.NodeConfigHelper.cloudSingleton;
 import static org.gridkit.nanocloud.viengine.NodeConfigHelper.setDefault;
+import static org.gridkit.nanocloud.viengine.NodeConfigHelper.setLazyDefault;
 
 import java.util.concurrent.ExecutionException;
 
@@ -25,6 +26,18 @@ class RemoteNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
         setDefault(config, RemoteEx.JAR_CACHE_PATH, "/tmp/.nanocloud");
         // shallow classpath is no supported
         config.set(ViConf.CLASSPATH_USE_SHALLOW, "false");
+        setLazyDefault(config, RemoteEx.REMOTE_TARGET_URL, new LazyPragma() {
+
+            @Override
+            public Object resolve(String key, PragmaReader context) {
+                String defaultSchema = context.get(Pragma.REMOTE_SCHEME_DEFAULT);
+                if (defaultSchema != null && context.get(RemoteEx.HOST) != null) {
+                    return defaultSchema + "://" + context.get(RemoteEx.HOST);
+                } else {
+                    return null;
+                }
+            }
+        });
     }
 
     @Override
@@ -35,7 +48,7 @@ class RemoteNodeTypeInitializer extends SlaveJvmNodeTypeInitializer {
 
     @Override
     protected void configureHostControlConsoleSubphase(PragmaWriter config) {
-        cloudSingleton(config, Pragma.RUNTIME_REMOTE_CONNECTION_MANAGE, RemoteControlConnectionManager.class, "terminate");
+        cloudSingleton(config, Pragma.RUNTIME_REMOTE_CONNECTION_MANAGE, RemoteControlConnectionManager.class, RemoteControlConnectionManager::terminate);
 
         NodeConfigHelper.passivePragma(config, "remote-protocol");
         NodeConfigHelper.passivePragma(config, "remote-protocol-connector");

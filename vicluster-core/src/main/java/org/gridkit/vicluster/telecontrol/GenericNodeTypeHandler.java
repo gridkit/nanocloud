@@ -263,9 +263,10 @@ public abstract class GenericNodeTypeHandler implements ViEngine.InductiveRule {
                 else {
                     boolean result = false;
                     if (file.isFile()) {
-                        ZipFile zipFile = new ZipFile(file);
-                        ZipEntry gridKitEntry = zipFile.getEntry("org/gridkit");
-                        result =  gridKitEntry != null;
+                        try (ZipFile zipFile = new ZipFile(file)) {
+                            ZipEntry gridKitEntry = zipFile.getEntry("org/gridkit");
+                            result =  gridKitEntry != null;
+                        }
                     } else if (file.isDirectory()) {
                         File gridKitPackage = new File(new File(file, "org"), "gridkit");
                         result = gridKitPackage.isDirectory();

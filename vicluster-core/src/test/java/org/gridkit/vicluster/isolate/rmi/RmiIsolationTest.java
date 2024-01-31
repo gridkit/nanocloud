@@ -26,97 +26,95 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.Callable;
 
-import org.gridkit.vicluster.ViManager;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.isolate.IsolateViNodeProvider;
-import org.gridkit.vicluster.telecontrol.isolate.IsolateAwareNodeProvider;
+import org.gridkit.vicluster.isolate.IsolateViNode;
 import org.junit.After;
 import org.junit.Test;
 
 @SuppressWarnings("deprecation")
 public class RmiIsolationTest {
 
-	ViManager cloud = new ViManager(new IsolateAwareNodeProvider());
-	
-	private ViNode createIsolateViHost(String name) {
-		return cloud.node(name);
-	}
-	
+    ViNode node1;
+    ViNode node2;
+
     @After
-	public void cleanIsolates() {
-		cloud.shutdown();
-		cloud = new ViManager(new IsolateViNodeProvider());
-	}
-	
+    public void cleanIsolates() {
+        if (node1 != null) {
+            node1.shutdown();
+        }
+        if (node2 != null) {
+            node2.shutdown();
+        }
+    }
 
-	/**
-	 * Verifies that RMI will use correct context class loader for deserializing requests.
-	 */
-	@Test
-	public void verify_isolate_connectivity() {
-		
-		ViNode node1 = createIsolateViHost("node1");
-		ViNode node2 = createIsolateViHost("node2");
-		
-		node1.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				
-				PingServer server = new PingServer();
-				Remote serverStub = UnicastRemoteObject.exportObject(server, 0);
-				
-				Registry reg = LocateRegistry.createRegistry(10000);
-				reg.bind("ping", serverStub);
-				
-				reg = LocateRegistry.getRegistry(10000);
-				
-				RemotePing rping = (RemotePing) reg.lookup("ping");
-				
-				PingObject ping = new PingObject("pong");
-				System.out.println("Ping: " + ping.getClass().getClassLoader());
-				assertThat(rping.ping(ping), is("pong"));
-				return null;
-			}
-		});
+    /**
+     * Verifies that RMI will use correct context class loader for deserializing requests.
+     */
+    @Test
+    public void verify_isolate_connectivity() {
 
-		node2.exec(new Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				
-				Registry reg = LocateRegistry.getRegistry(10000);
-				
-				RemotePing rping = (RemotePing) reg.lookup("ping");
-				
-				PingObject ping = new PingObject("pong");
-				System.out.println("Ping: " + ping.getClass().getClassLoader());
-				assertThat(rping.ping(ping), is("pong"));
-				return null;
-			}
-		});
-		
-	}
-	
-	
-	public static interface RemotePing extends Remote {
-		
-		public String ping(PingObject ping) throws RemoteException;
-	}
-	
-	public static class PingServer implements RemotePing {
-		@Override
-		public String ping(PingObject ping) throws RemoteException {
-			System.out.println("Pong: " + ping.getClass().getClassLoader());
-			return ping.pong;
-		}
-	}
-	
-	@SuppressWarnings("serial")
-	public static class PingObject implements Serializable {
-		
-		public String pong;
+        node1 = new IsolateViNode("node1");
+        node2 = new IsolateViNode("node2");
 
-		public PingObject(String pong) {
-			this.pong = pong;
-		}
-	}
+        node1.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+
+                PingServer server = new PingServer();
+                Remote serverStub = UnicastRemoteObject.exportObject(server, 0);
+
+                Registry reg = LocateRegistry.createRegistry(10000);
+                reg.bind("ping", serverStub);
+
+                reg = LocateRegistry.getRegistry(10000);
+
+                RemotePing rping = (RemotePing) reg.lookup("ping");
+
+                PingObject ping = new PingObject("pong");
+                System.out.println("Ping: " + ping.getClass().getClassLoader());
+                assertThat(rping.ping(ping), is("pong"));
+                return null;
+            }
+        });
+
+        node2.exec(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+
+                Registry reg = LocateRegistry.getRegistry(10000);
+
+                RemotePing rping = (RemotePing) reg.lookup("ping");
+
+                PingObject ping = new PingObject("pong");
+                System.out.println("Ping: " + ping.getClass().getClassLoader());
+                assertThat(rping.ping(ping), is("pong"));
+                return null;
+            }
+        });
+
+    }
+
+
+    public static interface RemotePing extends Remote {
+
+        public String ping(PingObject ping) throws RemoteException;
+    }
+
+    public static class PingServer implements RemotePing {
+        @Override
+        public String ping(PingObject ping) throws RemoteException {
+            System.out.println("Pong: " + ping.getClass().getClassLoader());
+            return ping.pong;
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class PingObject implements Serializable {
+
+        public String pong;
+
+        public PingObject(String pong) {
+            this.pong = pong;
+        }
+    }
 }

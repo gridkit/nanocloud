@@ -154,9 +154,11 @@ class PragmaMap implements PragmaReader, PragmaWriter, Cloneable {
                 keys.add(key);
             }
             value = lazy.resolve(key, this);
-            values.put(key, value);
-            onUpdate(key);
-            return (T)value;
+            if (value != null) {
+                values.put(key, value);
+                onUpdate(key);
+                return (T)value;
+            }
         }
         String defaultKey = Pragma.DEFAULT + key;
         value = getValue(defaultKey);

@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 import org.gridkit.nanocloud.MagicProps;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.hub.SlaveSpore;
@@ -29,7 +29,7 @@ class IsolatedRemoteSession implements RemoteExecutionSession {
     }
 
     @Override
-    public AdvancedExecutor getRemoteExecutor() {
+    public DirectRemoteExecutor getRemoteExecutor() {
         return nested.getRemoteExecutor();
     }
 

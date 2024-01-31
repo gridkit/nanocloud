@@ -17,31 +17,26 @@ package org.gridkit.vicluster.telecontrol.jvm;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
-import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViNodeExtender;
 import org.gridkit.vicluster.AdvExecutor2ViExecutor;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViEngine;
-import org.gridkit.vicluster.ViExecutor;
-import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeExtender;
-import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.ViNodeCore;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 /**
  *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 @SuppressWarnings("deprecation")
-class ViEngineNode implements ViNode {
+class ViEngineNode implements ViNodeCore {
 
     private ViEngine engine;
-    private ViExecutor execProxy;
+    private DirectRemoteExecutor executor;
 
     public ViEngineNode(ViEngine engine) {
         this.engine = engine;
@@ -58,7 +53,7 @@ class ViEngineNode implements ViNode {
         if (mp == null) {
             throw new RuntimeException("Cannot create node, ManagedProcess is not available");
         }
-        execProxy = new ExecProxy(mp.getExecutionService());
+        executor = mp.getExecutionService();
     }
 
     @Override
@@ -77,53 +72,8 @@ class ViEngineNode implements ViNode {
     }
 
     @Override
-	public void exec(Runnable task) {
-        execProxy.exec(task);
-    }
-
-    @Override
-	public void exec(VoidCallable task) {
-        execProxy.exec(task);
-    }
-
-    @Override
-	public <T> T exec(Callable<T> task) {
-        return execProxy.exec(task);
-    }
-
-    @Override
-	public Future<Void> submit(Runnable task) {
-        return execProxy.submit(task);
-    }
-
-    @Override
-	public Future<Void> submit(VoidCallable task) {
-        return execProxy.submit(task);
-    }
-
-    @Override
-	public <T> Future<T> submit(Callable<T> task) {
-        return execProxy.submit(task);
-    }
-
-    @Override
-	public <T> List<T> massExec(Callable<? extends T> task) {
-        return execProxy.massExec(task);
-    }
-
-    @Override
-	public List<Future<Void>> massSubmit(Runnable task) {
-        return execProxy.massSubmit(task);
-    }
-
-    @Override
-	public List<Future<Void>> massSubmit(VoidCallable task) {
-        return execProxy.massSubmit(task);
-    }
-
-    @Override
-	public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-        return execProxy.massSubmit(task);
+    public DirectRemoteExecutor executor() {
+        return executor;
     }
 
     @Override
@@ -139,7 +89,7 @@ class ViEngineNode implements ViNode {
             }
         }
         final Map<String, String> copy = new LinkedHashMap<String, String>(props);
-        exec(new Runnable() {
+        AdvExecutor2ViExecutor.exec(executor, new Runnable() {
             @Override
             public void run() {
                 for(String name: copy.keySet()) {
@@ -177,17 +127,5 @@ class ViEngineNode implements ViNode {
     @Override
     public void shutdown() {
         engine.shutdown();
-    }
-
-    private class ExecProxy extends AdvExecutor2ViExecutor {
-
-        public ExecProxy(AdvancedExecutor advExec) {
-            super(advExec);
-        }
-
-        @Override
-        protected AdvancedExecutor getExecutor() {
-            return super.getExecutor();
-        }
     }
 }

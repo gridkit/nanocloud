@@ -15,31 +15,39 @@ import org.gridkit.vicluster.ViConf.ConsoleConf;
 import org.gridkit.vicluster.ViEngine.InductiveRule;
 import org.gridkit.vicluster.ViHelper;
 import org.gridkit.vicluster.ViManager;
+import org.gridkit.vicluster.ViNodeSet;
 import org.gridkit.vicluster.WildProps;
 import org.gridkit.vicluster.telecontrol.jvm.ViEngineNodeProvider;
 
+/**
+ *
+ * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ *
+ *@deprecated See {@link Nanocloud}
+ */
+@Deprecated
 public class CloudFactory {
 
     public static final String PROP_TYPE_HANDLER = "org.gridkit.nanocloud.type-handler.";
 
-    public static Cloud createCloud() {
+    public static ViNodeSet createCloud() {
         ViManager cloud = new ViManager(new ViEngineNodeProvider());
         initDefaultTypeHandlers(cloud);
         ConsoleConf.at(cloud.node("**")).echoPrefix("~[%s] !(.*)");
         return cloud;
     }
 
-    public static Cloud createCloud(String config) {
-        Cloud cloud = createCloud();
+    public static ViNodeSet createCloud(String config) {
+        ViNodeSet cloud = createCloud();
         applyConfig(cloud, config);
         return cloud;
     }
 
-    public static void addType(Cloud cloud, String type, InductiveRule typeHandler) {
+    public static void addType(ViNodeSet cloud, String type, InductiveRule typeHandler) {
         cloud.node("**").setConfigElement(ViConf.TYPE_HANDLER + type, typeHandler);
     }
 
-    public static void addType(Cloud cloud, String type, String className) {
+    public static void addType(ViNodeSet cloud, String type, String className) {
         InductiveRule rule;
         try {
             Class<?> c = Class.forName(className);
@@ -52,7 +60,7 @@ public class CloudFactory {
         cloud.node("**").setConfigElement(ViConf.TYPE_HANDLER + type, rule);
     }
 
-    protected static void initDefaultTypeHandlers(Cloud cloud) {
+    protected static void initDefaultTypeHandlers(ViNodeSet cloud) {
         initInProcessTypeHandler(cloud);
         initIsolateTypeHandler(cloud);
         initLocalTypeHandler(cloud);
@@ -60,19 +68,19 @@ public class CloudFactory {
         initConfiguredTypeHandlers(cloud);
     }
 
-    private static void initInProcessTypeHandler(Cloud cloud) {
+    private static void initInProcessTypeHandler(ViNodeSet cloud) {
         // TODO Implement
     }
 
-    private static void initIsolateTypeHandler(Cloud cloud) {
+    private static void initIsolateTypeHandler(ViNodeSet cloud) {
         addType(cloud, ViConf.NODE_TYPE__ISOLATE, new IsolateNodeTypeHandler());
     }
 
-    private static void initLocalTypeHandler(Cloud cloud) {
+    private static void initLocalTypeHandler(ViNodeSet cloud) {
         addType(cloud, ViConf.NODE_TYPE__LOCAL, new LocalNodeTypeHandler());
     }
 
-    private static void initRemoteTypeHandler(Cloud cloud) {
+    private static void initRemoteTypeHandler(ViNodeSet cloud) {
         try {
             addType(cloud, ViConf.NODE_TYPE__REMOTE, "org.gridkit.nanocloud.telecontrol.ssh.RemoteNodeTypeHandler");
         }
@@ -84,7 +92,7 @@ public class CloudFactory {
     /**
      * Add type handles configure via system properties.
      */
-    protected static void initConfiguredTypeHandlers(Cloud cloud) {
+    protected static void initConfiguredTypeHandlers(ViNodeSet cloud) {
         for(Object k: System.getProperties().keySet()) {
             String key = (String) k;
             if (key.startsWith(PROP_TYPE_HANDLER)) {
@@ -105,7 +113,7 @@ public class CloudFactory {
         }
     }
 
-    public static void applyConfig(Cloud manager, String config) {
+    public static void applyConfig(ViNodeSet manager, String config) {
         try {
             applyConfig(manager, openStream(config));
         } catch (IOException e) {
@@ -113,7 +121,7 @@ public class CloudFactory {
         }
     }
 
-    public static void applyConfig(Cloud manager, Reader reader) {
+    public static void applyConfig(ViNodeSet manager, Reader reader) {
         WildProps wp = new WildProps();
         try {
             wp.load(reader);
@@ -123,7 +131,7 @@ public class CloudFactory {
         ViHelper.configure(manager, wp.entryList());
     }
 
-    public static void applyConfig(Cloud manager, InputStream is) {
+    public static void applyConfig(ViNodeSet manager, InputStream is) {
         WildProps wp = new WildProps();
         try {
             wp.load(is);

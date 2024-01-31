@@ -15,142 +15,146 @@
  */
 package org.gridkit.vicluster.telecontrol.jvm;
 
-import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeProps;
 
 /**
  * Static helper class for setup {@link ViNode} props specific to out-of-process implementations.
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
+ *
+ * @deprecated Use {@link VX#JVM} and {@link VX#CLASSPATH}
  */
+@Deprecated
 public class JvmProps implements ViNodeProps {
 
-	/**
-	 * Read-only process id of JVM
-	 */
+    /**
+     * Read-only process id of JVM
+     */
     @Deprecated
-	public static String PROC_ID = "jvm:proc-id";
-	
-	/**
-	 * JVM classpath extension. Multiple named extensions could be specified.
-	 */	
-	public static String CP_ADD = "jvm:cp-add:"; 
+    public static String PROC_ID = "jvm:proc-id";
 
-	/**
-	 * Removes part of replicated classpath. Multiple named extensions could be specified.
-	 */	
-	public static String CP_REMOVE = "jvm:cp-remove:"; 
+    /**
+     * JVM classpath extension. Multiple named extensions could be specified.
+     */
+    public static String CP_ADD = "jvm:cp-add:";
 
-	/**
-	 * Addition command line options for JVM.
-	 */	
-	public static String JVM_XX = "jvm:xx:";
+    /**
+     * Removes part of replicated classpath. Multiple named extensions could be specified.
+     */
+    public static String CP_REMOVE = "jvm:cp-remove:";
 
-	/**
-	 * Addition command line options for JVM.
-	 */	
-	public static String JVM_WORK_DIR = "jvm:work-dir";
+    /**
+     * Addition command line options for JVM.
+     */
+    public static String JVM_XX = "jvm:xx:";
+
+    /**
+     * Addition command line options for JVM.
+     */
+    public static String JVM_WORK_DIR = "jvm:work-dir";
 
     /**
      * Addition environment variables for JVM.
-     */ 
+     */
     public static String JVM_ENV = "jvm:env:";
-	
-	/**
-	 * JDK version
-	 */	
+
+    /**
+     * JDK version
+     */
     @Deprecated
-	public static String JDK_VERSION = "jdk:version";
+    public static String JDK_VERSION = "jdk:version";
 
-	/**
-	 * CPU Architecture 32 or 64
-	 */	
+    /**
+     * CPU Architecture 32 or 64
+     */
     @Deprecated
-	public static String JDK_ARCH = "jdk:arch";
+    public static String JDK_ARCH = "jdk:arch";
 
-	/**
-	 * Use JRE instead of JDK
-	 */	
+    /**
+     * Use JRE instead of JDK
+     */
     @Deprecated
-	public static String JDK_JRE_ONLY = "jdk:jre-only";
+    public static String JDK_JRE_ONLY = "jdk:jre-only";
 
-	/**
-	 * Use particular vendor
-	 */	
+    /**
+     * Use particular vendor
+     */
     @Deprecated
-	public static String JDK_VENDOR = "jdk:vendor";
+    public static String JDK_VENDOR = "jdk:vendor";
 
-	/**
-	 * Custom clarifier to select JDK
-	 */	
+    /**
+     * Custom clarifier to select JDK
+     */
     @Deprecated
-	public static String JDK_CLARIFIER = "jdk:clarifier";
+    public static String JDK_CLARIFIER = "jdk:clarifier";
 
-	
-	public static JvmProps at(ViConfigurable config) {
-		return new JvmProps(config);
-	}
-	
-	private final ViConfigurable config;
-	
-	protected JvmProps(ViConfigurable config) {
-		this.config = config;
-	}
-	
-	@Deprecated
-	public static void setJvmArg(ViConfigurable config, String string) {
-		config.setProp(JVM_XX + "arg:" + string, string);
-	}
 
-	public static void addJvmArg(ViConfigurable config, String string) {
-		config.setProp(JVM_XX + "arg:" + string, string);
-	}
+    public static JvmProps at(ViConfigurable config) {
+        return new JvmProps(config);
+    }
 
-	public JvmProps addJvmArg(String string) {
-		config.setProp(JVM_XX + "arg:" + string, string);
-		return this;
-	}
+    private final ViConfigurable config;
 
-	public JvmProps addJvmArgs(String... args) {
-		if (args.length == 0) {
-			return this;
-		}
-		else if (args.length == 1) {
-			addJvmArg(args[0]);
-		}
-		else {
-			StringBuilder sb = new StringBuilder();
-			for(String arg: args) {
-				sb.append('|').append(arg);
-			}
-			addJvmArg(sb.toString());
-		}
-		return this;
-	}
+    protected JvmProps(ViConfigurable config) {
+        this.config = config;
+    }
 
-	public JvmProps addClassPathElement(String string) {
-		config.setProp(CP_ADD + string, string);
-		return this;
-	}
+    @Deprecated
+    public static void setJvmArg(ViConfigurable config, String string) {
+        config.setProp(JVM_XX + "arg:" + string, string);
+    }
 
-	public JvmProps removeClassPathElement(String string) {
-		config.setProp(CP_REMOVE + string, string);
-		return this;
-	}
+    public static void addJvmArg(ViConfigurable config, String string) {
+        config.setProp(JVM_XX + "arg:" + string, string);
+    }
 
-	public JvmProps setWorkDir(String workDir) {
-		config.setProp(JVM_WORK_DIR, workDir);
-		return this;
-	}
-	
-	public static void setJvmArg(String logicalName, ViConfigurable config, String string) {
-		config.setProp(JVM_XX + logicalName, string);
-	}
+    public JvmProps addJvmArg(String string) {
+        config.setProp(JVM_XX + "arg:" + string, string);
+        return this;
+    }
 
-	public static void setJvmWorkDir(ViConfigurable config, String workDir) {
-		config.setProp(JVM_WORK_DIR, workDir);
-	}
-	
+    public JvmProps addJvmArgs(String... args) {
+        if (args.length == 0) {
+            return this;
+        }
+        else if (args.length == 1) {
+            addJvmArg(args[0]);
+        }
+        else {
+            StringBuilder sb = new StringBuilder();
+            for(String arg: args) {
+                sb.append('|').append(arg);
+            }
+            addJvmArg(sb.toString());
+        }
+        return this;
+    }
+
+    public JvmProps addClassPathElement(String string) {
+        config.setProp(CP_ADD + string, string);
+        return this;
+    }
+
+    public JvmProps removeClassPathElement(String string) {
+        config.setProp(CP_REMOVE + string, string);
+        return this;
+    }
+
+    public JvmProps setWorkDir(String workDir) {
+        config.setProp(JVM_WORK_DIR, workDir);
+        return this;
+    }
+
+    public static void setJvmArg(String logicalName, ViConfigurable config, String string) {
+        config.setProp(JVM_XX + logicalName, string);
+    }
+
+    public static void setJvmWorkDir(ViConfigurable config, String workDir) {
+        config.setProp(JVM_WORK_DIR, workDir);
+    }
+
     public JvmProps setEnv(String string, String value) {
         setEnv(config, string, value);
         return this;

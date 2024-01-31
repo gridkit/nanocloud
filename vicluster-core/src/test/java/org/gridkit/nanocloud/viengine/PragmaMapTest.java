@@ -10,21 +10,21 @@ public class PragmaMapTest {
     public void test_simple_prop() {
         PragmaMap map = new PragmaMap();
         map.set("prop:x", "x");
-        assertThat(map.get("prop:x")).isEqualTo("x");
+        assertThat(map.<String>get("prop:x")).isEqualTo("x");
     }
 
     @Test
     public void test_simple_default() {
         PragmaMap map = new PragmaMap();
         map.set("default:prop:x", "x");
-        assertThat(map.get("prop:x")).isEqualTo("x");
+        assertThat(map.<String>get("prop:x")).isEqualTo("x");
     }
 
     @Test
     public void test_wild_card_default() {
         PragmaMap map = new PragmaMap();
         map.set("default:prop:*", "x");
-        assertThat(map.get("prop:x")).isEqualTo("x");
+        assertThat(map.<String>get("prop:x")).isEqualTo("x");
     }
 
     @Test
@@ -32,8 +32,8 @@ public class PragmaMapTest {
         PragmaMap map = new PragmaMap();
         map.set("prop:x", "x");
         map.link("prop:y", "prop:x");
-        assertThat(map.get("prop:x")).isEqualTo("x");
-        assertThat(map.get("prop:y")).isEqualTo("x");
+        assertThat(map.<String>get("prop:x")).isEqualTo("x");
+        assertThat(map.<String>get("prop:y")).isEqualTo("x");
         System.out.println(map.describe("prop:y"));
     }
 
@@ -44,7 +44,7 @@ public class PragmaMapTest {
         map.link("prop:y", "prop:x");
         map.get("prop:x");
     }
-    
+
     @Test
     public void test_parametrized_link() {
         PragmaMap map = new PragmaMap();
@@ -52,9 +52,9 @@ public class PragmaMapTest {
         map.set("prop:a", "a");
         map.set("prop:b", "b");
         map.link("prop:x", "prop:${link}");
-        assertThat(map.get("prop:x")).isEqualTo("a");
+        assertThat(map.<String>get("prop:x")).isEqualTo("a");
         map.set("prop:link", "b");
-        assertThat(map.get("prop:x")).isEqualTo("b");        
+        assertThat(map.<String>get("prop:x")).isEqualTo("b");
     }
 
     @Test
@@ -64,9 +64,9 @@ public class PragmaMapTest {
         map.set("prop:a", "a");
         map.set("default:prop:b", "b");
         map.link("prop:x", "prop:${link}");
-        assertThat(map.get("prop:x")).isEqualTo("a");
+        assertThat(map.<String>get("prop:x")).isEqualTo("a");
         map.set("prop:link", "b");
-        assertThat(map.get("prop:x")).isEqualTo("b");        
+        assertThat(map.<String>get("prop:x")).isEqualTo("b");
     }
 
     @Test
@@ -76,9 +76,9 @@ public class PragmaMapTest {
         map.set("prop:a", "a");
         map.set("default:prop:b", "b");
         map.link("default:prop:?", "prop:${link}");
-        assertThat(map.get("prop:x")).isEqualTo("a");
+        assertThat(map.<String>get("prop:x")).isEqualTo("a");
         map.set("prop:link", "b");
-        assertThat(map.get("prop:x")).isEqualTo("b");        
+        assertThat(map.<String>get("prop:x")).isEqualTo("b");
     }
 
     @Test
@@ -88,9 +88,9 @@ public class PragmaMapTest {
         map.set("prop:a", "a");
         map.setLazy("prop:b", new Lazy());
         map.link("default:prop:?", "prop:${link}");
-        assertThat(map.get("prop:x")).isEqualTo("a");
+        assertThat(map.<String>get("prop:x")).isEqualTo("a");
         map.set("prop:link", "b");
-        assertThat(map.get("prop:x")).isEqualTo("lazy+prop:b");        
+        assertThat(map.<String>get("prop:x")).isEqualTo("lazy+prop:b");
     }
 
     @Test
@@ -100,16 +100,16 @@ public class PragmaMapTest {
         map.set("prop:a", "a");
         map.link("prop:x", "prop:${link}");
         map.setLazy("default:prop:*", new Lazy());
-        assertThat(map.get("prop:x")).isEqualTo("a");
+        assertThat(map.<String>get("prop:x")).isEqualTo("a");
         map.set("prop:link", "b");
-        assertThat(map.get("prop:x")).isEqualTo("lazy+prop:b");        
+        assertThat(map.<String>get("prop:x")).isEqualTo("lazy+prop:b");
     }
-    
+
     public static class Lazy implements LazyPragma {
 
         @Override
         public Object resolve(String key, PragmaReader context) {
             return "lazy+" + key;
-        }        
+        }
     }
 }

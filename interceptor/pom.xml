@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.gridkit.lab</groupId>
         <artifactId>vicluster-parent</artifactId>
-        <version>0.8.22-SNAPSHOT</version>        
+        <version>1.0-beta1-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -50,7 +50,7 @@
     </developers>
 
     <properties>
-      <asm.version>5.0.4</asm.version>
+      <asm.version>9.6</asm.version>
     </properties>
 
     <dependencies>
@@ -59,7 +59,7 @@
             <groupId>org.gridkit.lab</groupId>
             <artifactId>vicluster-core</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -69,7 +69,7 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>provided</scope>
-            <optional>true</optional>            
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -83,13 +83,13 @@
             <artifactId>asm-commons</artifactId>
             <version>${asm.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
@@ -107,7 +107,7 @@
                 <configuration>
                     <forkMode>always</forkMode>
                 </configuration>
-            </plugin>            
+            </plugin>
         </plugins>
     </build>
 </project>

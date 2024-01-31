@@ -17,9 +17,8 @@ package org.gridkit.nanocloud;
 
 import org.gridkit.nanocloud.telecontrol.ssh.SshSpiConf;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConfigurable;
-import org.gridkit.vicluster.ViConfExtender;
 import org.gridkit.vicluster.ViEngine;
+import org.gridkit.vicluster.ViManager;
 
 /**
  * Config properties for remote nodes.
@@ -39,14 +38,14 @@ public class RemoteNode extends ViConfigurable.Delegate {
     /**
      * Hint, where to execute process
      */
-    public static String HOST = "remote:host";
+    public static String HOST = RemoteEx.HOST;
 
     /**
      * Hint, which account to use
      */
-    public static String ACCOUNT = "remote:account";
+    public static String ACCOUNT = RemoteEx.ACCOUNT;
 
-    public static String PASSWORD = "remote:password";
+    public static String PASSWORD = RemoteEx.PASSWORD;
 
     public static String SSH_AUTH_METHODS = "remote:ssh-auth-methods";
 
@@ -55,7 +54,7 @@ public class RemoteNode extends ViConfigurable.Delegate {
     /**
      * Hint. remote location for jar cache
      */
-    public static String JAR_CACHE_PATH = "remote:jar-cache-path";
+    public static String JAR_CACHE_PATH = RemoteEx.JAR_CACHE_PATH;
 
     private ViConfigurable config;
 
@@ -81,7 +80,11 @@ public class RemoteNode extends ViConfigurable.Delegate {
         return this;
     }
 
-    public RemoteNode useSimpleRemoting() {
+    /**
+     * Left here for legacy {@link ViManager} implementation.
+     * @return
+     */
+    public RemoteNode useSimpleRemotingForLegacyEngine() {
         setRemoteNodeType();
         setHostsConfigFile("?~/ssh-credentials.prop");
         setConfigElement(RemoteEx.REMOTE_TARGET_URL, "~ssh://%s!(.*)");

@@ -1,8 +1,8 @@
 package org.gridkit.nanocloud.telecontrol.isolate;
 
+import org.gridkit.nanocloud.ViConfigurable;
+import org.gridkit.nanocloud.ViConfigurable.Delegate;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConfigurable;
-import org.gridkit.vicluster.ViConfigurable.Delegate;
 import org.gridkit.vicluster.isolate.IsolateProps;
 
 public class IsolateConfig extends Delegate {

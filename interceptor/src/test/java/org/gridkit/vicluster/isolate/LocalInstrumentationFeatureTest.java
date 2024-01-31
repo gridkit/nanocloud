@@ -16,17 +16,16 @@
 package org.gridkit.vicluster.isolate;
 
 import java.io.Serializable;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Nanocloud;
 import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViNode;
 import org.gridkit.nanocloud.interceptor.Intercept;
-import org.gridkit.vicluster.ViNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,7 +38,7 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
     @Override
     @Before
     public void initCloud() {
-        cloud = CloudFactory.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(VX.TYPE).setLocal();
     }
 
@@ -62,17 +61,16 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
 
         ViNode node = node("test_print_rule");
 
+        Intercept.enableInstrumentationTracing(node, true);
+
         Intercept.callSite()
             .onTypes(System.class)
             .onMethod("currentTimeMillis")
             .doPrint("Call time")
             .apply(node);
 
-        node.exec(new Callable<Long>() {
-            @Override
-            public Long call() throws Exception {
-                return System.currentTimeMillis();
-            }
+        node.calc(() -> {
+            return System.currentTimeMillis();
         });
     }
 
@@ -93,11 +91,8 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
 
         long time = System.currentTimeMillis();
 
-        long itime = node.exec(new Callable<Long>() {
-            @Override
-            public Long call() throws Exception {
-                return System.currentTimeMillis();
-            }
+        long itime = node.calc(() -> {
+            return System.currentTimeMillis();
         });
 
         System.out.println("Node is late by " + (time - itime) + "ms");
@@ -118,17 +113,13 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
             .doInvoke(new LongReturnValueShifter(-111111))
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                try {
-                    explode("test");
-                    Assert.fail("Exception expected");
-                }
-                catch(IllegalStateException e) {
-                    Assert.assertEquals("test", e.getMessage());
-                }
-                return null;
+        node.exec(() -> {
+            try {
+                explode("test");
+                Assert.fail("Exception expected");
+            }
+            catch(IllegalStateException e) {
+                Assert.assertEquals("test", e.getMessage());
             }
         });
     }
@@ -152,12 +143,8 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
             .doReturn(null)
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                System.exit(0);
-                return null;
-            }
+        node.exec(() -> {
+            System.exit(0);
         });
     }
 
@@ -167,7 +154,7 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
 //		System.setProperty("gridkit.isolate.trace-classes", "true");
 //		System.setProperty("gridkit.interceptor.trace", "true");
 
-        ViNode node = node("test_instrumentation_execution_prevention");
+        ViNode node = node("test_instrumentation_execution_prevention2");
 
         Intercept
             .callSite()
@@ -176,14 +163,10 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
             .doReturn(null)
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                System.exit(0);
-                // May be second time?
-                System.exit(0);
-                return null;
-            }
+        node.exec(() -> {
+            System.exit(0);
+            // May be second time?
+            System.exit(0);
         });
     }
 
@@ -202,33 +185,9 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
             .doThrow(new IllegalStateException("Ka-Boom"))
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                System.exit(0);
-                return null;
-            }
+        node.exec(() -> {
+            System.exit(0);
         });
-    }
-
-    private void addValueRule(ViNode node, Object key, Object value) {
-        Intercept
-            .callSite()
-            .onTypes(getClass())
-            .onMethod("getSomething")
-            .matchParams(key)
-            .doReturn(value)
-            .apply(node);
-    }
-
-    private void addErrorRule(ViNode node, Object key, Throwable e) {
-        Intercept
-            .callSite()
-            .onTypes(getClass())
-            .onMethod("getSomething")
-            .matchParams(key)
-            .doThrow(e)
-            .apply(node);
     }
 
     @Override
@@ -246,25 +205,19 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
         addValueRule(node, "B", "bb");
         addErrorRule(node, "X", new IllegalStateException("Just for fun"));
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+        node.exec(() -> {
+            System.out.println("Start evaluation");
 
-                System.out.println("Start evaluation");
+            Assert.assertEquals("a", getSomething("A"));
+            Assert.assertEquals("bb", getSomething("B"));
+            Assert.assertNull(getSomething("C"));
 
-                Assert.assertEquals("a", getSomething("A"));
-                Assert.assertEquals("bb", getSomething("B"));
-                Assert.assertNull(getSomething("C"));
-
-                try {
-                    getSomething("X");
-                    Assert.fail();
-                }
-                catch(IllegalStateException e) {
-                    Assert.assertEquals("Just for fun", e.getMessage());
-                }
-
-                return null;
+            try {
+                getSomething("X");
+                Assert.fail();
+            }
+            catch(IllegalStateException e) {
+                Assert.assertEquals("Just for fun", e.getMessage());
             }
         });
     }
@@ -296,20 +249,34 @@ public class LocalInstrumentationFeatureTest extends InstrumentationFeatureTest 
             .doCount(callB)
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-
-                callA();
-                callB();
-                callA();
-
-                return null;
-            }
+        node.exec(() -> {
+            callA();
+            callB();
+            callA();
         });
 
         Assert.assertEquals(2, callA.get());
         Assert.assertEquals(1, callB.get());
+    }
+
+    private void addValueRule(ViNode node, Object key, Object value) {
+        Intercept
+            .callSite()
+            .onTypes(getClass())
+            .onMethod("getSomething")
+            .matchParams(key)
+            .doReturn(value)
+            .apply(node);
+    }
+
+    private void addErrorRule(ViNode node, Object key, Throwable e) {
+        Intercept
+            .callSite()
+            .onTypes(getClass())
+            .onMethod("getSomething")
+            .matchParams(key)
+            .doThrow(e)
+            .apply(node);
     }
 
     private static void callA() {};

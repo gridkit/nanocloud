@@ -1,9 +1,9 @@
 package org.gridkit.nanocloud;
 
+import java.util.Arrays;
 import java.util.Collection;
 
-import org.gridkit.vicluster.ViConfExtender;
-import org.gridkit.vicluster.ViNode;
+import org.gridkit.nanocloud.viengine.ViManager2;
 
 /**
  *
@@ -33,4 +33,11 @@ public interface Cloud {
 
     public void shutdown();
 
+    public static ViNode multiNode(Collection<ViNode> nodes) {
+        return ViManager2.multiNode(nodes);
+    }
+
+    public static ViNode multiNode(ViNode... nodes) {
+        return multiNode(Arrays.asList(nodes));
+    }
 }

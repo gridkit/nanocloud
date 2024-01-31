@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gridkit.vicluster;
+package org.gridkit.nanocloud;
 
 import java.util.Map;
 
@@ -22,7 +22,7 @@ import java.util.Map;
  */
 public interface ViConfigurable {
 
-    public <X> X x(ViConfExtender<X> extender);
+    public default <X> X x(ViConfExtender<X> extender) { return extender.wrap(this); };
 
     public void setProp(String propName, String value);
 
@@ -45,27 +45,27 @@ public interface ViConfigurable {
         protected abstract ViConfigurable getConfigurable();
 
         @Override
-		public <X> X x(ViConfExtender<X> extention) {
+        public <X> X x(ViConfExtender<X> extention) {
             return getConfigurable().x(extention);
         }
 
         @Override
-		public void setProp(String propName, String value) {
+        public void setProp(String propName, String value) {
             getConfigurable().setProp(propName, value);
         }
 
         @Override
-		public void setProps(Map<String, String> props) {
+        public void setProps(Map<String, String> props) {
             getConfigurable().setProps(props);
         }
 
         @Override
-		public void setConfigElement(String key, Object value) {
+        public void setConfigElement(String key, Object value) {
             getConfigurable().setConfigElement(key, value);
         }
 
         @Override
-		public void setConfigElements(Map<String, Object> config) {
+        public void setConfigElements(Map<String, Object> config) {
             getConfigurable().setConfigElements(config);
         }
     }

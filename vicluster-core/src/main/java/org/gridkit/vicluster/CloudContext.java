@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 public interface CloudContext {
 
@@ -93,7 +94,7 @@ public interface CloudContext {
         }
 
         @Override
-		public String toString() {
+        public String toString() {
             return type.getSimpleName() + props.toString();
         }
     }
@@ -134,6 +135,47 @@ public interface CloudContext {
                         T service = (T)type.newInstance();
                         if (finalizerMethod != null) {
                             context.addFinalizer(reflectionFinalizer(service, finalizerMethod));
+                        }
+                        return service;
+                    } catch (InstantiationException e) {
+                        throw new RuntimeException(e);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+
+
+            return provider;
+        }
+
+        public static <T> ServiceProvider<T> reflectionProvider(final Class<? extends T> type, final Consumer<T> shutdownLambda) {
+            try {
+                Constructor<?> c = type.getConstructor();
+                if (!Modifier.isPublic(c.getModifiers())) {
+                    throw new RuntimeException("Class " + type.getName() + " does not have public no argument constructor");
+                }
+            } catch (SecurityException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+
+            ServiceProvider<T> provider = new ServiceProvider<T>() {
+
+                @SuppressWarnings("deprecation")
+                @Override
+                public T getService(CloudContext context) {
+                    try {
+                        final T service = (T)type.newInstance();
+                        if (shutdownLambda != null) {
+                            context.addFinalizer(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    shutdownLambda.accept(service);
+                                }
+                            });
                         }
                         return service;
                     } catch (InstantiationException e) {

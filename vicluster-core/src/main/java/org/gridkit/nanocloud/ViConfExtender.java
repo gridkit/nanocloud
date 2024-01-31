@@ -1,4 +1,4 @@
-package org.gridkit.vicluster;
+package org.gridkit.nanocloud;
 
 public interface ViConfExtender<X> {
 

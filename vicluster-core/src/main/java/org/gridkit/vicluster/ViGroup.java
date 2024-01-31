@@ -26,6 +26,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViNodeExtender;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)

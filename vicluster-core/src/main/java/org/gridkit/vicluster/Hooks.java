@@ -6,10 +6,10 @@ import org.gridkit.nanocloud.viengine.BootAnnotation;
 import org.gridkit.nanocloud.viengine.NodeAction;
 import org.gridkit.nanocloud.viengine.Pragma;
 import org.gridkit.nanocloud.viengine.PragmaWriter;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.ViEngine.Interceptor;
 import org.gridkit.vicluster.ViEngine.Phase;
 import org.gridkit.vicluster.ViEngine.QuorumGame;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 public class Hooks {
 
@@ -24,15 +24,15 @@ public class Hooks {
         @Override
         public void run(PragmaWriter context) throws ExecutionException {
             // Engine2 support
-            AdvancedExecutor executor = context.get(Pragma.RUNTIME_EXECUTOR);
+            DirectRemoteExecutor executor = context.get(Pragma.RUNTIME_EXECUTOR);
             try {
-                executor.submit(runnable).get();
+                executor.exec(runnable);
             } catch (Error e) {
-            	throw e;
+                throw e;
             } catch (Throwable e) {
-            	if (e instanceof ExecutionException) {
-            		e = e.getCause();
-            	}
+                if (e instanceof ExecutionException) {
+                    e = e.getCause();
+                }
                 BootAnnotation.fatal(context, e, "Failed to process startup hook - " + e.toString());
             }
         }
@@ -45,8 +45,8 @@ public class Hooks {
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
-            node.exec(runnable);
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
+            AdvExecutor2ViExecutor.exec(node, runnable);
         }
 
     }
@@ -62,16 +62,20 @@ public class Hooks {
         @Override
         public void run(PragmaWriter context) throws ExecutionException {
             // Engine2 support
-            AdvancedExecutor executor = context.get(Pragma.RUNTIME_EXECUTOR);
+            DirectRemoteExecutor executor = context.get(Pragma.RUNTIME_EXECUTOR);
             try {
-                executor.submit(runnable).get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                executor.exec(runnable);
+            } catch (Error e) {
+                throw e;
+            } catch (ExecutionException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new ExecutionException(e);
             }
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
             // ignore
         }
 
@@ -98,7 +102,7 @@ public class Hooks {
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
             // ignore
         }
 
@@ -125,7 +129,7 @@ public class Hooks {
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
             // ignore
         }
 

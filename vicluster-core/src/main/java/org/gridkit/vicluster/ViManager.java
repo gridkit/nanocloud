@@ -42,9 +42,12 @@ import java.util.regex.Pattern;
 
 import org.gridkit.nanocloud.NodeExecutionException;
 import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViNodeExtender;
 import org.gridkit.util.concurrent.Box;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 import org.gridkit.zerormi.RemoteExecutor;
 import org.gridkit.zerormi.RemoteExecutorAsynAdapter;
 import org.gridkit.zerormi.RemoteStub;
@@ -309,7 +312,7 @@ public class ViManager implements ViNodeSet {
         private String name;
         private ViNodeConfig config = new ViNodeConfig();
 //		private ViExecutor nodeExecutor;
-        private ViNode realNode;
+        private ViNodeCore realNode;
         private FutureTask<Void> initTask;
         private FutureBox<NodeExecutor> activeNode = new FutureBox<NodeExecutor>();
         private boolean terminated;
@@ -559,7 +562,7 @@ public class ViManager implements ViNodeSet {
             return name;
         }
 
-        private ViNode createNode() {
+        private ViNodeCore createNode() {
             if (ViProps.NODE_TYPE_ALIAS.equals(config.getProp(ViProps.NODE_TYPE))) {
                 String host = config.getProp(ViProps.HOST);
                 if (host == null) {
@@ -568,11 +571,11 @@ public class ViManager implements ViNodeSet {
                 if (host.startsWith("~")) {
                     host = transform(host, name);
                 }
-                ViNode hostnode = node(host);
+                ViNodeCore hostnode = ((ManagedNode)node(host)).realNode;
                 return new ProxyViNode(name, hostnode);
             }
             else {
-                ViNode realNode = provider.createNode(name, config);
+                ViNodeCore realNode = provider.createNode(name, config);
                 return realNode;
             }
         }
@@ -583,7 +586,7 @@ public class ViManager implements ViNodeSet {
                 String tname = swapThreadName("ViNode[" + name + "] init");
                 try {
                     try {
-                        ViNode realNode = createNode();
+                        ViNodeCore realNode = createNode();
                         synchronized(ManagedNode.this) {
                             if (terminated) {
                                 activeNode.setError(new RuntimeException("Node terminated"));
@@ -592,13 +595,13 @@ public class ViManager implements ViNodeSet {
                             else {
                                 try {
                                     ManagedNode.this.realNode = realNode;
-                                    RemoteExecutor rexec = realNode.exec(RemoteExecutor.INLINE_EXECUTOR_PRODUCER);
+                                    RemoteExecutor rexec = realNode.executor().exec(RemoteExecutor.INLINE_EXECUTOR_PRODUCER);
                                     if (RemoteStub.isRemoteStub(rexec)) {
                                         activeNode.setData(new ExceptionRefiningNodeExecutor(new RemoteNodeExecutor(rexec), realNode));
                                     }
                                     else {
                                         // fall back, added for compatibility with in-process node type
-                                        activeNode.setData(new ViNodeExecutor(realNode));
+                                        activeNode.setData(new ViNodeExecutor(realNode.executor()));
                                     }
                                     LOGGER.debug("ViNode[" + name + "] instantiated");
                                 } catch (Exception e) {
@@ -805,12 +808,12 @@ public class ViManager implements ViNodeSet {
     }
 
 
-    private static class ProxyViNode implements ViNode {
+    private static class ProxyViNode implements ViNodeCore {
 
         private final String name;
-        private final ViNode node;
+        private final ViNodeCore node;
 
-        public ProxyViNode(String name, ViNode node) {
+        public ProxyViNode(String name, ViNodeCore node) {
             this.name = name;
             this.node = node;
         }
@@ -831,56 +834,8 @@ public class ViManager implements ViNodeSet {
         }
 
         @Override
-        public void exec(Runnable task) {
-            node.exec(task);
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public void exec(VoidCallable task) {
-            node.exec(task);
-        }
-
-        @Override
-        public <T> T exec(Callable<T> task) {
-            return node.exec(task);
-        }
-
-        @Override
-        public Future<Void> submit(Runnable task) {
-            return node.submit(task);
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public Future<Void> submit(VoidCallable task) {
-            return node.submit(task);
-        }
-
-        @Override
-        public <T> Future<T> submit(Callable<T> task) {
-            return node.submit(task);
-        }
-
-        @Override
-        public <T> List<T> massExec(Callable<? extends T> task) {
-            return node.massExec(task);
-        }
-
-        @Override
-        public List<Future<Void>> massSubmit(Runnable task) {
-            return node.massSubmit(task);
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public List<Future<Void>> massSubmit(VoidCallable task) {
-            return node.massSubmit(task);
-        }
-
-        @Override
-        public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-            return node.massSubmit(task);
+        public DirectRemoteExecutor executor() {
+            return node.executor();
         }
 
         @Override
@@ -956,9 +911,9 @@ public class ViManager implements ViNodeSet {
 
         private final NodeExecutor nested;
 
-        private final ViNode node;
+        private final ViNodeCore node;
 
-        public ExceptionRefiningNodeExecutor(NodeExecutor nested, ViNode node) {
+        public ExceptionRefiningNodeExecutor(NodeExecutor nested, ViNodeCore node) {
             this.nested = nested;
             this.node = node;
         }
@@ -1100,15 +1055,15 @@ public class ViManager implements ViNodeSet {
 
     private static class ViNodeExecutor implements NodeExecutor {
 
-        private ViNode executor;
+        private DirectRemoteExecutor executor;
 
-        public ViNodeExecutor(ViNode executor) {
+        public ViNodeExecutor(DirectRemoteExecutor executor) {
             this.executor = executor;
         }
 
         @Override
         public void exec(Runnable task) throws Exception {
-            executor.exec(task);
+            executor.exec(new CallableRunnable(task));
         }
 
         @Override
@@ -1118,12 +1073,29 @@ public class ViManager implements ViNodeSet {
 
         @Override
         public FutureEx<Void> submit(Runnable task) {
-            return (FutureEx<Void>) executor.submit(task);
+            return (FutureEx<Void>) executor.submit(new CallableRunnable(task));
         }
 
         @Override
         public <V> FutureEx<V> submit(Callable<V> task) {
             return (FutureEx<V>) executor.submit(task);
+        }
+    }
+
+    private static class CallableRunnable implements Callable<Void>, Serializable {
+
+        private static final long serialVersionUID = 20240129L;
+
+        private final Runnable task;
+
+        protected CallableRunnable(Runnable task) {
+            this.task = task;
+        }
+
+        @Override
+        public Void call() throws Exception {
+            task.run();
+            return null;
         }
     }
 }

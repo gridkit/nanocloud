@@ -3,21 +3,23 @@ package org.gridkit.nanocloud.viengine;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.AdvancedExecutorAdapter;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
+import org.gridkit.vicluster.AdvExecutor2ViExecutor;
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 class ManagedNoMarshalIsolate implements ManagedProcess {
 
     private final Isolate isolate;
     private final ExecutorService exec;
-    private final AdvancedExecutor aexec;
+    private final DirectRemoteExecutor dexec;
 
     public ManagedNoMarshalIsolate(Isolate isolate) {
         try {
@@ -32,7 +34,7 @@ class ManagedNoMarshalIsolate implements ManagedProcess {
                 }
             });
             exec = fexec.get();
-            aexec = new AdvancedExecutorAdapter(exec);
+            dexec = new IsolateExecAdapter(new AdvancedExecutorAdapter(exec));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -65,8 +67,8 @@ class ManagedNoMarshalIsolate implements ManagedProcess {
     }
 
     @Override
-    public AdvancedExecutor getExecutionService() {
-        return aexec;
+    public DirectRemoteExecutor getExecutionService() {
+        return dexec;
     }
 
     @Override
@@ -89,6 +91,36 @@ class ManagedNoMarshalIsolate implements ManagedProcess {
             return (PrintStream) os;
         } else {
             return new PrintStream(os);
+        }
+    }
+
+    private static class IsolateExecAdapter implements DirectRemoteExecutor {
+
+        private final AdvancedExecutorAdapter service;
+
+        protected IsolateExecAdapter(AdvancedExecutorAdapter service) {
+            this.service = service;
+        }
+
+        @Override
+        public void exec(Runnable task) throws Exception {
+            AdvExecutor2ViExecutor.exec(service, task);
+
+        }
+
+        @Override
+        public <V> V exec(Callable<V> task) throws Exception {
+            return AdvExecutor2ViExecutor.exec(service, task);
+        }
+
+        @Override
+        public FutureEx<Void> submit(Runnable task) {
+            return service.submit(task);
+        }
+
+        @Override
+        public <V> FutureEx<V> submit(Callable<V> task) {
+            return service.submit(task);
         }
     }
 }

@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.gridkit.vicluster.CloudContext;
 import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.ViEngine;
 
 class ConsolePragmaHandler implements PragmaHandler {
 
@@ -116,7 +117,7 @@ class ConsolePragmaHandler implements PragmaHandler {
     }
 
     private void setEchoPrefix(PragmaWriter context, String stream, String prefix) {
-        String pref = prefix; // TODO transformation ViEngine.Core.transform(prefix, engine.getConfig().getNodeName());
+        String pref = ViEngine.Core.transform(prefix, context.get(ViConf.NODE_NAME));
         ConsoleMultiplexorStream cms = ensureStreamMux(context, stream);
         ((WrapperPrintStream)cms.outs[0]).prefix = pref;
     }

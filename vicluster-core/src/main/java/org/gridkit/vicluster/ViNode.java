@@ -20,157 +20,169 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViConfigurable;
+import org.gridkit.nanocloud.ViNodeControl;
+import org.gridkit.nanocloud.ViNodeExtender;
+
 
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
-public interface ViNode extends ViExecutor, ViConfigurable {
+public interface ViNode extends ViExecutor, ViConfigurable, ViNodeControl {
 
-	public String getProp(String propName);
+    @Override
+    public String getProp(String propName);
 
-	public Object getPragma(String pragmaName);
-	
-	public <X> X x(ViNodeExtender<X> extender);
-	
-	/**
-	 * Same as sending empty runnable to node. Usefully to force node initialization.
-	 */
-	public void touch();
-	
-	/** 
-	 * Ungracefully terminates remote process (or thread group in embeded node). Unlike {@link #shutdown()} no shutdown hooks will be executed in remote VM.
-	 * This method may be useful for fault tolerance testing.
-	 */
-	public void kill();
-	
-	/** 
-	 * Gracefully terminates remote process (or thread group in embeded node).
-	 */
-	public void shutdown();
-	
-	public static class Delegate implements ViNode {
-		
-		private final ViNode delegate;
+    @Override
+    public Object getPragma(String pragmaName);
 
-		public Delegate(ViNode delegate) {
-			this.delegate = delegate;
-		}
+    public <X> X x(ViNodeExtender<X> extender);
 
-		protected ViNode getDelegate() {
-			return delegate;
-		}
-		
-		@Override
+    /**
+     * Same as sending empty runnable to node. Usefully to force node initialization.
+     */
+    @Override
+    public void touch();
+
+    /**
+     * Ungracefully terminates remote process (or thread group in embeded node). Unlike {@link #shutdown()} no shutdown hooks will be executed in remote VM.
+     * This method may be useful for fault tolerance testing.
+     */
+    @Override
+    public void kill();
+
+    /**
+     * Gracefully terminates remote process (or thread group in embeded node).
+     */
+    @Override
+    public void shutdown();
+
+    public static class Delegate implements ViNode {
+
+        private final ViNode delegate;
+
+        public Delegate(ViNode delegate) {
+            this.delegate = delegate;
+        }
+
+        protected ViNode getDelegate() {
+            return delegate;
+        }
+
+        @Override
         public <X> X x(ViNodeExtender<X> extender) {
             return extender.wrap(delegate);
         }
 
         @Override
-		public <X> X x(ViConfExtender<X> extention) {
-			return extention.wrap(delegate);
-		}
-		
-        @Override
-        public String getProp(String propName) {
-        	return delegate.getProp(propName);
+        public <X> X x(ViConfExtender<X> extention) {
+            return extention.wrap(delegate);
         }
 
-		@Override
-		public Object getPragma(String pragmaName) {
-			return getPragma(pragmaName);
-		}
+        @Override
+        public String getProp(String propName) {
+            return delegate.getProp(propName);
+        }
 
-		@Override
-		public void setProp(String propName, String value) {
-			delegate.setProp(propName, value);
-		}
+        @Override
+        public Object getPragma(String pragmaName) {
+            return getPragma(pragmaName);
+        }
 
-		public void setConfigElement(String key, Object value) {
-			delegate.setConfigElement(key, value);
-		}
+        @Override
+        public void setProp(String propName, String value) {
+            delegate.setProp(propName, value);
+        }
 
-		public void setConfigElements(Map<String, Object> config) {
-			delegate.setConfigElements(config);
-		}
+        @Override
+        public void setConfigElement(String key, Object value) {
+            delegate.setConfigElement(key, value);
+        }
 
-		@Override
-		public void setProps(Map<String, String> props) {
-			delegate.setProps(props);
-		}
+        @Override
+        public void setConfigElements(Map<String, Object> config) {
+            delegate.setConfigElements(config);
+        }
 
-		@Override
-		public void touch() {
-			delegate.touch();
-		}
+        @Override
+        public void setProps(Map<String, String> props) {
+            delegate.setProps(props);
+        }
 
-		@Override
-		public void kill() {
-			delegate.kill();			
-		}
+        @Override
+        public void touch() {
+            delegate.touch();
+        }
 
-		@Override
-		public void shutdown() {
-			delegate.shutdown();
-		}
+        @Override
+        public void kill() {
+            delegate.kill();
+        }
 
-		@Override
-		public void exec(Runnable task) {
-			delegate.exec(task);
-		}
+        @Override
+        public void shutdown() {
+            delegate.shutdown();
+        }
+
+        @Override
+        public void exec(Runnable task) {
+            delegate.exec(task);
+        }
 
         @Override
         @SuppressWarnings("deprecation")
-		public void exec(VoidCallable task) {
-			delegate.exec(task);
-		}
+        public void exec(VoidCallable task) {
+            delegate.exec(task);
+        }
 
-		@Override
-		public <T> T exec(Callable<T> task) {
-			return delegate.exec(task);
-		}
+        @Override
+        public <T> T exec(Callable<T> task) {
+            return delegate.exec(task);
+        }
 
-		@Override
-		public Future<Void> submit(Runnable task) {
-			return delegate.submit(task);
-		}
+        @Override
+        public Future<Void> submit(Runnable task) {
+            return delegate.submit(task);
+        }
 
         @Override
         @SuppressWarnings("deprecation")
-		public Future<Void> submit(VoidCallable task) {
-			return delegate.submit(task);
-		}
+        public Future<Void> submit(VoidCallable task) {
+            return delegate.submit(task);
+        }
 
-		@Override
-		public <T> Future<T> submit(Callable<T> task) {
-			return delegate.submit(task);
-		}
+        @Override
+        public <T> Future<T> submit(Callable<T> task) {
+            return delegate.submit(task);
+        }
 
-		@Override
-		public <T> List<T> massExec(Callable<? extends T> task) {
-			return delegate.massExec(task);
-		}
+        @Override
+        public <T> List<T> massExec(Callable<? extends T> task) {
+            return delegate.massExec(task);
+        }
 
-		@Override
-		public List<Future<Void>> massSubmit(Runnable task) {
-			return delegate.massSubmit(task);
-		}
+        @Override
+        public List<Future<Void>> massSubmit(Runnable task) {
+            return delegate.massSubmit(task);
+        }
 
         @Override
         @SuppressWarnings("deprecation")
-		public List<Future<Void>> massSubmit(VoidCallable task) {
-			return delegate.massSubmit(task);
-		}
+        public List<Future<Void>> massSubmit(VoidCallable task) {
+            return delegate.massSubmit(task);
+        }
 
-		@Override
-		public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-			return delegate.massSubmit(task);
-		}
-		
-		@Override
-		public String toString() {
-			return delegate.toString();
-		}
-	}
+        @Override
+        public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
+            return delegate.massSubmit(task);
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
+    }
 }

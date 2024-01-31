@@ -1,6 +1,6 @@
 package org.gridkit.nanocloud;
 
-import static org.gridkit.nanocloud.RemoteNode.REMOTE;
+import static org.gridkit.nanocloud.telecontrol.ssh.SshConf.SSH;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -10,10 +10,10 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
 
     @BeforeClass
     public static void check_fbox1() {
-        Cloud c = CloudFactory.createCloud();
+        Cloud c = Nanocloud.createCloud();
         try {
-            c.node("**").x(REMOTE)
-                .useSimpleRemoting()
+            c.x(SSH)
+                .configureSimpleRemoting()
                 .setRemoteHost("fbox");
 
             c.node("test").touch();
@@ -31,9 +31,9 @@ public class FreeBSD_RemoteNodeFeatureTest extends ViNodeFeatureTest {
     @Before
     @Override
     public void initCloud() {
-        cloud = CloudFactory.createCloud();
-        cloud.node("**").x(REMOTE)
-            .useSimpleRemoting()
+        cloud = Nanocloud.createCloud();
+        cloud.x(SSH)
+            .configureSimpleRemoting()
             .setRemoteHost("fbox");
     }
 }

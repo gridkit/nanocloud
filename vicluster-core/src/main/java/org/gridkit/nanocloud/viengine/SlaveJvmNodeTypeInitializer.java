@@ -13,8 +13,8 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.nanocloud.telecontrol.ProcessSporeLauncher;
 import org.gridkit.nanocloud.telecontrol.ZeroRmiRemoteSession;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
+import org.gridkit.vicluster.telecontrol.StreamCopyThread;
 
 public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
 
@@ -75,7 +75,7 @@ public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
     }
 
     protected void configureCloudServices(PragmaWriter config) {
-        cloudSingleton(config, ViConf.SPI_STREAM_COPY_SERVICE, BackgroundStreamDumper.StreamDumperService.class, "shutdown");
+        cloudSingleton(config, ViConf.SPI_STREAM_COPY_SERVICE, StreamCopyThread.class, StreamCopyThread::shutdown);
     }
 
     protected void configureLaunchAction(PragmaWriter config) {
@@ -108,7 +108,7 @@ public abstract class SlaveJvmNodeTypeInitializer implements NodeAction {
     }
 
     protected void configureDefaultJavaExec(PragmaWriter config) {
-        setDefault(config, JvmConf.JVM_EXEC_CMD, "java");
+        setDefault(config, ViConf.JVM_EXEC_CMD, "java");
     }
 
 }

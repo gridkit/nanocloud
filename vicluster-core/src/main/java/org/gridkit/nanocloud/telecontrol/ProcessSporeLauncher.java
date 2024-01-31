@@ -40,7 +40,6 @@ import org.gridkit.nanocloud.telecontrol.HostControlConsole.SocketHandler;
 import org.gridkit.nanocloud.viengine.ProcessLifecycleListener;
 import org.gridkit.nanocloud.viengine.ProcessLifecycleListener.ExecFailedInfo;
 import org.gridkit.nanocloud.viengine.ProcessLifecycleListener.TerminationInfo;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.telecontrol.AgentEntry;
@@ -54,6 +53,7 @@ import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.StreamCopyService.Link;
 import org.gridkit.vicluster.telecontrol.bootstraper.SmartBootstraper;
 import org.gridkit.zeroio.LookbackOutputStream;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.NamedStreamPair;
@@ -360,7 +360,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
         byte[] binspore;
         FutureBox<ProcessStreams> procStreams = new FutureBox<ProcessStreams>();
         FutureBox<Integer> exitCode = new FutureBox<Integer>();
-        FutureBox<AdvancedExecutor> executor = new FutureBox<AdvancedExecutor>();
+        FutureBox<DirectRemoteExecutor> executor = new FutureBox<DirectRemoteExecutor>();
         Destroyable socketHandle;
         volatile Destroyable procHandle;
         StreamCopyService streamCopyService;
@@ -506,7 +506,7 @@ public class ProcessSporeLauncher implements ProcessLauncher {
         }
 
         @Override
-        public AdvancedExecutor getExecutionService() {
+        public DirectRemoteExecutor getExecutionService() {
             return fget(executor);
         }
 

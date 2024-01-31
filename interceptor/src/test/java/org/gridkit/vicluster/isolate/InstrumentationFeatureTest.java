@@ -18,17 +18,16 @@ package org.gridkit.vicluster.isolate;
 import static org.gridkit.nanocloud.VX.CONSOLE;
 
 import java.io.StringWriter;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Nanocloud;
 import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViNode;
 import org.gridkit.nanocloud.interceptor.Intercept;
-import org.gridkit.vicluster.ViNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +39,7 @@ public class InstrumentationFeatureTest {
 
     @Before
     public void initCloud() {
-        cloud = CloudFactory.createCloud();
+        cloud = Nanocloud.createCloud();
         cloud.x(VX.TYPE).setIsolate();
     }
 
@@ -55,8 +54,6 @@ public class InstrumentationFeatureTest {
 
     @Test
     public void test_print_rule() {
-//		System.setProperty("gridkit.isolate.trace-classes", "true");
-//		System.setProperty("gridkit.interceptor.trace", "true");
 
         StringWriter writer = new StringWriter();
         ViNode node = node("test_print_rule");
@@ -71,11 +68,8 @@ public class InstrumentationFeatureTest {
             .doPrint("Call time")
             .apply(node);
 
-        node.exec(new Callable<Long>() {
-            @Override
-            public Long call() throws Exception {
-                return System.currentTimeMillis();
-            }
+        node.calc(() -> {
+            return System.currentTimeMillis();
         });
 
         node.x(CONSOLE).flush();
@@ -98,11 +92,8 @@ public class InstrumentationFeatureTest {
 
         long time = System.currentTimeMillis();
 
-        long itime = node.exec(new Callable<Long>() {
-            @Override
-            public Long call() throws Exception {
-                return System.currentTimeMillis();
-            }
+        long itime = node.calc(() -> {
+            return System.currentTimeMillis();
         });
 
         Assert.assertTrue("Time expected to be shifted back", itime < time);
@@ -121,18 +112,15 @@ public class InstrumentationFeatureTest {
             .doInvoke(new LongReturnValueShifter(-111111))
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                try {
-                    explode("test");
-                    Assert.fail("Exception expected");
-                }
-                catch(IllegalStateException e) {
-                    Assert.assertEquals("test", e.getMessage());
-                }
-                return null;
+        node.calc(() -> {
+            try {
+                explode("test");
+                Assert.fail("Exception expected");
             }
+            catch(IllegalStateException e) {
+                Assert.assertEquals("test", e.getMessage());
+            }
+            return null;
         });
     }
 
@@ -154,12 +142,8 @@ public class InstrumentationFeatureTest {
         .doReturn(null)
         .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                System.exit(0);
-                return null;
-            }
+        node.exec(() -> {
+            System.exit(0);
         });
     }
 
@@ -177,14 +161,10 @@ public class InstrumentationFeatureTest {
         .doReturn(null)
         .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                System.exit(0);
-                // May be second time?
-                System.exit(0);
-                return null;
-            }
+        node.exec(() -> {
+            System.exit(0);
+            // May be second time?
+            System.exit(0);
         });
     }
 
@@ -202,12 +182,8 @@ public class InstrumentationFeatureTest {
         .doThrow(new IllegalStateException("Ka-Boom"))
         .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                System.exit(0);
-                return null;
-            }
+        node.exec(() -> {
+            System.exit(0);
         });
     }
 
@@ -243,23 +219,18 @@ public class InstrumentationFeatureTest {
         addValueRule(node, "B", "bb");
         addErrorRule(node, "X", new IllegalStateException("Just for fun"));
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+        node.exec(() -> {
 
-                Assert.assertEquals("a", getSomething("A"));
-                Assert.assertEquals("bb", getSomething("B"));
-                Assert.assertNull(getSomething("C"));
+            Assert.assertEquals("a", getSomething("A"));
+            Assert.assertEquals("bb", getSomething("B"));
+            Assert.assertNull(getSomething("C"));
 
-                try {
-                    getSomething("X");
-                    Assert.fail();
-                }
-                catch(IllegalStateException e) {
-                    Assert.assertEquals("Just for fun", e.getMessage());
-                }
-
-                return null;
+            try {
+                getSomething("X");
+                Assert.fail();
+            }
+            catch(IllegalStateException e) {
+                Assert.assertEquals("Just for fun", e.getMessage());
             }
         });
     }
@@ -290,16 +261,10 @@ public class InstrumentationFeatureTest {
             .doCount(callB)
             .apply(node);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-
-                callA();
-                callB();
-                callA();
-
-                return null;
-            }
+        node.exec(() -> {
+            callA();
+            callB();
+            callA();
         });
 
         Assert.assertEquals(2, callA.get());

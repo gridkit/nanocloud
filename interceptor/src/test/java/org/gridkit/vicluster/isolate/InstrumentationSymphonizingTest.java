@@ -17,18 +17,16 @@ package org.gridkit.vicluster.isolate;
 
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Nanocloud;
+import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViNode;
 import org.gridkit.nanocloud.interceptor.Intercept;
 import org.gridkit.util.concurrent.CyclicBlockingBarrier;
 import org.gridkit.util.concurrent.VectorFuture;
-import org.gridkit.vicluster.ViExecutor;
-import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViProps;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,8 +43,8 @@ public class InstrumentationSymphonizingTest {
 
     @Before
     public void initCloud() {
-        cloud = CloudFactory.createCloud();
-        ViProps.at(cloud.node("**")).setIsolateType();
+        cloud = Nanocloud.createCloud();
+        cloud.x(VX.ISOLATE);
     }
 
     @After
@@ -69,11 +67,8 @@ public class InstrumentationSymphonizingTest {
 
         f.get();
 
-        String text = node.exec(new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                return InstrumentationSymphonizingTest.text.toString();
-            }
+        String text = node.calc(() -> {
+            return InstrumentationSymphonizingTest.text.toString();
         });
 
         Assert.assertFalse("ABCDEFGHI".equals(text));
@@ -115,11 +110,8 @@ public class InstrumentationSymphonizingTest {
 
         f.get();
 
-        String text = node.exec(new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                return InstrumentationSymphonizingTest.text.toString();
-            }
+        String text = node.calc(() -> {
+            return InstrumentationSymphonizingTest.text.toString();
         });
 
         Assert.assertFalse("ABCDEFGHI".equals(text));
@@ -135,8 +127,8 @@ public class InstrumentationSymphonizingTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Future<List<Void>> sendTasks(ViExecutor node) {
-        Future<Void> f1 = node.submit(new Runnable() {
+    private Future<List<Void>> sendTasks(ViNode node) {
+        Future<Void> f1 = node.asyncExecRunnable(new Runnable() {
             @Override
             public void run() {
                 pushToList("A");
@@ -144,7 +136,7 @@ public class InstrumentationSymphonizingTest {
                 pushToList("G");
             }
         });
-        Future<Void> f2 = node.submit(new Runnable() {
+        Future<Void> f2 = node.asyncExecRunnable(new Runnable() {
             @Override
             public void run() {
                 pushToList("B");
@@ -152,7 +144,7 @@ public class InstrumentationSymphonizingTest {
                 pushToList("H");
             }
         });
-        Future<Void> f3 = node.submit(new Runnable() {
+        Future<Void> f3 = node.asyncExecRunnable(new Runnable() {
             @Override
             public void run() {
                 pushToList("C");

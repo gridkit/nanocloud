@@ -22,11 +22,11 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A simple class file parser for inspecting constant pool.
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 class ConstPoolParser {
-	
+
     /**
      * The type of CONSTANT_Class constant pool items.
      */
@@ -103,38 +103,39 @@ class ConstPoolParser {
      * 9 different items.
      */
     static final int HANDLE_BASE = 20;
-	
-	private byte[] b;
-	private ConstEntry[] entries;
-	
-	public ConstPoolParser(byte[] data) {
-		this.b = data;
 
-		if (readShort(6) > Opcodes.V1_7) {
+    private byte[] b;
+    private ConstEntry[] entries;
+
+    public ConstPoolParser(byte[] data) {
+        this.b = data;
+
+        if (readShort(6) > Opcodes.V1_8) {
+        	// there are serious changes in 1.8 constant pool
             throw new IllegalArgumentException("Unsupported class file version: " + readShort(6));
         }
-		
-		int count = readUnsignedShort(8);
-		entries = new ConstEntry[count];
-		int offs = 10;
-		for(int i = 1; i != count; ++i) {
-			int size;	
-			int ctype = b[offs]; 
+
+        int count = readUnsignedShort(8);
+        entries = new ConstEntry[count];
+        int offs = 10;
+        for(int i = 1; i != count; ++i) {
+            int size;
+            int ctype = b[offs];
             switch (ctype) {
             case CLASS:
-            	entries[i] = new ConstClass();
-            	size = entries[i].parse(offs);
-            	break;
+                entries[i] = new ConstClass();
+                size = entries[i].parse(offs);
+                break;
             case FIELD:
             case METH:
             case IMETH:
-            	entries[i] = new ConstFieldOrMethod();
-            	size = entries[i].parse(offs);
-            	break;
+                entries[i] = new ConstFieldOrMethod();
+                size = entries[i].parse(offs);
+                break;
             case NAME_TYPE:
-            	entries[i] = new ConstTypeAndName();
-            	size = entries[i].parse(offs);
-            	break;
+                entries[i] = new ConstTypeAndName();
+                size = entries[i].parse(offs);
+                break;
             case INT:
             case FLOAT:
             case INDY:
@@ -150,72 +151,72 @@ class ConstPoolParser {
                 size = entries[i].parse(offs);
                 break;
             case HANDLE:
-            	size = 4;
-            	break;
+                size = 4;
+                break;
             case STR:
-            	entries[i] = new ConstString();
-            	size = entries[i].parse(offs);
-            	break;
+                entries[i] = new ConstString();
+                size = entries[i].parse(offs);
+                break;
             case MTYPE:
-            	size = 3;
-            	break;
+                size = 3;
+                break;
             default:
-            	throw new IllegalArgumentException("Unknown CONST type: " + ctype);
+                throw new IllegalArgumentException("Unknown CONST type: " + ctype);
             }
             offs += size;
-		}
-	}
-	
-	public ConstEntry get(int n) {
-		return entries[n];
-	}
-	
-	public Iterable<ConstEntry> all() {
-		return new Iterable<ConstPoolParser.ConstEntry>() {
-			@Override
-			public Iterator<ConstEntry> iterator() {
-				return new Iterator<ConstPoolParser.ConstEntry>() {
+        }
+    }
 
-					int n = 0;
-					
-					{
-						next();
-					}
-					
-					@Override
-					public boolean hasNext() {
-						return n < entries.length;
-					}
+    public ConstEntry get(int n) {
+        return entries[n];
+    }
 
-					@Override
-					public ConstEntry next() {
-						if (!hasNext()) {
-							throw new NoSuchElementException();
-						}
-						ConstEntry ce = entries[n];
-						while((++n) < entries.length && entries[n] == null) {};
-						return ce;
-					}
+    public Iterable<ConstEntry> all() {
+        return new Iterable<ConstPoolParser.ConstEntry>() {
+            @Override
+            public Iterator<ConstEntry> iterator() {
+                return new Iterator<ConstPoolParser.ConstEntry>() {
 
-					@Override
-					public void remove() {
-						throw new UnsupportedOperationException();
-					}
-				};
-			}
-		};
-	}
-	
+                    int n = 0;
+
+                    {
+                        next();
+                    }
+
+                    @Override
+                    public boolean hasNext() {
+                        return n < entries.length;
+                    }
+
+                    @Override
+                    public ConstEntry next() {
+                        if (!hasNext()) {
+                            throw new NoSuchElementException();
+                        }
+                        ConstEntry ce = entries[n];
+                        while((++n) < entries.length && entries[n] == null) {};
+                        return ce;
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        };
+    }
+
     private short readShort(final int index) {
         byte[] b = this.b;
         return (short) (((b[index] & 0xFF) << 8) | (b[index + 1] & 0xFF));
     }
-	
+
     private int readUnsignedShort(final int index) {
         byte[] b = this.b;
         return ((b[index] & 0xFF) << 8) | (b[index + 1] & 0xFF);
     }
-    
+
     /**
      * Reads UTF8 string in {@link #b b}.
      *
@@ -260,148 +261,150 @@ class ConstPoolParser {
         }
         return new String(buf, 0, strLen);
     }
-    
+
     interface ConstEntry {
-    	
-    	public int parse(int offs);
-    	
+
+        public int parse(int offs);
+
     }
-    
-    /**
-	 * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.1
-	 */
-	class ConstClass implements ConstEntry {
-		
-		private int nameRef;
-	
-		@Override
-		public int parse(int offs) {
-			nameRef = readUnsignedShort(offs + 1);
-			return 3;
-		}
-	
-		public String getName() {
-			return entries[nameRef].toString();
-		}
 
-		@Override
+    /**
+     * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.1
+     */
+    class ConstClass implements ConstEntry {
+
+        private int nameRef;
+
+        @Override
+        public int parse(int offs) {
+            nameRef = readUnsignedShort(offs + 1);
+            return 3;
+        }
+
+        public String getName() {
+            return entries[nameRef].toString();
+        }
+
+        @Override
+        public String toString() {
+            return "CLASS " + getName();
+        }
+    }
+
+    /**
+     * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.2
+     */
+    class ConstFieldOrMethod implements ConstEntry {
+
+        private int type;
+        private int classNameRef;
+        private int typeAndNameRef;
+
+        @Override
+        public int parse(int offs) {
+            type = b[offs];
+            classNameRef = readUnsignedShort(offs + 1);
+            typeAndNameRef = readUnsignedShort(offs + 3);
+            return 5;
+        }
+
+        public String getClassName() {
+            return ((ConstClass)entries[classNameRef]).getName();
+        }
+
+        public boolean isField() {
+            return type == FIELD;
+        }
+
+        public boolean isInterfaceMethod() {
+            return type == IMETH;
+        }
+
+        public String getName() {
+            return ((ConstTypeAndName)entries[typeAndNameRef]).getName();
+        }
+
+        public String getType() {
+            return ((ConstTypeAndName)entries[typeAndNameRef]).getType();
+        }
+
+        @Override
+        public String toString() {
+            return (isField() ? "FIELD " : isInterfaceMethod() ? "IMETHOD " : "METHOD ")
+                    + getClassName() + "::" + getName() + " -> " + getType();
+        }
+    }
+
+    /**
+     * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.3
+     */
+    class ConstString implements ConstEntry {
+
+        private int utfRef;
+
+        @Override
+        public int parse(int offs) {
+            utfRef = readUnsignedShort(offs);
+            return 3;
+        }
+
+        @Override
 		public String toString() {
-			return "CLASS " + getName();
-		}
-	}
-	
-    /**
-	 * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.2
-	 */
-	class ConstFieldOrMethod implements ConstEntry {
-		
-		private int type;
-		private int classNameRef;
-		private int typeAndNameRef;
-		
-		@Override
-		public int parse(int offs) {
-			type = b[offs];
-			classNameRef = readUnsignedShort(offs + 1);
-			typeAndNameRef = readUnsignedShort(offs + 3);
-			return 5;
-		}
-		
-		public String getClassName() {
-			return ((ConstClass)entries[classNameRef]).getName();
-		}
-		
-		public boolean isField() {
-			return type == FIELD;
-		}
-		
-		public boolean isInterfaceMethod() {
-			return type == IMETH;
-		}
-		
-		public String getName() {
-			return ((ConstTypeAndName)entries[typeAndNameRef]).getName();
-		}
-
-		public String getType() {
-			return ((ConstTypeAndName)entries[typeAndNameRef]).getType();
-		}
-
-		@Override
-		public String toString() {
-			return (isField() ? "FIELD " : isInterfaceMethod() ? "IMETHOD " : "METHOD ")
-					+ getClassName() + "::" + getName() + " -> " + getType();
-		}
-	}
+            return entries[utfRef].toString();
+        }
+    }
 
     /**
-	 * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.3
-	 */
-	class ConstString implements ConstEntry {
+     * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.6
+     */
+    class ConstTypeAndName implements ConstEntry {
 
-		private int utfRef;
+        private int nameRef;
+        private int typeRef;
 
-		@Override
-		public int parse(int offs) {
-			utfRef = readUnsignedShort(offs);
-			return 3;
-		}
-	
-		public String toString() {
-			return entries[utfRef].toString();
-		}
-	}
-	
+        @Override
+        public int parse(int offs) {
+            nameRef = readUnsignedShort(offs + 1);
+            typeRef = readUnsignedShort(offs + 3);
+            return 5;
+        }
+
+        public String getName() {
+            return entries[nameRef].toString();
+        }
+
+        public String getType() {
+            return entries[typeRef].toString();
+        }
+
+        @Override
+        public String toString() {
+            return "NAME_AND_TYPE " + getName() + " -> " + getType();
+        }
+    }
+
     /**
-	 * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.6
-	 */
-	class ConstTypeAndName implements ConstEntry {
+     * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7
+     */
+    class ConstUtf8 implements ConstEntry {
 
-		private int nameRef;
-		private int typeRef;
-		
-		@Override
-		public int parse(int offs) {
-			nameRef = readUnsignedShort(offs + 1);
-			typeRef = readUnsignedShort(offs + 3);
-			return 5;
-		}
-		
-		public String getName() {
-			return entries[nameRef].toString();
-		}
-		
-		public String getType() {
-			return entries[typeRef].toString();
-		}
+        private int offs;
+        private int len;
+        private String text;
 
-		@Override
-		public String toString() {
-			return "NAME_AND_TYPE " + getName() + " -> " + getType();
-		}
-	}
-	
-    /**
-	 * http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7
-	 */
-	class ConstUtf8 implements ConstEntry {
-    	
-    	private int offs;
-    	private int len;
-    	private String text;
-    	
-    	@Override
-    	public int parse(int offs) {
-    		this.offs = offs + 3;
+        @Override
+        public int parse(int offs) {
+            this.offs = offs + 3;
             len = readUnsignedShort(offs + 1);
             return len + 3;
-    	}
-    	
+        }
+
+        @Override
 		public String toString() {
-    		if (text == null) {
-    			text = readUTF(b, offs, len, new char[len]);
-    		}
-    		return text;
-    	}
+            if (text == null) {
+                text = readUTF(b, offs, len, new char[len]);
+            }
+            return text;
+        }
     }
 }

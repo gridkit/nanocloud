@@ -80,6 +80,9 @@ public class SshConfigurer {
         if (props.get(RemoteNode.PASSWORD) != null) {
             conf.put(SPI_SSH_PASSWORD, props.get(RemoteNode.PASSWORD));
         }
+        if (props.get(RemoteNode.SSH_KEY_FILE) != null) {
+            conf.put(SPI_SSH_PRIVATE_KEY_FILE, props.get(RemoteNode.SSH_KEY_FILE));
+        }
         if (props.get(SshSpiConf.SSH_PASSWORD) != null) {
             conf.put(SPI_SSH_PASSWORD, props.get(SshSpiConf.SSH_PASSWORD));
         }

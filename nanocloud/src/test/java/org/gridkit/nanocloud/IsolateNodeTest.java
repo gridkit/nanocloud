@@ -15,93 +15,88 @@
  */
 package org.gridkit.nanocloud;
 
+import org.gridkit.nanocloud.test.junit.CloudRule;
+import org.gridkit.nanocloud.test.junit.DisposableCloud;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.isolate.Isolate;
 import org.gridkit.vicluster.isolate.IsolateProps;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class IsolateNodeTest {
 
-	
-	private Cloud cloud;
-	
-	@Before
-	public void initCloud() {
-		cloud = CloudFactory.createCloud();
-		ViProps.at(cloud.node("**")).setIsolateType();
-	}
-	
-	@After
-	public void shutdownCloud() {
-		cloud.shutdown();
-	}
-	
-	@Test
-	public void verify_default_isolation() {
-		cloud.node("node1").exec(new Runnable() {
-			@Override
-			public void run() {
-				assertIsolated(IsolateNodeTest.class);				
-				assertIsolated(SharedStatics.class);				
-			}
-		});
-	}
+    @Rule
+    public CloudRule cloud = new DisposableCloud();
 
-	@Test
-	public void verify_package_sharing() {
-		IsolateProps.at(cloud.node("node1"))
-			.sharePackage("org.gridkit");
-		
-		cloud.node("node1").exec(new Runnable() {
-			@Override
-			public void run() {
-				assertShared(IsolateNodeTest.class);				
-				assertShared(SharedStatics.class);				
-			}
-		});
-	}
+    @Before
+    public void initCloud() {
+        cloud.x(VX.ISOLATE);
+    }
 
-	@Test
-	public void verify_class_sharing() {
-		IsolateProps.at(cloud.node("node1"))
-		.shareClass(SharedStatics.class);
-		
-		cloud.node("node1").exec(new Runnable() {
-			@Override
-			public void run() {
-				assertIsolated(IsolateNodeTest.class);				
-				assertShared(SharedStatics.class);				
-			}
-		});
-	}
+    @Test
+    public void verify_default_isolation() {
+        cloud.node("node1").execRunnable(new Runnable() {
+            @Override
+            public void run() {
+                assertIsolated(IsolateNodeTest.class);
+                assertIsolated(SharedStatics.class);
+            }
+        });
+    }
 
-	@Test
-	public void verify_package_isolation() {
-		IsolateProps.at(cloud.node("node1"))
-		.sharePackage("")
-		.isolatePackage("org.gridkit.nanocloud");
-		
-		cloud.node("node1").exec(new Runnable() {
-			@Override
-			public void run() {
-				assertIsolated(IsolateNodeTest.class);				
-				assertIsolated(SharedStatics.class);				
-				assertShared(ViNode.class);				
-			}
-		});
-	}
+    @Test
+    public void verify_package_sharing() {
+        IsolateProps.at(cloud.node("node1"))
+            .sharePackage("org.gridkit");
 
-	private static void assertIsolated(Class<?> c) {
-		ClassLoader cl = c.getClassLoader();
-		Assert.assertTrue("Class " + c.getSimpleName() + " is expected to be isolated", cl.getClass().getName().startsWith(Isolate.class.getName()));
-	}
+        cloud.node("node1").execRunnable(new Runnable() {
+            @Override
+            public void run() {
+                assertShared(IsolateNodeTest.class);
+                assertShared(SharedStatics.class);
+            }
+        });
+    }
 
-	private static void assertShared(Class<?> c) {
-		ClassLoader cl = c.getClassLoader();
-		Assert.assertFalse("Class " + c.getSimpleName() + " is expected to be shared", cl.getClass().getName().startsWith(Isolate.class.getName()));
-	}	
+    @Test
+    public void verify_class_sharing() {
+        IsolateProps.at(cloud.node("node1"))
+        .shareClass(SharedStatics.class);
+
+        cloud.node("node1").execRunnable(new Runnable() {
+            @Override
+            public void run() {
+                assertIsolated(IsolateNodeTest.class);
+                assertShared(SharedStatics.class);
+            }
+        });
+    }
+
+    @Test
+    public void verify_package_isolation() {
+        IsolateProps.at(cloud.node("node1"))
+        .sharePackage("")
+        .isolatePackage("org.gridkit.nanocloud");
+
+        cloud.node("node1").execRunnable(new Runnable() {
+            @Override
+            public void run() {
+                assertIsolated(IsolateNodeTest.class);
+                assertIsolated(SharedStatics.class);
+                assertShared(ViNode.class);
+            }
+        });
+    }
+
+    private static void assertIsolated(Class<?> c) {
+        ClassLoader cl = c.getClassLoader();
+        Assert.assertTrue("Class " + c.getSimpleName() + " is expected to be isolated", cl.getClass().getName().startsWith(Isolate.class.getName()));
+    }
+
+    private static void assertShared(Class<?> c) {
+        ClassLoader cl = c.getClassLoader();
+        Assert.assertFalse("Class " + c.getSimpleName() + " is expected to be shared", cl.getClass().getName().startsWith(Isolate.class.getName()));
+    }
 }

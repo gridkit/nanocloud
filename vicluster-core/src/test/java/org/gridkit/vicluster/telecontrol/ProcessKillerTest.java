@@ -16,36 +16,36 @@
 package org.gridkit.vicluster.telecontrol;
 
 import org.gridkit.nanocloud.Cloud;
-import org.gridkit.nanocloud.CloudFactory;
+import org.gridkit.nanocloud.Nanocloud;
 import org.gridkit.vicluster.ViProps;
 import org.junit.Test;
 
 public class ProcessKillerTest {
 
-	@Test
-	public void verify_shutdown_after_kill() throws InterruptedException {
-		Cloud cloud = CloudFactory.createCloud();
-		ViProps.at(cloud.node("**")).setLocalType();
-		
-		cloud.node("node1");
-		cloud.node("node2");
-		
-		cloud.node("**").exec(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("Hi!");
-			}
-		});
-		
-		cloud.node("node1").submit(new Runnable() {
-			@Override
-			public void run() {
-				Runtime.getRuntime().halt(0);
-			}
-		});
-		
-		Thread.sleep(1000);
-		
-		cloud.shutdown();
-	}
+    @Test
+    public void verify_shutdown_after_kill() throws InterruptedException {
+        Cloud cloud = Nanocloud.createCloud();
+        ViProps.at(cloud.node("**")).setLocalType();
+
+        cloud.node("node1");
+        cloud.node("node2");
+
+        cloud.node("**").execRunnable(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Hi!");
+            }
+        });
+
+        cloud.node("node1").asyncExecRunnable(new Runnable() {
+            @Override
+            public void run() {
+                Runtime.getRuntime().halt(0);
+            }
+        });
+
+        Thread.sleep(1000);
+
+        cloud.shutdown();
+    }
 }

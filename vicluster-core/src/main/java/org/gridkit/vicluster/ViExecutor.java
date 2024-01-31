@@ -20,38 +20,38 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
- * 
+ *
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  */
 public interface ViExecutor {
 
-	public void exec(Runnable task);
-	
-	@SuppressWarnings("deprecation")
+    public void exec(Runnable task);
+
+    @SuppressWarnings("deprecation")
     public void exec(VoidCallable task);
 
-	public <T> T exec(Callable<T> task);
-	
-	public Future<Void> submit(Runnable task);
-	
-	@SuppressWarnings("deprecation")
+    public <T> T exec(Callable<T> task);
+
+    public Future<Void> submit(Runnable task);
+
+    @SuppressWarnings("deprecation")
     public Future<Void> submit(VoidCallable task);
-	
-	public <T> Future<T> submit(Callable<T> task);	
 
-	// Mass operations
+    public <T> Future<T> submit(Callable<T> task);
 
-	/**
-	 * Version of exec for group
-	 * 
-	 * @return
-	 */
-	public <T> List<T> massExec(Callable<? extends T> task);
-	
-	public List<Future<Void>> massSubmit(Runnable task);
-	
-	@SuppressWarnings("deprecation")
+    // Mass operations
+
+    /**
+     * Version of exec for group
+     *
+     * @return
+     */
+    public <T> List<T> massExec(Callable<? extends T> task);
+
+    public List<Future<Void>> massSubmit(Runnable task);
+
+    @SuppressWarnings("deprecation")
     public List<Future<Void>> massSubmit(VoidCallable task);
-	
-	public <T> List<Future<T>> massSubmit(Callable<? extends T> task);
+
+    public <T> List<Future<T>> massSubmit(Callable<? extends T> task);
 }

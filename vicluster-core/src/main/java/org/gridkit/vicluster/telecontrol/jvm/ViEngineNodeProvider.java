@@ -7,8 +7,8 @@ import org.gridkit.nanocloud.telecontrol.RuntimePragmaSupport;
 import org.gridkit.vicluster.AbstractCloudContext;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.ViEngine;
-import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.ViNodeCore;
 import org.gridkit.vicluster.ViNodeProvider;
 import org.gridkit.zerormi.zlog.LogStream;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class ViEngineNodeProvider implements ViNodeProvider {
     }
 
     @Override
-    public ViNode createNode(String name, ViNodeConfig config) {
+    public ViNodeCore createNode(String name, ViNodeConfig config) {
         ViEngine.Core core = null;
         try {
             Map<String, Object> engineConfig = config.getConfigMap();
@@ -37,7 +37,7 @@ public class ViEngineNodeProvider implements ViNodeProvider {
             return node;
         }
         catch(Exception e) {
-            if ("true".equalsIgnoreCase(String.valueOf(config.get(ViConf.NODE_DUMP_ON_FAILURE)))) {
+            if ("true".equalsIgnoreCase(String.valueOf((String)config.get(ViConf.NODE_DUMP_ON_FAILURE)))) {
                 core.dumpCore(new WarnStream(LoggerFactory.getLogger(ViEngineNodeProvider.class)));
             }
             throw Any.throwUnchecked(e);

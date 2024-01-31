@@ -8,10 +8,7 @@ import org.gridkit.vicluster.ViConf.HookConf;
 import org.gridkit.vicluster.ViConf.JvmConf;
 import org.gridkit.vicluster.ViConf.RuntimeEx;
 import org.gridkit.vicluster.ViConf.TypeConf;
-import org.gridkit.vicluster.ViConfExtender;
-import org.gridkit.vicluster.ViConfigurable;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeExtender;
 
 /**
  * This class is a central reference point for various {@link ViNode} extenders.
@@ -96,7 +93,7 @@ public class VX {
     public static final ViNodeExtender<RuntimeEx> RUNTIME = new ViNodeExtender<RuntimeEx>() {
 
         @Override
-        public RuntimeEx wrap(ViNode node) {
+        public RuntimeEx wrap(ViNodeControl node) {
             return RuntimeEx.at(node);
         }
     };

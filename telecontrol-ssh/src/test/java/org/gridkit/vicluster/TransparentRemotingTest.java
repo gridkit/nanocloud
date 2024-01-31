@@ -18,187 +18,186 @@ package org.gridkit.vicluster;
 import java.rmi.Remote;
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
-import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class TransparentRemotingTest {
 
-	private Cloud cloud = SimpleCloudFactory.createCloud();
-	
-	@After
-	public void dropCloud() {
-		cloud.shutdown();
-	}
-	
-	public ViNode getIsolateNode() {
-		ViNode node = cloud.node("isolate");
-		ViProps.at(node).setIsolateType();
-		return node;
-	}
-	
-	@Test
-	public void check_isolate_with_simple_double_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newSimpleServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(0d, ping.pingDouble(10d));
-	}
+    private ViNodeSet cloud = SimpleCloudFactory.createCloud();
 
-	@Test
-	public void check_isolate_with_simple_long_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newSimpleServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(0, ping.pingLong(10l));
-	}
+    @After
+    public void dropCloud() {
+        cloud.shutdown();
+    }
 
-	@Test
-	public void check_isolate_with_simple_int_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newSimpleServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(0, ping.pingInt(10));
-	}
+    public ViNode getIsolateNode() {
+        ViNode node = cloud.node("isolate");
+        ViProps.at(node).setIsolateType();
+        return node;
+    }
 
-	@Test
-	public void check_isolate_with_simple_string_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newSimpleServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(null, ping.pingString("ABC"));
-	}
+    @Test
+    public void check_isolate_with_simple_double_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newSimpleServer(node);
 
-	@Test(timeout = 10000)
-	public void check_isolate_with_inverting_double_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newInvertedServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(-10d, ping.pingDouble(10d));
-	}
+        ping.ping();
+        Assert.assertEquals(0d, ping.pingDouble(10d), 1e-6);
+    }
 
-	@Test(timeout = 10000)
-	public void check_isolate_with_inverting_long_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newInvertedServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(-10l, ping.pingLong(10l));
-	}
+    @Test
+    public void check_isolate_with_simple_long_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newSimpleServer(node);
 
-	@Test(timeout = 10000)
-	public void check_isolate_with_inverting_int_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newInvertedServer(node);
-		
-		ping.ping();
-		Assert.assertEquals(-10, ping.pingInt(10));
-	}
+        ping.ping();
+        Assert.assertEquals(0, ping.pingLong(10l));
+    }
 
-	@Test(timeout = 10000)
-	public void check_isolate_with_inverting_string_ping() {
-		ViNode node = getIsolateNode();
-		Ping ping = newInvertedServer(node);
-		
-		ping.ping();
-		Assert.assertEquals("ABC", ping.pingString("ABC"));
-	}
+    @Test
+    public void check_isolate_with_simple_int_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newSimpleServer(node);
 
-	public Ping newInvertedServer(ViNode node) {
-		Ping ping = node.exec(new Callable<Ping>() {
-			@Override
-			public Ping call() throws Exception {				
-				return new InveringPingServer();
-			}
-		});
-		return ping;
-	}
+        ping.ping();
+        Assert.assertEquals(0, ping.pingInt(10));
+    }
 
-	public Ping newSimpleServer(ViNode node) {
-		Ping ping = node.exec(new Callable<Ping>() {
-			@Override
-			public Ping call() throws Exception {				
-				return new SimplePingServer();
-			}
-		});
-		return ping;
-	}
-	
-	public interface Ping extends Remote {
-		
-		public void ping();
-		
-		public double pingDouble(double val);
+    @Test
+    public void check_isolate_with_simple_string_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newSimpleServer(node);
 
-		public int pingInt(int val);
+        ping.ping();
+        Assert.assertEquals(null, ping.pingString("ABC"));
+    }
 
-		public long pingLong(long val);
+    @Test(timeout = 10000)
+    public void check_isolate_with_inverting_double_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newInvertedServer(node);
 
-		public String pingString(String val);
-		
-	}
-	
-	public class SimplePingServer implements Ping {
+        ping.ping();
+        Assert.assertEquals(-10d, ping.pingDouble(10d), 1e-6);
+    }
 
-		@Override
-		public void ping() {
-		}
+    @Test(timeout = 10000)
+    public void check_isolate_with_inverting_long_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newInvertedServer(node);
 
-		@Override
-		public double pingDouble(double val) {
-			return 0;
-		}
+        ping.ping();
+        Assert.assertEquals(-10l, ping.pingLong(10l));
+    }
 
-		@Override
-		public int pingInt(int val) {
-			return 0;
-		}
+    @Test(timeout = 10000)
+    public void check_isolate_with_inverting_int_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newInvertedServer(node);
 
-		@Override
-		public long pingLong(long val) {
-			return 0;
-		}
+        ping.ping();
+        Assert.assertEquals(-10, ping.pingInt(10));
+    }
 
-		@Override
-		public String pingString(String val) {
-			return null;
-		}
-	}
-	
-	public class InveringPingServer extends SimplePingServer {
+    @Test(timeout = 10000)
+    public void check_isolate_with_inverting_string_ping() {
+        ViNode node = getIsolateNode();
+        Ping ping = newInvertedServer(node);
 
-		@Override
-		public void ping() {
-			super.ping();
-		}
+        ping.ping();
+        Assert.assertEquals("ABC", ping.pingString("ABC"));
+    }
 
-		@Override
-		public double pingDouble(double val) {
-			return -val;
-		}
+    public Ping newInvertedServer(ViNode node) {
+        Ping ping = node.exec(new Callable<Ping>() {
+            @Override
+            public Ping call() throws Exception {
+                return new InveringPingServer();
+            }
+        });
+        return ping;
+    }
 
-		@Override
-		public int pingInt(int val) {
-			return -val;
-		}
+    public Ping newSimpleServer(ViNode node) {
+        Ping ping = node.exec(new Callable<Ping>() {
+            @Override
+            public Ping call() throws Exception {
+                return new SimplePingServer();
+            }
+        });
+        return ping;
+    }
 
-		@Override
-		public long pingLong(long val) {
-			return -val;
-		}
+    public interface Ping extends Remote {
 
-		@Override
-		public String pingString(String val) {
-			return val;
-		}
-	}
-	
+        public void ping();
+
+        public double pingDouble(double val);
+
+        public int pingInt(int val);
+
+        public long pingLong(long val);
+
+        public String pingString(String val);
+
+    }
+
+    public class SimplePingServer implements Ping {
+
+        @Override
+        public void ping() {
+        }
+
+        @Override
+        public double pingDouble(double val) {
+            return 0;
+        }
+
+        @Override
+        public int pingInt(int val) {
+            return 0;
+        }
+
+        @Override
+        public long pingLong(long val) {
+            return 0;
+        }
+
+        @Override
+        public String pingString(String val) {
+            return null;
+        }
+    }
+
+    public class InveringPingServer extends SimplePingServer {
+
+        @Override
+        public void ping() {
+            super.ping();
+        }
+
+        @Override
+        public double pingDouble(double val) {
+            return -val;
+        }
+
+        @Override
+        public int pingInt(int val) {
+            return -val;
+        }
+
+        @Override
+        public long pingLong(long val) {
+            return -val;
+        }
+
+        @Override
+        public String pingString(String val) {
+            return val;
+        }
+    }
+
 }

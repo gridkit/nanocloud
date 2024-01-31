@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 import org.gridkit.nanocloud.telecontrol.ZeroRmiRemoteSession;
 import org.gridkit.vicluster.ViConf;
 import org.gridkit.vicluster.isolate.IsolateProps;
-import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
+import org.gridkit.vicluster.telecontrol.StreamCopyThread;
 
 class IsolateNodeTypeInitializer implements NodeAction {
 
@@ -50,7 +50,7 @@ class IsolateNodeTypeInitializer implements NodeAction {
     }
 
     protected void configureCloudServices(PragmaWriter config) {
-        cloudSingleton(config, ViConf.SPI_STREAM_COPY_SERVICE, BackgroundStreamDumper.StreamDumperService.class, "shutdown");
+        cloudSingleton(config, ViConf.SPI_STREAM_COPY_SERVICE, StreamCopyThread.class, StreamCopyThread::shutdown);
     }
 
     protected void configurePragmas(PragmaWriter config) {

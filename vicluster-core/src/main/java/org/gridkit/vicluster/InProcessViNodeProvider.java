@@ -15,215 +15,152 @@
  */
 package org.gridkit.vicluster;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViNodeExtender;
 import org.gridkit.util.concurrent.FutureBox;
+import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.isolate.Isolate;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 public class InProcessViNodeProvider implements ViNodeProvider {
 
-	@Override
-	public boolean verifyNodeConfig(ViNodeConfig config) {
-		return true;
-	}
+    @Override
+    public boolean verifyNodeConfig(ViNodeConfig config) {
+        return true;
+    }
 
-	@Override
-	public ViNode createNode(String name, ViNodeConfig config) {
-		InProcessViNode node = new InProcessViNode(name);
-		config.apply(node);
-		return node;
-	}
-	
-	@Override
-	public void shutdown() {
-		// TODO implement shutdown()
-	}
+    @Override
+    public ViNodeCore createNode(String name, ViNodeConfig config) {
+        InProcessViNode node = new InProcessViNode(name);
+        config.apply(node);
+        return node;
+    }
 
-	private static class InProcessViNode implements ViNode {
-		
-		private Isolate isolate;
-		
-		public InProcessViNode(String name) {
-			isolate = new Isolate(name);
-			isolate.start();
-		}
+    @Override
+    public void shutdown() {
+        // TODO implement shutdown()
+    }
 
-		@Override
-		public <X> X x(ViNodeExtender<X> extention) {
-		    return extention.wrap(this);
-		}
+    private static class InProcessViNode implements ViNodeCore {
 
-		@Override
-		public <X> X x(ViConfExtender<X> extention) {
-			return extention.wrap(this);
-		}
+        private Isolate isolate;
+        private DirectRemoteExecutor executor;
 
-		@Override
-		public String getProp(String propName) {
-			return isolate.getProp(propName);
-		}
-
-		@Override
-		public Object getPragma(String pragmaName) {
-			return null;
-		}
-
-		public void setProp(String propName, String value) {
-			isolate.setProp(propName, value);
-		}
-
-		public void setProps(Map<String, String> props) {
-			isolate.setProp(props);
-		}
-
-		@Override
-		public void setConfigElement(String key, Object value) {
-			if (value == null || value instanceof String) {
-				setProp(key, (String)value);
-			}
-		}
-
-		@Override
-		public void setConfigElements(Map<String, Object> config) {
-			for(String key: config.keySet()) {
-				setConfigElement(key, config.get(key));
-			}
-		}
-		
-		@Override
-		public void kill() {
-			isolate.stop();
-		}
-
-		@Override
-		public void shutdown() {
-			isolate.stop();
-		}
-
-		@Override
-		public void touch() {
-		}
-
-		@Override
-		public void exec(Runnable task) {
-			isolate.execNoMarshal(task);
-		}
+        public InProcessViNode(String name) {
+            isolate = new Isolate(name);
+            isolate.start();
+            executor = new IsolateDirectExec(isolate);
+        }
 
         @Override
-        @SuppressWarnings("deprecation")
-		public void exec(final VoidCallable task) {
-			isolate.execNoMarshal(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						task.call();
-					} catch (Exception e) {
-						AnyThrow.throwUncheked(e);
-					}					
-				}
-			});
-		}
-
-		@Override
-		public <T> T exec(Callable<T> task) {
-			Future<T> f = submit(task);
-			try {
-				return f.get();
-			} catch (InterruptedException e) {
-				AnyThrow.throwUncheked(e);
-				throw new Error("Unreachable");
-			} catch (ExecutionException e) {
-				AnyThrow.throwUncheked(e.getCause());
-				throw new Error("Unreachable");
-			}
-		}
-
-		@Override
-		public Future<Void> submit(final Runnable task) {
-		    final FutureBox<Void> box = new FutureBox<Void>();
-			isolate.submitNoMarshal(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        task.run();
-                        box.setData(null);
-                    }
-                    catch(Throwable e) {
-                        box.setErrorIfWaiting(e);
-                    }
-                }
-            });
-			return box;
-		}
+        public <X> X x(ViNodeExtender<X> extention) {
+            return extention.wrap(this);
+        }
 
         @Override
-        @SuppressWarnings("deprecation")
-		public Future<Void> submit(final VoidCallable task) {			
-			return submit(new Runnable(){
-				public void run() {
-					try {
-						task.call();
-					} catch (Exception e) {
-						AnyThrow.throwUncheked(e);
-					}
-				}
-			});
-		}
+        public <X> X x(ViConfExtender<X> extention) {
+            return extention.wrap(this);
+        }
 
-		@Override
-		public <T> Future<T> submit(final Callable<T> task) {
-            final FutureBox<T> box = new FutureBox<T>();
+        @Override
+        public String getProp(String propName) {
+            return isolate.getProp(propName);
+        }
+
+        @Override
+        public Object getPragma(String pragmaName) {
+            return null;
+        }
+
+        @Override
+        public void setProp(String propName, String value) {
+            isolate.setProp(propName, value);
+        }
+
+        @Override
+        public void setProps(Map<String, String> props) {
+            isolate.setProp(props);
+        }
+
+        @Override
+        public void setConfigElement(String key, Object value) {
+            if (value == null || value instanceof String) {
+                setProp(key, (String)value);
+            }
+        }
+
+        @Override
+        public void setConfigElements(Map<String, Object> config) {
+            for(String key: config.keySet()) {
+                setConfigElement(key, config.get(key));
+            }
+        }
+
+        @Override
+        public void kill() {
+            isolate.stop();
+        }
+
+        @Override
+        public void shutdown() {
+            isolate.stop();
+        }
+
+        @Override
+        public void touch() {
+        }
+
+        @Override
+        public DirectRemoteExecutor executor() {
+            return executor;
+        }
+    }
+
+    private static class IsolateDirectExec implements DirectRemoteExecutor {
+
+        private final Isolate isolate;
+
+        protected IsolateDirectExec(Isolate isolate) {
+            this.isolate = isolate;
+        }
+
+        @Override
+        public void exec(Runnable task) throws Exception {
+            isolate.execNoMarshal(task);
+        }
+
+        @Override
+        public <V> V exec(final Callable<V> task) throws Exception {
+            return isolate.execNoMarshal(task);
+        }
+
+        @Override
+        public FutureEx<Void> submit(final Runnable task) {
+            final FutureBox<Void> box = new FutureBox<>();
             isolate.submitNoMarshal(new Runnable() {
+
                 @Override
                 public void run() {
-                    try {
-                        box.setData(task.call());
-                    }
-                    catch(Throwable e) {
-                        box.setErrorIfWaiting(e);
-                    }
+                    box.capture(task);
                 }
             });
             return box;
-		}
-
-		@Override
-		public <T> List<T> massExec(Callable<? extends T> task) {
-			return Collections.singletonList((T)exec(task));
-		}
-
-		@Override
-		public List<Future<Void>> massSubmit(Runnable task) {
-			return Collections.singletonList(submit(task));
-		}
+        }
 
         @Override
-        @SuppressWarnings("deprecation")
-		public List<Future<Void>> massSubmit(VoidCallable task) {
-			return Collections.singletonList(submit(task));
-		}
+        public <V> FutureEx<V> submit(Callable<V> task) {
+            final FutureBox<V> box = new FutureBox<>();
+            isolate.submitNoMarshal(new Runnable() {
 
-		@Override
-		@SuppressWarnings({ "unchecked", "rawtypes" })
-		public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-			return (List)Collections.singletonList(submit(task));
-		}
-		
-		private static class AnyThrow {
-
-		    public static void throwUncheked(Throwable e) {
-		        AnyThrow.<RuntimeException>throwAny(e);
-		    }
-		   
-		    @SuppressWarnings("unchecked")
-		    private static <E extends Throwable> void throwAny(Throwable e) throws E {
-		        throw (E)e;
-		    }
-		}
-	}	
+                @Override
+                public void run() {
+                    box.capture(task);
+                }
+            });
+            return box;
+        }
+    }
 }

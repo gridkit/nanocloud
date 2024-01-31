@@ -20,6 +20,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViConfigurable;
+
 /**
  * 
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)

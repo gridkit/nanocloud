@@ -30,18 +30,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.gridkit.lab.interceptor.CutPoint;
 import org.gridkit.lab.interceptor.Interception;
 import org.gridkit.lab.interceptor.Interceptor;
+import org.gridkit.nanocloud.ViConfigurable;
 import org.gridkit.nanocloud.telecontrol.isolate.IsolateRemoteSessionWrapper;
 import org.gridkit.nanocloud.viengine.Pragma;
 import org.gridkit.util.concurrent.BlockingBarrier;
 import org.gridkit.util.concurrent.zerormi.ExportableBarrier;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConfigurable;
-import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.isolate.Isolate;
 
 public class Intercept {
 
-    public static void enableInstrumentationTracing(ViNode node, boolean enable) {
+    public static void enableInstrumentationTracing(ViConfigurable node, boolean enable) {
         node.setProp("gridkit.interceptor.trace", Boolean.toString(enable));
     }
 

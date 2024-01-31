@@ -23,89 +23,92 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class BasicJvmNodeTest {
 
-	ViManager cloud;
+    ViManager cloud;
 
-	@Before
-	public void init() {
-		cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON)));
-	}
+    @Before
+    public void init() {
+        cloud = new ViManager(new JvmNodeProvider(new LocalJvmProcessFactory(BackgroundStreamDumper.SINGLETON)));
+    }
 
-	@After
-	public void cleanup() {
-		cloud.shutdown();
-	}
-	
-	@Test
-	public void hallo_world_test() {
-		
-		ViNode node = cloud.node("HalloWelt");
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("Hallo world!");
-			}
-		});
-		
-		node.shutdown();
-	}	
+    @After
+    public void cleanup() {
+        cloud.shutdown();
+    }
 
-	@Test
-	public void test_single_VM_option() {
-		
-		ViNode node = cloud.node("HalloWelt");
-		JvmProps.addJvmArg(node, "-Dtest-property=Y-a-a-hoo");
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals("Y-a-a-hoo", System.getProperty("test-property"));
-			}
-		});
+    @Test
+    public void hallo_world_test() {
 
-		Assert.assertEquals("Y-a-a-hoo", node.getProp("test-property"));
-		
-		node.shutdown();
-	}	
+        ViNode node = cloud.node("HalloWelt");
 
-	@Test
-	public void test_multiple_VM_options() {
-		
-		ViNode node = cloud.node("HalloWelt");
-		JvmProps.addJvmArg(node, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				Assert.assertEquals("Y-a-a-hoo", System.getProperty("test-property1"));
-				Assert.assertEquals("Boo", System.getProperty("test-property2"));
-			}
-		});
-		
-		Assert.assertEquals("Y-a-a-hoo", node.getProp("test-property1"));
-		Assert.assertEquals("Boo", node.getProp("test-property2"));
-		
-		node.shutdown();
-	}	
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Hallo world!");
+            }
+        });
 
-	@Test(expected=RuntimeException.class)
-	public void test_invalid_VM_options() {
-		
-		ViNode node = cloud.node("HalloWelt");
-		JvmProps.addJvmArg(node, "-XX:+InvalidOption");
-		
-		node.exec(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("Ping");
-			}
-		});
-		
-		
-		node.shutdown();
-	}	
+        node.shutdown();
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void test_single_VM_option() {
+
+        ViNode node = cloud.node("HalloWelt");
+        JvmProps.addJvmArg(node, "-Dtest-property=Y-a-a-hoo");
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("Y-a-a-hoo", System.getProperty("test-property"));
+            }
+        });
+
+        Assert.assertEquals("Y-a-a-hoo", node.getProp("test-property"));
+
+        node.shutdown();
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void test_multiple_VM_options() {
+
+        ViNode node = cloud.node("HalloWelt");
+        JvmProps.addJvmArg(node, "|-Dtest-property1=Y-a-a-hoo|-Dtest-property2=Boo");
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                Assert.assertEquals("Y-a-a-hoo", System.getProperty("test-property1"));
+                Assert.assertEquals("Boo", System.getProperty("test-property2"));
+            }
+        });
+
+        Assert.assertEquals("Y-a-a-hoo", node.getProp("test-property1"));
+        Assert.assertEquals("Boo", node.getProp("test-property2"));
+
+        node.shutdown();
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test(expected=RuntimeException.class)
+    public void test_invalid_VM_options() {
+
+        ViNode node = cloud.node("HalloWelt");
+        JvmProps.addJvmArg(node, "-XX:+InvalidOption");
+
+        node.exec(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Ping");
+            }
+        });
+
+
+        node.shutdown();
+    }
 }

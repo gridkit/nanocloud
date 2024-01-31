@@ -21,67 +21,66 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
-import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class CloudFactoryCheck {
 
-	private static String CONFIG = "~/nanocloud-testcluster.viconf";
-	
-	private Cloud manager; 
+    private static String CONFIG = "~/nanocloud-testcluster.viconf";
 
-	@After
-	public void dropNodes() {
-		if (manager != null) {
-			manager.shutdown();
-		}
-	}
-	
-	@Before
-	public void checkConfig() {
-		Assume.assumeTrue(new File(new File(System.getProperty("user.home")), CONFIG.substring(2)).exists());
-	}
-	
-	@Test
-	public void test_ssh_node() throws InterruptedException {
-		
-		manager = SimpleCloudFactory.createCloud(CONFIG);
-		
-		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
-		manager.node("jvm.remote.host1");
-		
-		List<String> ids = manager.node("**.host1").massExec(new Callable<String>(){
-			@Override
-			public String call() throws Exception {
-				System.out.println("This is std out");
-				System.err.println("This is std err");
-				Thread.sleep(500);
-				return ManagementFactory.getRuntimeMXBean().getName();
-			}
-		});
-		ids = new ArrayList<String>(ids);
-		
-		String name = ManagementFactory.getRuntimeMXBean().getName();
-		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
-		
-		Thread.sleep(500);
-	}
+    private ViNodeSet manager;
+
+    @After
+    public void dropNodes() {
+        if (manager != null) {
+            manager.shutdown();
+        }
+    }
+
+    @Before
+    public void checkConfig() {
+        Assume.assumeTrue(new File(new File(System.getProperty("user.home")), CONFIG.substring(2)).exists());
+    }
+
+    @Test
+    public void test_ssh_node() throws InterruptedException {
+
+        manager = SimpleCloudFactory.createCloud(CONFIG);
+
+        manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
+        manager.node("jvm.remote.host1");
+
+        List<String> ids = manager.node("**.host1").massExec(new Callable<String>(){
+            @Override
+            public String call() throws Exception {
+                System.out.println("This is std out");
+                System.err.println("This is std err");
+                Thread.sleep(500);
+                return ManagementFactory.getRuntimeMXBean().getName();
+            }
+        });
+        ids = new ArrayList<String>(ids);
+
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
+
+        Thread.sleep(500);
+    }
 
 //	@Test
 //	@SuppressWarnings("deprecation")
 //	public void test_ssh_forced_local() throws InterruptedException {
-//		
+//
 //		manager = SimpleCloudFactory.createLocalCloud(CONFIG);
-//		
+//
 //		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
 //		manager.node("jvm.remote.host1");
-//		
+//
 //		List<String> ids = manager.node("**.host1").massExec(new Callable<String>(){
 //			@Override
 //			public String call() throws Exception {
@@ -92,91 +91,91 @@ public class CloudFactoryCheck {
 //			}
 //		});
 //		ids = new ArrayList<String>(ids);
-//		
+//
 //		String name = ManagementFactory.getRuntimeMXBean().getName();
 //		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
-//		
+//
 //		Thread.sleep(500);
 //	}
-	
-	@Test
-	public void test_bulk_ssh_nodes() {
-		manager = SimpleCloudFactory.createCloud(CONFIG);
-		
-		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
 
-		for(int i = 0; i != 15; ++i) {
-			manager.node("jvm.remote.host" + (1 + i % 3) + ".node" + i);
-		}
-		
-		List<String> ids = manager.node("**.node*").massExec(new Callable<String>(){
-			@Override
-			public String call() throws Exception {
-				return ManagementFactory.getRuntimeMXBean().getName();
-			}
-		});
-		ids = new ArrayList<String>(ids);
-		
-		String name = ManagementFactory.getRuntimeMXBean().getName();
-		System.out.println("Local JVM: " + name);
-		System.out.println("Remote VMs:");
-		for(String vmname: ids) {
-			System.out.println("  " + vmname);
-		}
-	}
-	
-	@Test
-	public void test_isolate_and_local_node() {
-		manager = SimpleCloudFactory.createCloud(CONFIG);
-		
-		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
-		manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
-		
-		manager.node("isolate.node1");
-		manager.node("jvm.local.node1");
-		
-		List<String> ids = manager.node("**.node1").massExec(new Callable<String>(){
-			@Override
-			public String call() throws Exception {
-				String vmname = ManagementFactory.getRuntimeMXBean().getName();
-				System.out.println("Hi, this JVM is named '" + vmname + "'");
-				return vmname;
-			}
-		});
-		ids = new ArrayList<String>(ids);
-		
-		String name = ManagementFactory.getRuntimeMXBean().getName();
-		System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
-		
-		Assert.assertEquals(2, ids.size());
-		Assert.assertTrue("One of VM name should be same as this", ids.remove(name));
-		Assert.assertFalse("Remaining VM name should be different", ids.remove(name));
-	}
+    @Test
+    public void test_bulk_ssh_nodes() {
+        manager = SimpleCloudFactory.createCloud(CONFIG);
 
-	@Test
-	public void test_isolate_local_remote_node() {
-		manager = SimpleCloudFactory.createCloud(CONFIG);
-		
-		manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
-		manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
-		manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
-		
-		manager.node("isolate.node1");
-		manager.node("jvm.local.node1");
-		manager.node("jvm.remote.host1.node1");
-		
-		List<String> ids = manager.node("**.node1").massExec(new Callable<String>(){
-			@Override
-			public String call() throws Exception {
-				String vmname = ManagementFactory.getRuntimeMXBean().getName();
-				System.out.println("HI! this JVM is named '" + vmname + "'");
-				return vmname;
-			}
-		});
-		ids = new ArrayList<String>(ids);
-		
-		String name = ManagementFactory.getRuntimeMXBean().getName();
-		System.out.println("Local JVM: " + name);
-		System.out.println("Other JVMs " + ids);
-	}
+        manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
+
+        for(int i = 0; i != 15; ++i) {
+            manager.node("jvm.remote.host" + (1 + i % 3) + ".node" + i);
+        }
+
+        List<String> ids = manager.node("**.node*").massExec(new Callable<String>(){
+            @Override
+            public String call() throws Exception {
+                return ManagementFactory.getRuntimeMXBean().getName();
+            }
+        });
+        ids = new ArrayList<String>(ids);
+
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        System.out.println("Local JVM: " + name);
+        System.out.println("Remote VMs:");
+        for(String vmname: ids) {
+            System.out.println("  " + vmname);
+        }
+    }
+
+    @Test
+    public void test_isolate_and_local_node() {
+        manager = SimpleCloudFactory.createCloud(CONFIG);
+
+        manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
+        manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
+
+        manager.node("isolate.node1");
+        manager.node("jvm.local.node1");
+
+        List<String> ids = manager.node("**.node1").massExec(new Callable<String>(){
+            @Override
+            public String call() throws Exception {
+                String vmname = ManagementFactory.getRuntimeMXBean().getName();
+                System.out.println("Hi, this JVM is named '" + vmname + "'");
+                return vmname;
+            }
+        });
+        ids = new ArrayList<String>(ids);
+
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        System.out.println("Local JVM: " + name + " Nodes' JVM: " + ids);
+
+        Assert.assertEquals(2, ids.size());
+        Assert.assertTrue("One of VM name should be same as this", ids.remove(name));
+        Assert.assertFalse("Remaining VM name should be different", ids.remove(name));
+    }
+
+    @Test
+    public void test_isolate_local_remote_node() {
+        manager = SimpleCloudFactory.createCloud(CONFIG);
+
+        manager.node("isolate.**").setProp(ViProps.NODE_TYPE, "isolate");
+        manager.node("jvm.local.**").setProp(ViProps.NODE_TYPE, "local");
+        manager.node("jvm.remote.**").setProp(ViProps.NODE_TYPE, "remote");
+
+        manager.node("isolate.node1");
+        manager.node("jvm.local.node1");
+        manager.node("jvm.remote.host1.node1");
+
+        List<String> ids = manager.node("**.node1").massExec(new Callable<String>(){
+            @Override
+            public String call() throws Exception {
+                String vmname = ManagementFactory.getRuntimeMXBean().getName();
+                System.out.println("HI! this JVM is named '" + vmname + "'");
+                return vmname;
+            }
+        });
+        ids = new ArrayList<String>(ids);
+
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        System.out.println("Local JVM: " + name);
+        System.out.println("Other JVMs " + ids);
+    }
 }

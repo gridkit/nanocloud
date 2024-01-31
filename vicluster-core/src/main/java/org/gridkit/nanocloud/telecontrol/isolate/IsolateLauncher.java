@@ -14,7 +14,6 @@ import java.util.List;
 
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.vicluster.isolate.Isolate;
@@ -23,6 +22,7 @@ import org.gridkit.vicluster.telecontrol.ClasspathUtils;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamPipe;
 import org.gridkit.zeroio.LookbackOutputStream;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 import org.gridkit.zerormi.DuplexStream;
 import org.gridkit.zerormi.DuplexStreamConnector;
 import org.gridkit.zerormi.NamedStreamPair;
@@ -97,7 +97,7 @@ class IsolateLauncher implements ProcessLauncher {
         private LookbackOutputStream stdOut = new LookbackOutputStream(4096);
         private LookbackOutputStream stdErr = new LookbackOutputStream(4096);
 
-        private AdvancedExecutor executor;
+        private DirectRemoteExecutor executor;
         private FutureBox<Integer> exitBox = new FutureBox<Integer>();
 
         public IsolateSession(Isolate isolate, RemoteExecutionSession session) {
@@ -187,7 +187,7 @@ class IsolateLauncher implements ProcessLauncher {
         }
 
         @Override
-        public AdvancedExecutor getExecutionService() {
+        public DirectRemoteExecutor getExecutionService() {
             return executor;
         }
 

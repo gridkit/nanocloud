@@ -19,17 +19,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
 import org.gridkit.nanocloud.VX;
-import org.gridkit.vicluster.ViConfExtender;
-import org.gridkit.vicluster.ViNode;
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViNodeExtender;
+import org.gridkit.vicluster.AdvExecutor2ViExecutor;
 import org.gridkit.vicluster.ViNodeConfig;
-import org.gridkit.vicluster.ViNodeExtender;
-import org.gridkit.vicluster.VoidCallable;
+import org.gridkit.vicluster.ViNodeCore;
 import org.gridkit.vicluster.isolate.IsolateProps;
 import org.gridkit.vicluster.isolate.IsolateSelfInitializer;
 import org.gridkit.vicluster.telecontrol.BackgroundStreamDumper;
@@ -40,187 +37,160 @@ import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
 import org.gridkit.vicluster.telecontrol.jvm.JvmNodeProvider;
 import org.gridkit.vicluster.telecontrol.jvm.JvmProps;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 @SuppressWarnings("deprecation")
 public class IsolateAwareNodeProvider extends JvmNodeProvider {
 
-	public IsolateAwareNodeProvider() {
-		super(null);
-	}
+    public IsolateAwareNodeProvider() {
+        super(null);
+    }
 
-	@Override
-	public ViNode createNode(String name, ViNodeConfig config) {
-		try {
-			Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
+    @Override
+    public ViNodeCore createNode(String name, ViNodeConfig config) {
+        try {
+            Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
 
-			for(String key: config.getAllProps(JvmProps.CP_ADD).keySet()) {
-				String path = config.getProp(key);
-				if (path == null) {
-					continue;
-				}
-				if ("".equals(path)) {
-					path = key.substring(JvmProps.CP_ADD.length());
-				}
-				isolateProps.put(IsolateProps.CP_INCLUDE + new File(path).toURI().toString(), "");
-			}
-			for(String key: config.getAllProps(JvmProps.CP_REMOVE).keySet()) {				
-				String path = config.getProp(key);
-				if (path == null) {
-					continue;
-				}
-				if ("".equals(path)) {
-					path = key.substring(JvmProps.CP_ADD.length());
-				}
-				String url = new File(path).toURI().toString();
-				isolateProps.put(IsolateProps.CP_EXCLUDE + url, "");
-				isolateProps.put(IsolateProps.CP_EXCLUDE + "jar:" + url + "!/", "");
-			}
+            for(String key: config.getAllProps(JvmProps.CP_ADD).keySet()) {
+                String path = config.getProp(key);
+                if (path == null) {
+                    continue;
+                }
+                if ("".equals(path)) {
+                    path = key.substring(JvmProps.CP_ADD.length());
+                }
+                isolateProps.put(IsolateProps.CP_INCLUDE + new File(path).toURI().toString(), "");
+            }
+            for(String key: config.getAllProps(JvmProps.CP_REMOVE).keySet()) {
+                String path = config.getProp(key);
+                if (path == null) {
+                    continue;
+                }
+                if ("".equals(path)) {
+                    path = key.substring(JvmProps.CP_ADD.length());
+                }
+                String url = new File(path).toURI().toString();
+                isolateProps.put(IsolateProps.CP_EXCLUDE + url, "");
+                isolateProps.put(IsolateProps.CP_EXCLUDE + "jar:" + url + "!/", "");
+            }
 
-			IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps, config.getAllVanilaProps(), BackgroundStreamDumper.SINGLETON);
-			JvmConfig jvmConfig = prepareJvmConfig(config);
-			ManagedProcess process = factory.createProcess(name, jvmConfig);
-			return createViNode(name, config, process);
-		} catch (IOException e) {
-			// TODO special exception for node creation failure
-			throw new RuntimeException("Failed to create node '" + name + "'", e);
-		}		
-	}
-	
-	@Override
-	protected ViNode createViNode(String name, ViNodeConfig config, ManagedProcess process) throws IOException {
-		Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
-		// add Isolate init hook first
-		ViNodeConfig cc = new ViNodeConfig();
-		cc.x(VX.HOOK).setStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
-		config.apply(cc);
-		
-		return new WrapperNode(super.createViNode(name, cc, process));
-	}
-	
-	static class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
+            IsolateJvmNodeFactory factory = new IsolateJvmNodeFactory(isolateProps, config.getAllVanilaProps(), BackgroundStreamDumper.SINGLETON);
+            JvmConfig jvmConfig = prepareJvmConfig(config);
+            ManagedProcess process = factory.createProcess(name, jvmConfig);
+            return createViNode(name, config, process);
+        } catch (IOException e) {
+            // TODO special exception for node creation failure
+            throw new RuntimeException("Failed to create node '" + name + "'", e);
+        }
+    }
 
-		private Map<String, String> isolateConfigProps;
-		private Map<String, String> vanilaProps;
+    @Override
+    protected ViNodeCore createViNode(String name, ViNodeConfig config, ManagedProcess process) throws IOException {
+        Map<String, String> isolateProps = config.getAllProps(IsolateProps.PREFIX);
+        // add Isolate init hook first
+        ViNodeConfig cc = new ViNodeConfig();
+        cc.x(VX.HOOK).setStartupHook("isolate-init-hook", new IsolateSelfInitializer(isolateProps));
+        config.apply(cc);
+
+        return new WrapperNode(super.createViNode(name, cc, process));
+    }
+
+    static class IsolateJvmNodeFactory extends LocalJvmProcessFactory {
+
+        private Map<String, String> isolateConfigProps;
+        private Map<String, String> vanilaProps;
 
 
-		private IsolateJvmNodeFactory(Map<String, String> isolateConfigProps, Map<String, String> vanilaProps, StreamCopyService streamCopyService) {
-			super(streamCopyService);
-		    this.isolateConfigProps = isolateConfigProps;
-			this.vanilaProps = vanilaProps;
-		}
+        private IsolateJvmNodeFactory(Map<String, String> isolateConfigProps, Map<String, String> vanilaProps, StreamCopyService streamCopyService) {
+            super(streamCopyService);
+            this.isolateConfigProps = isolateConfigProps;
+            this.vanilaProps = vanilaProps;
+        }
 
-		@Override
-		protected Process startProcess(String name, ExecCommand jvmCmd) throws IOException {
-			return new IsolateProcess(name, isolateConfigProps, vanilaProps, jvmCmd);
-		}
-	}
-	
-	
-	private static class WrapperNode implements ViNode {
-		
-		private final ViNode node;
+        @Override
+        protected Process startProcess(String name, ExecCommand jvmCmd) throws IOException {
+            return new IsolateProcess(name, isolateConfigProps, vanilaProps, jvmCmd);
+        }
+    }
 
-		public WrapperNode(ViNode node) {
-			this.node = node;
-		}
 
-		@Override
-		public <X> X x(ViNodeExtender<X> extention) {
-		    return extention.wrap(this);
-		}
+    private static class WrapperNode implements ViNodeCore {
 
-		@Override
-		public <X> X x(ViConfExtender<X> extention) {
-			return extention.wrap(this);
-		}
-		
-		public void setProp(String propName, String value) {
-			node.setProp(propName, value);
-			if (propName.startsWith(IsolateProps.PREFIX)) {
-				Map<String, String> map = Collections.singletonMap(propName, value);
-				node.exec(new IsolateSelfInitializer(map));
-			}
-		}
+        private final ViNodeCore node;
 
-		public String getProp(String propName) {
-			return node.getProp(propName);
-		}
+        public WrapperNode(ViNodeCore node) {
+            this.node = node;
+        }
 
-		@Override
-		public Object getPragma(String pragmaName) {
-			return node.getPragma(pragmaName);
-		}
+        @Override
+        public <X> X x(ViNodeExtender<X> extention) {
+            return extention.wrap(this);
+        }
 
-		public void setConfigElement(String key, Object value) {
-			node.setConfigElement(key, value);
-		}
+        @Override
+        public <X> X x(ViConfExtender<X> extention) {
+            return extention.wrap(this);
+        }
 
-		public void setConfigElements(Map<String, Object> config) {
-			node.setConfigElements(config);
-		}
+        @Override
+        public void setProp(String propName, String value) {
+            node.setProp(propName, value);
+            if (propName.startsWith(IsolateProps.PREFIX)) {
+                Map<String, String> map = Collections.singletonMap(propName, value);
+                AdvExecutor2ViExecutor.exec(node.executor(), new IsolateSelfInitializer(map));
+            }
+        }
 
-		public void setProps(Map<String, String> props) {
-			node.setProps(props);
-			Map<String, String> map = new LinkedHashMap<String, String>();
-			for(String key: props.keySet()) {
-				if (key.startsWith(IsolateProps.PREFIX)) {
-					map.put(key, props.get(key));
-				}
-				node.exec(new IsolateSelfInitializer(map));
-			}
-		}
+        @Override
+        public String getProp(String propName) {
+            return node.getProp(propName);
+        }
 
-		public void touch() {
-			node.touch();
-		}
+        @Override
+        public Object getPragma(String pragmaName) {
+            return node.getPragma(pragmaName);
+        }
 
-		@Override
-		public void kill() {
-			node.kill();
-		}
+        @Override
+        public void setConfigElement(String key, Object value) {
+            node.setConfigElement(key, value);
+        }
 
-		public void shutdown() {
-			node.shutdown();
-		}
+        @Override
+        public void setConfigElements(Map<String, Object> config) {
+            node.setConfigElements(config);
+        }
 
-		public void exec(Runnable task) {
-			node.exec(task);
-		}
+        @Override
+        public void setProps(Map<String, String> props) {
+            node.setProps(props);
+            Map<String, String> map = new LinkedHashMap<String, String>();
+            for(String key: props.keySet()) {
+                if (key.startsWith(IsolateProps.PREFIX)) {
+                    map.put(key, props.get(key));
+                }
+                AdvExecutor2ViExecutor.exec(node.executor(), new IsolateSelfInitializer(map));
+            }
+        }
 
-		public void exec(VoidCallable task) {
-			node.exec(task);
-		}
+        @Override
+        public DirectRemoteExecutor executor() {
+            return node.executor();
+        }
 
-		public <T> T exec(Callable<T> task) {
-			return node.exec(task);
-		}
+        @Override
+        public void touch() {
+            node.touch();
+        }
 
-		public Future<Void> submit(Runnable task) {
-			return node.submit(task);
-		}
+        @Override
+        public void kill() {
+            node.kill();
+        }
 
-		public Future<Void> submit(VoidCallable task) {
-			return node.submit(task);
-		}
-
-		public <T> Future<T> submit(Callable<T> task) {
-			return node.submit(task);
-		}
-
-		public <T> List<T> massExec(Callable<? extends T> task) {
-			return node.massExec(task);
-		}
-
-		public List<Future<Void>> massSubmit(Runnable task) {
-			return node.massSubmit(task);
-		}
-
-		public List<Future<Void>> massSubmit(VoidCallable task) {
-			return node.massSubmit(task);
-		}
-
-		public <T> List<Future<T>> massSubmit(Callable<? extends T> task) {
-			return node.massSubmit(task);
-		}
-	}
+        @Override
+        public void shutdown() {
+            node.shutdown();
+        }
+    }
 }

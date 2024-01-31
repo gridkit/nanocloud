@@ -28,7 +28,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.StreamCorruptedException;
 import java.net.SocketException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.AdvancedExecutorAdapter;
+import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.util.concurrent.FutureEx;
 import org.gridkit.zerormi.zlog.LogLevel;
 import org.gridkit.zerormi.zlog.LogStream;
@@ -68,8 +68,8 @@ public class RmiGateway {
     private InboundMessageStream in;
     private OutboundMessageStream out;
 
-    private RemoteExecutionService service;
-    private CounterAgent remote;
+    private final RemoteExecutionService service;
+    private final  FutureBox<RemoteExecutor> remoteFuture = new FutureBox<>();
     private Thread readerThread;
 
     private final LogStream logVerbose;
@@ -121,6 +121,10 @@ public class RmiGateway {
                         return t;
                     }
                 });
+    }
+
+    public FutureEx<RemoteExecutor> getRemoteExecutionPoint() {
+        return remoteFuture;
     }
 
     public AdvancedExecutor getRemoteExecutorService() {
@@ -207,6 +211,8 @@ public class RmiGateway {
         logInfo.log("RMI gateway [" + name +"] terminated.");
         terminated = true;
         terminatedCause = cause;
+
+        remoteFuture.cancel(true);
 
         try {
             out.close();
@@ -325,13 +331,14 @@ public class RmiGateway {
 
             out = new OutboundMessageStream(socket.getOutput());
 
-            CounterAgent localAgent = new LocalAgent();
-            channel.exportObject(CounterAgent.class, localAgent);
+            RemoteExecutor localAgent = new LocalAgent();
+            channel.exportObject(RemoteExecutor.class, localAgent);
             out.writeHandShake(localAgent);
 
             // important create out stream first!
             in = new InboundMessageStream(socket.getInput());
-            remote = (CounterAgent) in.readHandShake();
+            RemoteExecutor remote = (RemoteExecutor) in.readHandShake();
+            remoteFuture.setData(remote);
 
             readerThread = new SocketReader();
             readerThread.setName("RMI-Receiver: " + socket);
@@ -764,7 +771,7 @@ public class RmiGateway {
             return new Callable<T>() {
                 @Override
                 public T call() throws Exception {
-                    return remote.remoteCall(task);
+                    return remoteFuture.get().exec(task);
                 }
             };
         }
@@ -816,14 +823,16 @@ public class RmiGateway {
         }
     }
 
-    public static interface CounterAgent extends Remote {
-        public <T> T remoteCall(Callable<T> callable) throws RemoteException, Exception;
-    }
+    private class LocalAgent implements RemoteExecutor {
 
-    private class LocalAgent implements CounterAgent {
         @Override
-        public <T> T remoteCall(Callable<T> callable) throws Exception {
-            return callable.call();
+        public void exec(Runnable task) throws Exception {
+            task.run();
+        }
+
+        @Override
+        public <T> T exec(Callable<T> task) throws Exception {
+            return task.call();
         }
     }
 }

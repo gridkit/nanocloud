@@ -3,7 +3,7 @@ package org.gridkit.nanocloud.interceptor;
 import org.gridkit.nanocloud.viengine.NodeTrigger;
 import org.gridkit.nanocloud.viengine.Pragma;
 import org.gridkit.nanocloud.viengine.PragmaWriter;
-import org.gridkit.util.concurrent.AdvancedExecutor;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 class IsolateInitializer implements NodeTrigger {
 
@@ -16,7 +16,7 @@ class IsolateInitializer implements NodeTrigger {
 
     @Override
     public boolean evaluate(PragmaWriter context) {
-        AdvancedExecutor executor = context.get(Pragma.RUNTIME_EXECUTOR);
+        DirectRemoteExecutor executor = context.get(Pragma.RUNTIME_EXECUTOR);
         if (executor != null) {
             InstrumentationInitializer.configureIsolate(executor);
             return true;

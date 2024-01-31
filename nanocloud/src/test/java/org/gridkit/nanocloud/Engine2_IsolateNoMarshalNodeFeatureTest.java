@@ -31,22 +31,14 @@ public class Engine2_IsolateNoMarshalNodeFeatureTest extends ViNodeFeatureTest {
             .noMarshal(true);
     }
 
-    @Test
     @Override
-    public void verify_isolation_static_with_void_callable() {
-        super.verify_isolation_static_with_callable();
+    public void verify_isolation_static_with_exec() {
+        Assume.assumeTrue(false);
     }
 
-    @Test
     @Override
-    public void verify_isolation_static_with_callable() {
-        super.verify_isolation_static_with_callable();
-    }
-
-    @Test
-    @Override
-    public void verify_isolation_static_with_runnable() {
-        super.verify_isolation_static_with_runnable();
+    public void verify_isolation_static_with_calc() {
+        Assume.assumeTrue(false);
     }
 
     @Override

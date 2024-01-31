@@ -5,12 +5,12 @@ import java.util.concurrent.ExecutionException;
 
 import org.gridkit.nanocloud.NodeConfigurationException;
 import org.gridkit.nanocloud.NodeExecutionException;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.vicluster.AbstractCloudContext;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViNodeConfig;
+import org.gridkit.vicluster.ViNodeCore;
 import org.gridkit.vicluster.ViNodeProvider;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 
 public class ViEngine2NodeProvider implements ViNodeProvider {
 
@@ -41,7 +41,7 @@ public class ViEngine2NodeProvider implements ViNodeProvider {
     }
 
     @Override
-    public ViNode createNode(String name, ViNodeConfig config) {
+    public ViNodeCore createNode(String name, ViNodeConfig config) {
         PragmaMap map = coreConfig.clone();
         map.set(Pragma.NODE_NAME, name);
         Map<String, Object> nodeConfig = config.getConfigMap();
@@ -83,7 +83,7 @@ public class ViEngine2NodeProvider implements ViNodeProvider {
     class Engine implements ViEngine2 {
 
         PragmaWriter context;
-        AdvancedExecutor executor;
+        DirectRemoteExecutor executor;
         NodeAction stopSwitch;
         NodeAction killSwitch;
         boolean terminated;
@@ -105,7 +105,7 @@ public class ViEngine2NodeProvider implements ViNodeProvider {
         }
 
         @Override
-        public AdvancedExecutor getExecutor() {
+        public DirectRemoteExecutor getExecutor() {
             return executor;
         }
 

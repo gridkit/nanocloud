@@ -15,7 +15,7 @@
  */
 package org.gridkit.vicluster.telecontrol.ssh;
 
-import org.gridkit.vicluster.ViConfigurable;
+import org.gridkit.nanocloud.ViConfigurable;
 import org.gridkit.vicluster.ViNodeProps;
 
 /**

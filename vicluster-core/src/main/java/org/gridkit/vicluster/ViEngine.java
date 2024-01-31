@@ -26,7 +26,6 @@ import org.gridkit.nanocloud.telecontrol.NodeFactory;
 import org.gridkit.nanocloud.telecontrol.ProcessLauncher;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSession;
 import org.gridkit.nanocloud.telecontrol.RemoteExecutionSessionWrapper;
-import org.gridkit.util.concurrent.AdvancedExecutor;
 import org.gridkit.util.concurrent.FutureBox;
 import org.gridkit.vicluster.CloudContext.ServiceKey;
 import org.gridkit.vicluster.CloudContext.ServiceProvider;
@@ -34,6 +33,7 @@ import org.gridkit.vicluster.telecontrol.AgentEntry;
 import org.gridkit.vicluster.telecontrol.Classpath.ClasspathEntry;
 import org.gridkit.vicluster.telecontrol.ManagedProcess;
 import org.gridkit.vicluster.telecontrol.StreamCopyService;
+import org.gridkit.zerormi.DirectRemoteExecutor;
 import org.gridkit.zerormi.zlog.LogStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -257,7 +257,7 @@ public interface ViEngine {
         }
 
         @Override
-		public synchronized void kill() {
+        public synchronized void kill() {
             if (!started) {
                 throw new IllegalStateException();
             }
@@ -271,7 +271,7 @@ public interface ViEngine {
         }
 
         @Override
-		public synchronized void shutdown() {
+        public synchronized void shutdown() {
             if (!started) {
                 throw new IllegalSelectorException();
             }
@@ -402,7 +402,7 @@ public interface ViEngine {
                 }
 
                 @Override
-                public void processAdHoc(String name, ViExecutor node) {
+                public void processAdHoc(String name, DirectRemoteExecutor node) {
                     throw new IllegalArgumentException("Node is already initialized");
                 }
             };
@@ -496,7 +496,7 @@ public interface ViEngine {
         }
 
         @Deprecated
-        public static void processStartupHooks(ViNodeConfig conf, AdvancedExecutor exec) {
+        public static void processStartupHooks(ViNodeConfig conf, DirectRemoteExecutor exec) {
             ViEngineGame game = new ViEngineGame(conf.config);
             game.play(Phase.POST_INIT, null);
             Map<String, Object> result = game.exportConfig();
@@ -504,14 +504,14 @@ public interface ViEngine {
         }
 
         @Deprecated
-        public static void processShutdownHooks(ViNodeConfig conf, AdvancedExecutor exec) {
+        public static void processShutdownHooks(ViNodeConfig conf, DirectRemoteExecutor exec) {
             ViEngineGame game = new ViEngineGame(conf.config);
             game.play(Phase.PRE_SHUTDOWN, null);
             Map<String, Object> result = game.exportConfig();
             processHooks(result, exec, true);
         }
 
-        protected static void processHooks(Map<String, Object> config, AdvancedExecutor target, boolean reverseOrder) {
+        protected static void processHooks(Map<String, Object> config, DirectRemoteExecutor target, boolean reverseOrder) {
             List<String> keySet = new ArrayList<String>(config.keySet());
 
             if (reverseOrder) {
@@ -524,7 +524,7 @@ public interface ViEngine {
                     config.remove(key);
                     if (hook != null) {
                         if (hook instanceof Runnable) {
-                            MassExec.exec(target, (Runnable)hook);
+                            AdvExecutor2ViExecutor.exec(target, (Runnable)hook);
                         }
                         else {
                             throw new IllegalArgumentException("Hook " + key + " is not a Runnable");
@@ -743,13 +743,13 @@ public interface ViEngine {
         public Map<String, Object> getConfigProps(String matcher);
 
         @Override
-		public void unsetProp(String propName);
+        public void unsetProp(String propName);
 
         @Override
-		public void addUniqueProp(String propName, Object value);
+        public void addUniqueProp(String propName, Object value);
 
         @Override
-		public void setProp(String propName, Object value);
+        public void setProp(String propName, Object value);
 
         /**
          * Will update value without reordering of keys.
@@ -777,7 +777,7 @@ public interface ViEngine {
 
         public void process(String name, Phase phase, QuorumGame game);
 
-        public void processAdHoc(String name, ViExecutor node);
+        public void processAdHoc(String name, DirectRemoteExecutor node);
 
     }
 
@@ -808,12 +808,12 @@ public interface ViEngine {
     public class InitTimePragmaHandler implements PragmaHandler {
 
         @Override
-		public Object get(String key, ViEngine engine) {
+        public Object get(String key, ViEngine engine) {
             return engine.getConfig().get(key);
         }
 
         @Override
-		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
+        public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
             if (engine.isStarted()) {
                 throw new IllegalStateException("Pragma '" + key + "' cannot be set on started node");
             }
@@ -823,12 +823,12 @@ public interface ViEngine {
     public class ReadOnlyPragmaHandler implements PragmaHandler {
 
         @Override
-		public Object get(String key, ViEngine engine) {
+        public Object get(String key, ViEngine engine) {
             return engine.getConfig().get(key);
         }
 
         @Override
-		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
+        public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
             throw new IllegalStateException("Pragma '" + key + "' is read only");
         }
     }
@@ -836,20 +836,16 @@ public interface ViEngine {
     public class HookPragmaHandler implements PragmaHandler {
 
         @Override
-		public Object get(String key, ViEngine engine) {
+        public Object get(String key, ViEngine engine) {
             return engine.getConfig().get(key);
         }
 
         @Override
-		public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
+        public void set(String key, Object value, ViEngine engine, WritableSpiConfig wc) {
             Interceptor hook = (Interceptor) value;
             if (engine.isStarted()) {
-                ViExecutor exec = null;
                 ManagedProcess mp = engine.getConfig().getManagedProcess();
-                if (mp != null) {
-                    exec = new AdvExecutor2ViExecutor(mp.getExecutionService());
-                }
-                hook.processAdHoc(key, exec);
+                hook.processAdHoc(key, mp.getExecutionService());
             }
             wc.setProp(key, value);
         }
@@ -917,7 +913,7 @@ public interface ViEngine {
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
             throw new IllegalStateException("Node '" + node + "' is already initialized");
         }
     }
@@ -966,7 +962,7 @@ public interface ViEngine {
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
             for(Interceptor i: interceptors) {
                 i.processAdHoc(name, node);
             }
@@ -1009,7 +1005,7 @@ public interface ViEngine {
         }
 
         @Override
-        public void processAdHoc(String name, ViExecutor node) {
+        public void processAdHoc(String name, DirectRemoteExecutor node) {
             throw new IllegalArgumentException("Node is already initialized");
         }
     }

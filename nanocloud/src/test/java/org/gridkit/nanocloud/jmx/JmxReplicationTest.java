@@ -5,7 +5,6 @@ import static org.gridkit.nanocloud.VX.TYPE;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.UndeclaredThrowableException;
-import java.util.concurrent.Callable;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.JMX;
@@ -13,12 +12,15 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.gridkit.nanocloud.VX;
+import org.gridkit.nanocloud.ViNode;
+import org.gridkit.nanocloud.interceptor.Intercept;
 import org.gridkit.nanocloud.interceptor.misc.PlatformMBeanServerInterceptor;
 import org.gridkit.nanocloud.jmx.MBeanRegistrator.DestroyableMBeanRegistrator;
 import org.gridkit.nanocloud.test.junit.CloudRule;
 import org.gridkit.nanocloud.test.junit.DisposableCloud;
-import org.gridkit.vicluster.ViNode;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class JmxReplicationTest {
@@ -33,25 +35,22 @@ public class JmxReplicationTest {
 
     public static String TEST_BEAN_NAME ="NanocloudTest:name=TEST_BEAN";
 
+    @Rule
     public CloudRule cloud = new DisposableCloud();
 
     @Test
     public void replicate_remote_process_mbeans() throws InterruptedException {
 
         ViNode node = cloud.node("target");
-        node.x(TYPE).setLocal();
+        node.x(VX.LOCAL);
 
         DestroyableMBeanRegistrator mreg = new DestroyableMBeanRegistrator(new MBeanRegistrator.MBeanDomainPrefixer(new MBeanRegistrator.MBeanServerRegistrator(ManagementFactory.getPlatformMBeanServer()), "target@"));
 
         final RemoteMBeanReplicator mrep = new RemoteMBeanReplicator(mreg);
 
-        node.exec(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                mrep.export(null, ManagementFactory.getPlatformMBeanServer());
-                addTestMBean("JMX_TEST");
-                return null;
-            }
+        node.exec(() -> {
+            mrep.export(null, ManagementFactory.getPlatformMBeanServer());
+            addTestMBean("JMX_TEST");
         });
 
         Thread.sleep(1000);
@@ -88,41 +87,31 @@ public class JmxReplicationTest {
         PlatformMBeanServerInterceptor.apply(node1);
         PlatformMBeanServerInterceptor.apply(node2);
 
+        Intercept.enableInstrumentationTracing(node1, true);
+
         DestroyableMBeanRegistrator mreg1 = new DestroyableMBeanRegistrator(new MBeanRegistrator.MBeanDomainPrefixer(new MBeanRegistrator.MBeanServerRegistrator(ManagementFactory.getPlatformMBeanServer()), "isolate1@"));
         final RemoteMBeanReplicator mrep1 = new RemoteMBeanReplicator(mreg1);
 
-        node1.exec(new Runnable() {
-            @Override
-            public void run() {
-                MBeanServer mserver = ManagementFactory.getPlatformMBeanServer();
-                System.out.println("MServer is " + mserver.getClass().getName());
-                mrep1.export(null, mserver);
-            }
+        node1.exec(() -> {
+            MBeanServer mserver = ManagementFactory.getPlatformMBeanServer();
+            System.out.println("MServer is " + mserver.getClass().getName());
+            mrep1.export(null, mserver);
         });
 
         DestroyableMBeanRegistrator mreg2 = new DestroyableMBeanRegistrator(new MBeanRegistrator.MBeanDomainPrefixer(new MBeanRegistrator.MBeanServerRegistrator(ManagementFactory.getPlatformMBeanServer()), "isolate2@"));
         final RemoteMBeanReplicator mrep2 = new RemoteMBeanReplicator(mreg2);
 
-        node2.exec(new Runnable() {
-            @Override
-            public void run() {
-                MBeanServer mserver = ManagementFactory.getPlatformMBeanServer();
-                System.out.println("MServer is " + mserver.getClass().getName());
-                mrep2.export(null, mserver);
-            }
+        node2.exec(() -> {
+            MBeanServer mserver = ManagementFactory.getPlatformMBeanServer();
+            System.out.println("MServer is " + mserver.getClass().getName());
+            mrep2.export(null, mserver);
         });
 
-        node1.exec(new Runnable() {
-            @Override
-            public void run() {
-                addTestMBean("Isolate1");
-            }
+        node1.exec(() -> {
+            addTestMBean("Isolate1");
         });
-        node2.exec(new Runnable() {
-            @Override
-            public void run() {
-                addTestMBean("Isolate2");
-            }
+        node2.exec(() -> {
+            addTestMBean("Isolate2");
         });
 
         Thread.sleep(1000);

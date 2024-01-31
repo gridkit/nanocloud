@@ -4,10 +4,11 @@ import static org.gridkit.nanocloud.VX.REMOTE;
 
 import org.gridkit.nanocloud.RemoteEx;
 import org.gridkit.nanocloud.RemoteNode;
+import org.gridkit.nanocloud.ViConfExtender;
+import org.gridkit.nanocloud.ViConfigurable;
 import org.gridkit.nanocloud.viengine.Pragma;
+import org.gridkit.nanocloud.viengine.PragmaHandler;
 import org.gridkit.vicluster.ViConf;
-import org.gridkit.vicluster.ViConfExtender;
-import org.gridkit.vicluster.ViConfigurable;
 
 public class SshConf extends RemoteEx<SshConf> {
 
@@ -18,6 +19,8 @@ public class SshConf extends RemoteEx<SshConf> {
             SshConf ssh = new SshConf(node);
             node.x(REMOTE);
             node.setConfigElement(Pragma.REMOTE_PROTOCOL + "ssh", SshConnectorAction.INSTANCE);
+            node.setConfigElement(Pragma.NODE_PRAGMA_HANDLER + "ssh", PragmaHandler.PASSIVE);
+            node.setProp(Pragma.DEFAULT + Pragma.REMOTE_SCHEME_DEFAULT, "ssh");
 
             return ssh;
         }
@@ -49,6 +52,7 @@ public class SshConf extends RemoteEx<SshConf> {
         return this;
     }
 
+    @Deprecated
     public SshConf setPassword(String password) {
         setConfigElement(RemoteNode.PASSWORD, password);
         return this;

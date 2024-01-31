@@ -18,18 +18,19 @@ package org.gridkit.vicluster.telecontrol.ssh;
 import java.net.InetAddress;
 import java.util.concurrent.Callable;
 
-import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nanocloud.RemoteNode;
 import org.gridkit.nanocloud.SimpleCloudFactory;
 import org.gridkit.vicluster.ViConf;
+import org.gridkit.vicluster.ViNodeSet;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class SimpleCloudCheck {
 
     @Test
     public void verify_cbox_cluster() {
-        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        ViNodeSet cloud = SimpleCloudFactory.createSimpleSshCloud();
         cloud.node("cbox1");
 
         cloud.node("**").exec(new Runnable() {
@@ -37,7 +38,7 @@ public class SimpleCloudCheck {
             public void run() {
                 System.out.println("Hi!");
 
-                Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
+                ViNodeSet rcloud = SimpleCloudFactory.createSimpleSshCloud();
                 rcloud.node("localhost").exec(new Runnable() {
                     @Override
                     public void run() {
@@ -50,7 +51,7 @@ public class SimpleCloudCheck {
 
     @Test
     public void verify_cbox_cluster_on_cbox() throws InterruptedException {
-        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        ViNodeSet cloud = SimpleCloudFactory.createSimpleSshCloud();
         cloud.node("cbox1");
 
         cloud.node("**").exec(new Runnable() {
@@ -58,7 +59,7 @@ public class SimpleCloudCheck {
             public void run() {
                 System.out.println("Hi!");
 
-                Cloud rcloud = SimpleCloudFactory.createSimpleSshCloud();
+                ViNodeSet rcloud = SimpleCloudFactory.createSimpleSshCloud();
                 rcloud.node("cbox1").exec(new Runnable() {
                     @Override
                     public void run() {
@@ -73,17 +74,17 @@ public class SimpleCloudCheck {
 
     @Test
     public void verify_cbox_cluster_on_cbox_with_cloud_factory() throws InterruptedException {
-        Cloud cloud = CloudFactory.createCloud();        
-        cloud.node("cbox1").x(RemoteNode.REMOTE).useSimpleRemoting();
-        
+        ViNodeSet cloud = CloudFactory.createCloud();
+        cloud.node("cbox1").x(RemoteNode.REMOTE).useSimpleRemotingForLegacyEngine();
+
         cloud.node("**").exec(new Runnable() {
             @Override
             public void run() {
                 System.out.println("Hi!");
-                
-                Cloud rcloud = CloudFactory.createCloud();
+
+                ViNodeSet rcloud = CloudFactory.createCloud();
                 rcloud.node("cbox1").setProp(ViConf.NODE_TRACE, "true");
-                rcloud.node("cbox1").x(RemoteNode.REMOTE).useSimpleRemoting();
+                rcloud.node("cbox1").x(RemoteNode.REMOTE).useSimpleRemotingForLegacyEngine();
                 rcloud.node("cbox1").exec(new Runnable() {
                     @Override
                     public void run() {
@@ -92,13 +93,13 @@ public class SimpleCloudCheck {
                 });
             }
         });
-        
+
         Thread.sleep(2000);
-    }    
-    
+    }
+
     @Test
     public void remote_hallo_world() throws InterruptedException {
-        Cloud cloud = SimpleCloudFactory.createSimpleSshCloud();
+        ViNodeSet cloud = SimpleCloudFactory.createSimpleSshCloud();
         cloud.node("cbox1");
 
         cloud.node("**").exec(new Callable<Void>() {

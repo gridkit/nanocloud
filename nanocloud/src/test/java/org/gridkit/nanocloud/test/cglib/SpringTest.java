@@ -1,14 +1,19 @@
 package org.gridkit.nanocloud.test.cglib;
 
-import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.nanocloud.VX;
-import org.gridkit.vicluster.ViNode;
+import org.gridkit.nanocloud.ViNode;
+import org.gridkit.nanocloud.test.junit.CloudRule;
+import org.gridkit.nanocloud.test.junit.DisposableCloud;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class SpringTest {
+
+    @Rule
+    public CloudRule cloud = new DisposableCloud();
 
     @Test
     public void create_context() {
@@ -17,10 +22,10 @@ public class SpringTest {
 
     @Test
     public void create_context_in_isolation() {
-        ViNode node = CloudFactory.createCloud().node("test");
-        node.x(VX.ISOLATE).setIsolateNodeType();
+        ViNode node = cloud.node("test");
+        node.x(VX.ISOLATE);
 
-        node.exec(new Runnable() {
+        node.execRunnable(new Runnable() {
 
             @Override
             public void run() {

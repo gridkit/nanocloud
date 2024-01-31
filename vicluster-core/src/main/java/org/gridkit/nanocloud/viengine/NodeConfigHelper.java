@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,8 +63,8 @@ public class NodeConfigHelper {
         writer.setLazy(Pragma.DEFAULT + key, lazy);
     }
 
-    public static <T> void cloudSingleton(PragmaWriter writer, String key, Class<T> type, String shutdownMethod) {
-        SharedEntity<T> entry = new SharedEntity<T>(Helper.key(type), Helper.reflectionProvider(type, shutdownMethod));
+    public static <T> void cloudSingleton(PragmaWriter writer, String key, Class<T> type, Consumer<T> shutdownLambda) {
+        SharedEntity<T> entry = new SharedEntity<T>(Helper.key(type), Helper.reflectionProvider(type, shutdownLambda));
         writer.setLazy(key, entry);
     }
 

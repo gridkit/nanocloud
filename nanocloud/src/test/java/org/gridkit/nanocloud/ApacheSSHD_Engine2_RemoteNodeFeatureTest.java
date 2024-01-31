@@ -61,6 +61,7 @@ public class ApacheSSHD_Engine2_RemoteNodeFeatureTest extends ViNodeFeatureTest 
         sshServer.stop(/*immediately*/true);
     }
 
+    @SuppressWarnings("deprecation")
     @Before
     @Override
     public void initCloud() {

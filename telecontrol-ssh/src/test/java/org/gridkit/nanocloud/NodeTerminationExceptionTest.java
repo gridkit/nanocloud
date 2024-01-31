@@ -1,5 +1,6 @@
 package org.gridkit.nanocloud;
 
+import org.gridkit.vicluster.ViNodeSet;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,12 +14,13 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+@SuppressWarnings("deprecation")
 public class NodeTerminationExceptionTest {
 
     @Rule
     public Timeout timeout = new Timeout(30000);
 
-    private Cloud cloud;
+    private ViNodeSet cloud;
 
     @After
     public void recycleCloud() {
